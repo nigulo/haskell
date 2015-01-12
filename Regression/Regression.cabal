@@ -1,0 +1,91 @@
+name:                Regression
+version:             0.0.1
+cabal-version:       >= 1.2
+build-type:          Simple
+license:             AllRightsReserved
+license-file:        ""
+copyright:           maintainer:          stability:           homepage:            package-url:         bug-reports:         synopsis:            description:         category:            author:              tested-with:         data-files:          data-dir:            ""
+extra-source-files:  extra-tmp-files:
+
+library 
+  build-depends:    
+                    Math -any,
+                    Utils -any,
+                    base -any,
+                    random -any,
+                    containers -any,
+                    SafeSemaphore -any,
+                    mwc-random -any,
+                    vector -any,
+                    accelerate -any
+  hs-source-dirs:   src
+  ghc-options:      -O2 -fexcess-precision
+  exposed-modules:  
+                   Regression.AnalyticData,
+                   Regression.AnalyticDataWrapper,
+                   Regression.Bootstrap,
+                   Regression.CUDALeastSquares,
+                   Regression.Data,
+                   Regression.FFT,
+                   Regression.Functions,
+                   Regression.IMF,
+                   Regression.IOLeastSquares,
+                   Regression.LeastSquares,
+                   Regression.Polynom,
+                   Regression.Regression,
+                   Regression.Spline,
+                   Regression.Statistic,
+                   Regression.Utils
+  extensions:       
+                    ExistentialQuantification,
+                    FlexibleInstances,
+                    ScopedTypeVariables,
+                    TypeSynonymInstances
+
+executable Regression
+  build-depends:   
+                   base -any,
+                   random -any,
+                   accelerate -any
+  hs-source-dirs:  src
+  ghc-options:     -O2 -fexcess-precision -threaded -rtsopts
+  main-is:         Main.hs
+  extensions:      
+                   ExistentialQuantification,
+                   FlexibleInstances,
+                   ScopedTypeVariables,
+                   TypeSynonymInstances
+
+test-suite RegressionTests
+  type:            exitcode-stdio-1.0
+  main-is:         RegressionTests.hs
+  ghc-options:     -Wall -rtsopts -threaded
+  build-depends:   
+                   base >= 4,
+                   HTF > 0.9,
+                   filepath >=1.3.0 && <1.4
+  hs-source-dirs:  
+                   src,
+                   src/Regression,
+                   tests
+  other-modules:   
+                   Regression.RegressionTest,
+                   Regression.PolynomTest,
+                   CUDALeastSquares
+  extensions:      
+                   FlexibleInstances,
+                   ScopedTypeVariables,
+                   TypeSynonymInstances
+
+executable GradientAscent
+  build-depends:   base >= 4,
+                   system-fileio -any,
+                   system-filepath -any,
+                   bytestring -any,
+                   utf8-string -any
+  hs-source-dirs:  src
+  ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
+  main-is:         Regression/GradientAscent.hs
+  extensions:      DoAndIfThenElse,      
+                   ScopedTypeVariables
+

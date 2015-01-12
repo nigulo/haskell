@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<polynoms
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]><![CDATA[(1,1.0)]]><![CDATA[(2,1.0)]]><![CDATA[(3,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="1.0"
+      ><![CDATA[1.0]]></function></modulatorfunc
+    ><modulatorderiv
+      ><function initialExpression="0.0"
+      ><![CDATA[0.0]]></function></modulatorderiv></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]><![CDATA[(1,1.0)]]><![CDATA[(2,1.0)]]><![CDATA[(3,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin((6.283185307179586)*(x))"
+      ><![CDATA[sin((6.283185307179586)*(x))]]></function></modulatorfunc
+    ><modulatorderiv
+      ><function initialExpression="((6.283185307179586)^(i))*(sin(((6.283185307179586)*(x))+((i)*(1.5707963267948966))))"
+      ><![CDATA[((6.283185307179586)^(i))*(sin(((6.283185307179586)*(x))+((i)*(1.5707963267948966))))]]></function></modulatorderiv></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]><![CDATA[(1,1.0)]]><![CDATA[(2,1.0)]]><![CDATA[(3,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin((12.566370614359172)*(x))"
+      ><![CDATA[sin((12.566370614359172)*(x))]]></function></modulatorfunc
+    ><modulatorderiv
+      ><function initialExpression="((12.566370614359172)^(i))*(sin(((12.566370614359172)*(x))+((i)*(1.5707963267948966))))"
+      ><![CDATA[((12.566370614359172)^(i))*(sin(((12.566370614359172)*(x))+((i)*(1.5707963267948966))))]]></function></modulatorderiv></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]><![CDATA[(1,1.0)]]><![CDATA[(2,1.0)]]><![CDATA[(3,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos((6.283185307179586)*(x))"
+      ><![CDATA[cos((6.283185307179586)*(x))]]></function></modulatorfunc
+    ><modulatorderiv
+      ><function initialExpression="((6.283185307179586)^((i)+(1.0)))*(sin(((6.283185307179586)*(x))+(((i)+(1.0))*(1.5707963267948966))))"
+      ><![CDATA[((6.283185307179586)^((i)+(1.0)))*(sin(((6.283185307179586)*(x))+(((i)+(1.0))*(1.5707963267948966))))]]></function></modulatorderiv></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]><![CDATA[(1,1.0)]]><![CDATA[(2,1.0)]]><![CDATA[(3,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos((12.566370614359172)*(x))"
+      ><![CDATA[cos((12.566370614359172)*(x))]]></function></modulatorfunc
+    ><modulatorderiv
+      ><function initialExpression="((12.566370614359172)^((i)+(1.0)))*(sin(((12.566370614359172)*(x))+(((i)+(1.0))*(1.5707963267948966))))"
+      ><![CDATA[((12.566370614359172)^((i)+(1.0)))*(sin(((12.566370614359172)*(x))+(((i)+(1.0))*(1.5707963267948966))))]]></function></modulatorderiv></polynom></polynoms>

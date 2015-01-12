@@ -1,0 +1,725 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<polynoms
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]><![CDATA[(1,1.0)]]><![CDATA[(2,1.0)]]><![CDATA[(3,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="1.0"
+      ><![CDATA[1.0]]></function></modulatorfunc
+    ><modulatorderiv
+      ><function initialExpression="0.0"
+      ><![CDATA[0.0]]></function></modulatorderiv></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin((3.9269908169872414)*(x))"
+      ><![CDATA[sin((3.9269908169872414)*(x))]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos((3.9269908169872414)*(x))"
+      ><![CDATA[cos((3.9269908169872414)*(x))]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(6.407508398534104e-4*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(6.407508398534104e-4*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.2815016797068208e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(1.2815016797068208e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.9222525195602312e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(1.9222525195602312e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(2.5630033594136415e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(2.5630033594136415e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(3.203754199267052e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(3.203754199267052e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(3.8445050391204623e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(3.8445050391204623e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(4.4852558789738725e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(4.4852558789738725e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(5.126006718827283e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(5.126006718827283e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(5.766757558680694e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(5.766757558680694e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(6.407508398534104e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(6.407508398534104e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(7.048259238387514e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(7.048259238387514e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(7.689010078240925e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(7.689010078240925e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(8.329760918094335e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(8.329760918094335e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(8.970511757947745e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(8.970511757947745e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(9.611262597801156e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(9.611262597801156e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.0252013437654566e-2*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(1.0252013437654566e-2*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.0892764277507976e-2*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(1.0892764277507976e-2*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.1533515117361387e-2*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(1.1533515117361387e-2*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.2174265957214797e-2*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(1.2174265957214797e-2*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.2815016797068209e-2*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(1.2815016797068209e-2*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.3455767636921618e-2*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(1.3455767636921618e-2*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.4096518476775028e-2*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(1.4096518476775028e-2*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.473726931662844e-2*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(1.473726931662844e-2*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.537802015648185e-2*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(1.537802015648185e-2*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.601877099633526e-2*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[sin(1.601877099633526e-2*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(6.407508398534104e-4*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(6.407508398534104e-4*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.2815016797068208e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(1.2815016797068208e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.9222525195602312e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(1.9222525195602312e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(2.5630033594136415e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(2.5630033594136415e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(3.203754199267052e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(3.203754199267052e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(3.8445050391204623e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(3.8445050391204623e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(4.4852558789738725e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(4.4852558789738725e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(5.126006718827283e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(5.126006718827283e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(5.766757558680694e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(5.766757558680694e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(6.407508398534104e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(6.407508398534104e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(7.048259238387514e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(7.048259238387514e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(7.689010078240925e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(7.689010078240925e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(8.329760918094335e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(8.329760918094335e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(8.970511757947745e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(8.970511757947745e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(9.611262597801156e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(9.611262597801156e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.0252013437654566e-2*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(1.0252013437654566e-2*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.0892764277507976e-2*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(1.0892764277507976e-2*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.1533515117361387e-2*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(1.1533515117361387e-2*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.2174265957214797e-2*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(1.2174265957214797e-2*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.2815016797068209e-2*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(1.2815016797068209e-2*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.3455767636921618e-2*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(1.3455767636921618e-2*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.4096518476775028e-2*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(1.4096518476775028e-2*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.473726931662844e-2*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(1.473726931662844e-2*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.537802015648185e-2*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(1.537802015648185e-2*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="sin(1.601877099633526e-2*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[sin(1.601877099633526e-2*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(6.407508398534104e-4*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(6.407508398534104e-4*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.2815016797068208e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(1.2815016797068208e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.9222525195602312e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(1.9222525195602312e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(2.5630033594136415e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(2.5630033594136415e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(3.203754199267052e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(3.203754199267052e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(3.8445050391204623e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(3.8445050391204623e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(4.4852558789738725e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(4.4852558789738725e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(5.126006718827283e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(5.126006718827283e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(5.766757558680694e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(5.766757558680694e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(6.407508398534104e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(6.407508398534104e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(7.048259238387514e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(7.048259238387514e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(7.689010078240925e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(7.689010078240925e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(8.329760918094335e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(8.329760918094335e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(8.970511757947745e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(8.970511757947745e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(9.611262597801156e-3*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(9.611262597801156e-3*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.0252013437654566e-2*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(1.0252013437654566e-2*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.0892764277507976e-2*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(1.0892764277507976e-2*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.1533515117361387e-2*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(1.1533515117361387e-2*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.2174265957214797e-2*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(1.2174265957214797e-2*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.2815016797068209e-2*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(1.2815016797068209e-2*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.3455767636921618e-2*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(1.3455767636921618e-2*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.4096518476775028e-2*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(1.4096518476775028e-2*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.473726931662844e-2*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(1.473726931662844e-2*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.537802015648185e-2*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(1.537802015648185e-2*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.601877099633526e-2*x)*sin(3.9269908169872414*x)"
+      ><![CDATA[cos(1.601877099633526e-2*x)*sin(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(6.407508398534104e-4*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(6.407508398534104e-4*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.2815016797068208e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(1.2815016797068208e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.9222525195602312e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(1.9222525195602312e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(2.5630033594136415e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(2.5630033594136415e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(3.203754199267052e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(3.203754199267052e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(3.8445050391204623e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(3.8445050391204623e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(4.4852558789738725e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(4.4852558789738725e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(5.126006718827283e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(5.126006718827283e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(5.766757558680694e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(5.766757558680694e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(6.407508398534104e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(6.407508398534104e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(7.048259238387514e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(7.048259238387514e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(7.689010078240925e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(7.689010078240925e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(8.329760918094335e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(8.329760918094335e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(8.970511757947745e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(8.970511757947745e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(9.611262597801156e-3*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(9.611262597801156e-3*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.0252013437654566e-2*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(1.0252013437654566e-2*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.0892764277507976e-2*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(1.0892764277507976e-2*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.1533515117361387e-2*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(1.1533515117361387e-2*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.2174265957214797e-2*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(1.2174265957214797e-2*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.2815016797068209e-2*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(1.2815016797068209e-2*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.3455767636921618e-2*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(1.3455767636921618e-2*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.4096518476775028e-2*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(1.4096518476775028e-2*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.473726931662844e-2*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(1.473726931662844e-2*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.537802015648185e-2*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(1.537802015648185e-2*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom
+  ><polynom
+    ><coeficients
+    ><![CDATA[(0,1.0)]]></coeficients
+    ><modulatorfunc
+      ><function initialExpression="cos(1.601877099633526e-2*x)*cos(3.9269908169872414*x)"
+      ><![CDATA[cos(1.601877099633526e-2*x)*cos(3.9269908169872414*x)]]></function></modulatorfunc
+    ><modulatorderiv/></polynom></polynoms>
