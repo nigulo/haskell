@@ -1,0 +1,69 @@
+name:                Utils
+version:             0.0.1
+cabal-version:       >= 1.2
+build-type:          Simple
+license:             AllRightsReserved
+extra-source-files:  extra-tmp-files:     
+executable Utils
+  build-depends:   
+                   base -any,
+                   HaXml -any,
+                   array -any,
+                   filepath -any,
+                   pretty -any,
+                   random -any,
+                   time -any
+  hs-source-dirs:  src
+  ghc-options:     -O2 -fexcess-precision
+  main-is:         Main.hs
+  other-modules:   
+                   Utils.IO,
+                   Utils.List,
+                   Utils.Math,
+                   Utils.Misc,
+                   Utils.Num,
+                   Utils.Str,
+                   Utils.Xml
+  extensions:      ScopedTypeVariables
+
+library 
+  build-depends:    
+                   base -any,
+                   HaXml -any,
+                   array -any,
+                   filepath -any,
+                   pretty -any,
+                   random -any,
+                   time -any,
+                   vector -any,
+                   SafeSemaphore ==0.9.*,
+                   HTF >=0.11.2 && <0.12,
+                   bytestring -any,
+                   utf8-string -any
+  hs-source-dirs:   src
+  ghc-options:      -O2 -fexcess-precision
+  exposed-modules:  
+                   Utils.Concurrent,
+                   Utils.IO,
+                   Utils.List,
+                   Utils.Math,
+                   Utils.Misc,
+                   Utils.Num,
+                   Utils.Str,
+                   Utils.Test,
+                   Utils.Xml
+
+test-suite UtilsTests
+  type:            exitcode-stdio-1.0
+  main-is:         UtilsTests.hs
+  ghc-options:     -Wall -rtsopts
+  build-depends:   base >= 4, HTF > 0.9
+  hs-source-dirs:  
+                   src, 
+                   src/Utils, 
+                   tests
+  other-modules:   
+                   Utils.MiscTest,
+                   Concurrent
+  extensions:      ScopedTypeVariables
+
