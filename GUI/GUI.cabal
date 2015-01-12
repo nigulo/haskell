@@ -1,0 +1,50 @@
+name:                GUI
+version:             0.0.1
+cabal-version:       >= 1.2
+build-type:          Simple
+license:             AllRightsReserved
+license-file:        ""
+copyright:           
+maintainer:          
+stability:           
+homepage:            
+package-url:         
+bug-reports:         
+synopsis:            
+description:         .
+category:            
+author:              
+tested-with:         
+data-files:          
+data-dir:             ""
+extra-source-files:  
+extra-tmp-files:     
+library 
+  build-depends:    
+                    Math -any,
+                    Utils -any,
+                    base -any,
+                    containers -any,
+                    gtk3 -any,
+                    cairo -any,
+                    transformers -any,
+                    vector -any
+  hs-source-dirs:   src
+  ghc-options:      -O2 -fexcess-precision
+  exposed-modules:  
+                    GUI.Plot,
+                    GUI.Widget
+
+executable GUI
+  build-depends:   
+                   Math -any,
+                   Utils -any,
+                   base -any,
+                   cairo -any,
+                   containers -any,
+                   gtk3 -any,
+                   transformers -any
+  hs-source-dirs:  src
+  ghc-options:     -O2 -fexcess-precision
+  main-is:         Main.hs
+
