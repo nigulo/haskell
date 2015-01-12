@@ -1,0 +1,401 @@
+
+module TSA.GUI.IO (importData, exportData, loadAsciiDialog) where
+
+import Graphics.UI.Gtk hiding (addWidget)
+import Data.IORef
+import qualified Data.Map as Map
+import Control.Concurrent
+import Debug.Trace
+
+import Regression.Data as D hiding (ws)
+import Regression.Utils
+
+import ISDA.InOut
+
+import TSA.Params
+import TSA.GUI.State
+import TSA.GUI.Dialog
+import TSA.GUI.Data
+
+import GUI.Widget
+
+import Utils.Misc
+import Utils.Str
+import Utils.List
+import Data.Char
+import Data.List
+import Data.Maybe
+import Control.Concurrent.MVar
+import System.IO
+import System.Random
+
+import Astro.Ephem.Types
+
+import qualified Data.Vector.Unboxed as V
+import Control.Applicative
+
+loadAsciiDialog :: StateRef -> IO ()
+loadAsciiDialog stateRef = do
+    state <- readMVar stateRef
+    (currentGraphTab, _) <- getCurrentGraphTab state
+    dialog <- fileChooserDialogNew (Just "Read ASCII") (Just (getWindow state)) FileChooserActionOpen [("Cancel", ResponseCancel), ("Open", ResponseAccept)]
+    --nameEntry <- entryNew
+    --nameEntry `entrySetText` "Input"
+    --addWidget (Just "Name: ") nameEntry dialog
+
+    fileFilter <- fileFilterNew
+    fileFilter `fileFilterAddPattern` "*.dat"
+    fileFilter `fileFilterAddPattern` "*.DAT"
+    fileFilter `fileFilterAddPattern` "*.txt"
+    fileFilter `fileFilterAddPattern` "*.TXT"
+    fileFilter `fileFilterAddPattern` "*.csv"
+    fileFilter `fileFilterAddPattern` "*.CSV"
+    --fileFilter `fileFilterAddPattern` "*.*"
+
+    (castToFileChooser dialog) `fileChooserAddFilter` fileFilter
+    (castToFileChooser dialog) `fileChooserSetFilter` fileFilter
+
+    widgetShowAll dialog
+    response <- dialogRun dialog
+    --name <- entryGetText nameEntry
+    file <- fileChooserGetFilename (castToFileChooser dialog)
+    
+    if response == ResponseAccept && (file /= Nothing)
+        then
+            do
+                fileContents <- readFile (fromJust file)
+                let 
+                    fileName = take (length (fromJust file) - 4) (fromJust file)
+                    shortName = 
+                        let indices = (elemIndices '\\' fileName)
+                        in if length indices <= 0 then fileName else drop (last indices + 1) fileName
+                    fileLines = filter (\line -> trim line /= "") $ lines fileContents
+                widgetDestroy dialog
+                dataFormatDialog stateRef (readAscii stateRef shortName) fileLines
+        else
+            do
+                widgetDestroy dialog
+
+data ColumnType = ColGeneral | ColJD | ColYear | ColMonth | ColDay | ColYYYYMMDD | ColError deriving (Eq)
+columnTypes = [ColGeneral, ColJD, ColYear, ColMonth, ColDay, ColYYYYMMDD, ColError]
+
+dataFormatDialog :: StateRef -> ([ColumnType] -> [[String]] -> String -> IO ()) -> [String] -> IO ()
+dataFormatDialog stateRef callback lines = do
+    state <- readMVar stateRef
+    
+    assistant <- assistantNew
+    
+    let
+        win = getWindow state
+    icon <- windowGetIcon win
+    assistant `set` [windowTitle := "Format data columns", windowIcon := icon]
+    
+    page1 <- vBoxNew False 0
+    assistantSetPageType assistant page1 AssistantPageConfirm
+    headerLabel <- labelNew $ Just "First rows of data:"
+    addWidgetToVBox Nothing headerLabel PackNatural page1
+    dataLabel <- labelNew $ Just $ concatMap (\line -> line ++ "\n") (take 5 lines)
+    addWidgetToVBox Nothing dataLabel PackNatural page1
+    separator1 <- hSeparatorNew
+    addWidgetToVBox Nothing separator1 PackNatural page1
+    separatorIndicesEntry <- entryNew
+    addWidgetToVBox (Just "Separator indices:") separatorIndicesEntry PackNatural page1 
+    omitSeparatorsCheck <- checkButtonNew
+    addWidgetToVBox (Just "Omit separators: ") omitSeparatorsCheck PackNatural page1 
+    separator2 <- hSeparatorNew
+    addWidgetToVBox Nothing separator2 PackNatural page1
+    delimitersLabel <- labelNew $ Just "Delimiters:"
+    addWidgetToVBox Nothing delimitersLabel PackNatural page1 
+    spaceCheck <- checkButtonNew >>= \button -> toggleButtonSetActive button True >> return button
+    addWidgetToVBox (Just "Space: ") spaceCheck PackNatural page1 
+    tabCheck <- checkButtonNew
+    addWidgetToVBox (Just "Tab: ") tabCheck PackNatural page1
+    commaCheck <- checkButtonNew
+    addWidgetToVBox (Just "Comma: ") commaCheck PackNatural page1
+    semicolonCheck <- checkButtonNew
+    addWidgetToVBox (Just "Semicolon: ") semicolonCheck PackNatural page1
+    skipRowsEntry <- entryNew
+    addWidgetToVBox (Just "Skip rows:") skipRowsEntry PackNatural page1 
+    --assistant `set` [assistantChildComplete := True]
+    assistantAppendPage assistant page1
+    
+    page2 <- vBoxNew False 0
+    headerLabel <- labelNew $ Just "Columns:"
+    addWidgetToVBox Nothing headerLabel PackNatural page2
+    table <- tableNew 0 0 True
+    addWidgetToVBox Nothing table PackNatural page2
+    nameEntry <- entryNew
+    addWidgetToVBox (Just "Name: ") nameEntry PackNatural page2
+    assistantAppendPage assistant page2
+    
+    widgetShowAll assistant
+    assistantSetPageComplete assistant page1 True
+    assistantSetPageComplete assistant page2 True
+    assistantSetPageType assistant page2 AssistantPageConfirm
+    
+    on assistant assistantCancel $ widgetDestroy assistant 
+    on assistant assistantPrepare $ \page -> do
+        useSpace <- toggleButtonGetActive spaceCheck
+        useTab <- toggleButtonGetActive tabCheck
+        useComma <- toggleButtonGetActive commaCheck
+        useSemicolon <- toggleButtonGetActive semicolonCheck
+        separatorIndicesStr <- entryGetText separatorIndicesEntry
+        omitSeparators <- toggleButtonGetActive omitSeparatorsCheck
+        skippedRowsStr <- entryGetText skipRowsEntry
+        let
+            separatorOffset = if omitSeparators then 1 else 0 
+            separatorIndices :: [Int] = sort $ map (read) $ filter (\ind -> trim ind /= "") $ concat $ map (splitBy ';') $ concat $ map (splitBy ',') $ words separatorIndicesStr
+            splitFunc useChar char line = if useChar then concat (map (splitBy char) line) else line
+            splittedLines' = map (\line -> filter (\col -> trim col /= "") (
+                ((splitFunc useSpace ' ') . (splitFunc useTab '\t') . (splitFunc useComma ',') . (splitFunc useSemicolon ';')) 
+                    (if separatorIndices /= [] then map (\(i1, i2) -> take (i2 - i1 - separatorOffset) (drop (i1 + separatorOffset) line)) (zip (-separatorOffset:separatorIndices) (separatorIndices ++ [length line])) else [line])
+                )) lines
+            skippedRows :: [Int] = sort $ map (read) $ filter (\ind -> trim ind /= "") $ concat $ map (splitBy ';') $ concat $ map (splitBy ',') $ words skippedRowsStr
+            splittedLines = foldl' (\lines (skippedRow, i) -> removeAt (skippedRow - i) lines) splittedLines' (zip skippedRows [1 ..]) 
+            first5Rows = take 5 splittedLines
+            colsAndLengths = map (\(i, line) -> (i, length line)) (zip [1, 2 ..] splittedLines)
+            (minLine, minCols) = minimumBy (\(_, len1) (_, len2) -> compare len1 len2) colsAndLengths
+            (maxLine, maxCols) = maximumBy (\(_, len1) (_, len2) -> compare len1 len2) colsAndLengths
+            cols = transpose $ map (take minCols) splittedLines
+            numRows = length first5Rows
+            numCols = length cols
+        if minCols /= maxCols
+            then do
+                msgDialog <- messageDialogNew (Just (castToWindow assistant)) [DialogDestroyWithParent] MessageWarning ButtonsOk 
+                    ("Unequal column numbers detected. Line " ++ (show minLine) ++ " has " ++ (show minCols) ++ " columns, but line " ++ (show maxLine) ++ " has " ++ (show maxCols) ++ " columns.")
+                dialogRun msgDialog
+                widgetDestroy msgDialog
+                return ()
+            else return ()
+        tableCells <- containerGetChildren table
+        mapM_ (containerRemove table) tableCells
+        tableResize table (numRows + 1) numCols
+        mapM_ (\(row, line) -> mapM_ (\(col, elem) -> do
+                        cell <- labelNew $ Just elem
+                        tableAttachDefaults table cell col (col + 1) row (row + 1)
+                ) (zip [0, 1 ..] line)
+            ) (zip [0, 1 ..] (map (take numCols) first5Rows)) 
+        typeCombos <- mapM (\col -> do
+                typeCombo <- createComboBox ["-", "General", "JD", "Year", "Month", "Day", "YYYY-MM-DD", "Error"]
+                comboBoxSetActive typeCombo 0
+                tableAttachDefaults table typeCombo col (col + 1) (numRows) (numRows + 1)
+                return typeCombo
+            ) [0 .. numCols - 1] 
+        widgetShowAll page2
+        on assistant assistantClose $ do
+            colTypesAndCols <- mapM (\(col, typeCombo) -> do
+                    colType <- comboBoxGetActive typeCombo
+                    case colType of
+                        0 -> return Nothing
+                        i -> return $ Just (columnTypes !! (i - 1), cols !! col)
+                ) (zip [0, 1 ..] typeCombos)
+            let
+                (colTypes, selectedCols) = unzip $ catMaybes colTypesAndCols
+            name <- entryGetText nameEntry
+            callback colTypes selectedCols name
+            widgetDestroy assistant 
+        return ()
+    return ()
+
+readValue :: ColumnType -> String -> Double
+readValue ColYYYYMMDD val = 
+    let
+        year = read $ take 4 val
+        month = read $ take 2 $ if length val == 8 then drop 4 val else drop 5 val
+        date = read $ if length val == 8 then drop 6 val else drop 8 val
+        TropicalYears result = toTropicalYears (YMD year month date)
+    in
+        result
+readValue _ val = read val
+
+readAscii :: StateRef -> String -> [ColumnType] -> [[String]] -> String -> IO ()
+readAscii stateRef _ [] _ _ = return ()
+readAscii stateRef fileName colTypes cols name = do
+    state <- readMVar stateRef
+    (currentGraphTab, _) <- getCurrentGraphTab state
+    let
+            ymdToYears = colTypes !! 0 == ColYear && colTypes !! 1 == ColMonth && colTypes !! 2 == ColDay
+            dataLines =
+                map (\line -> 
+                        let
+                            lineVals = map (\(i, val) -> readValue (colTypes !! i) val) (zip [0, 1 ..] line)
+                        in
+                            if ymdToYears
+                                then
+                                     let
+                                         [year, month, day] = take 3 lineVals
+                                         TropicalYears result = toTropicalYears (YMD (floor year) (floor month) day)
+                                     in
+                                         result:drop 3 lineVals
+                                else lineVals 
+                    ) $ transpose cols 
+            numCols = if ymdToYears then length colTypes - 2 else length colTypes    
+            is1d = numCols == 1 || numCols == 2 && ColError `elem` colTypes 
+            is2d = numCols == 2 || numCols == 3 && ColError `elem` colTypes 
+            dat = 
+                if is1d then 
+                        D.data1 $ V.fromList $ map (\line -> 
+                            if length line == 1 
+                                then (head line, 1, 1) 
+                                else (head line, 1, last line)) dataLines
+                else if is2d 
+                    then
+                        D.data1 $ V.fromList $ map (\line -> 
+                            if length line == 2 
+                                then (head line, last line, 1) 
+                                else (head line, line !! 1, last line)) dataLines
+                    else
+                        D.data2 $ map (\line -> 
+                            if length line == 3 
+                                then ([head line, line !! 1], last line, 1) 
+                                else ([head line, line !! 1], line !! 2, last line)) dataLines
+            graphTabParms = (graphTabs state) !! currentGraphTab
+            selectedGraph = graphTabSelection graphTabParms
+    modifyMVar_ stateRef $ \state -> return $ addDiscreteData dat (if name == "" then fileName else name) (Just (currentGraphTab, selectedGraph)) state
+
+-------------------------------------------------------------------------------
+
+importData :: StateRef -> IO ()
+importData stateRef = do
+    state <- readMVar stateRef
+    (currentGraphTab, _) <- getCurrentGraphTab state
+    dialog <- fileChooserDialogNew (Just "Import from ISDA") (Just (getWindow state)) FileChooserActionOpen [("Cancel", ResponseCancel), ("Open", ResponseAccept)]
+    --nameEntry <- entryNew
+    --nameEntry `entrySetText` "Input"
+    --addWidget (Just "Name: ") nameEntry dialog
+
+    fileFilter <- fileFilterNew
+    fileFilter `fileFilterAddPattern` "*.WRK"
+    fileFilter `fileFilterAddPattern` "*.SPC"
+
+    (castToFileChooser dialog) `fileChooserAddFilter` fileFilter
+    (castToFileChooser dialog) `fileChooserSetFilter` fileFilter
+
+    widgetShowAll dialog
+    response <- dialogRun dialog
+    --name <- entryGetText nameEntry
+    file <- fileChooserGetFilename (castToFileChooser dialog)
+    
+    if response == ResponseAccept && (file /= Nothing)
+        then
+            do
+                let 
+                    graphTabParms = (graphTabs state) !! currentGraphTab
+                    selectedGraph = graphTabSelection graphTabParms
+
+                    extension = reverse (take 4 (reverse (fromJust file)))
+                    fileName = take (length (fromJust file) - 4) (fromJust file)
+                    mode = if (map toUpper extension) == ".WRK" then "D_" else "S_"
+                    shortName = 
+                        let indices = (elemIndices '\\' fileName)
+                        in if length indices <= 0 then fileName else drop (last indices + 1) fileName
+                widgetDestroy dialog
+                isdaState <- readStateFromFile fileName (ISDA.InOut.Params (Map.fromList [("CONFIGURATION", mode)]))
+                modifyMVar_ stateRef $ \state -> return $ addDiscreteData (decode isdaState) shortName (Just (currentGraphTab, selectedGraph)) state
+        else
+            do
+                widgetDestroy dialog
+
+exportData :: State -> IO ()
+exportData state = do
+    dialog <- fileChooserDialogNew (Just "Export to ISDA") (Just (getWindow state)) FileChooserActionSave [("Cancel", ResponseCancel), ("Save", ResponseAccept)]
+    g <- getStdGen 
+    
+    fileFilter <- fileFilterNew
+    fileFilter `fileFilterAddPattern` "*.WRK"
+    fileFilter `fileFilterAddPattern` "*.SPC"
+
+    (castToFileChooser dialog) `fileChooserAddFilter` fileFilter
+    (castToFileChooser dialog) `fileChooserSetFilter` fileFilter
+    
+    --yesButton <- dialogAddButton dialog "Yes" ResponseYes
+    --yesButton `widgetSetSensitivity` False
+    --dialogAddButton dialog "No" ResponseNo
+    dataSetCombo <- dataSetComboNew (\_ -> True) state
+    addWidget (Just "Data set: ") (getComboBox dataSetCombo) dialog
+
+    precisionAdjustment <- adjustmentNew 1024 1 100000 1 1 1
+    precisionSpin <- spinButtonNew precisionAdjustment 1 0
+    addWidget (Just "Precision: ") precisionSpin dialog
+
+    {--let 
+        toggleYesButton :: IO ()
+        toggleYesButton = 
+            do
+                selectedData <- getSelectedData dataSetCombo
+                let sensitivity =
+                        case selectedData of 
+                            Just _ -> True
+                            Nothing -> False
+                yesButton `widgetSetSensitivity` sensitivity
+                        
+    (getComboBox dataSetCombo) `onChanged` toggleYesButton
+    --}
+
+    widgetShowAll dialog
+    response <- dialogRun dialog
+    selectedData <- getSelectedData dataSetCombo
+    precision <- spinButtonGetValue precisionSpin
+    file <- fileChooserGetFilename (castToFileChooser dialog)
+    
+    if response == ResponseAccept && (not (isNothing selectedData)) && (file /= Nothing)
+        then
+            do
+                widgetDestroy dialog
+                let
+                    Just f = file
+                    fileName = 
+                        if any (\suffix -> suffix `isSuffixOf` (map toLower f)) [".wrk", ".spc"]  
+                            then (take (length f - 4) f) 
+                            else f 
+                    isdaState = encode d where
+                        d = case subData (head (dataSet (fromJust selectedData))) of
+                            Left dataOrSpec -> dataOrSpec
+                            Right (Left s) -> sampleAnalyticData_ s [round precision] g
+                            Right (Right f) -> sampleAnalyticData_ f [round precision] g
+                writeStateToFile fileName isdaState
+        else 
+            widgetDestroy dialog
+
+decode :: ISDAState -> D.Data
+decode (params, datOrSpec) = 
+    case datOrSpec of 
+        Left (dataHeader, dataBlocks) -> 
+            D.data1 $ V.fromList $ (zip3 (map (+tOff dataHeader) (ts dataBlocks)) 
+                         (map realToFrac (fs dataBlocks))
+                         (if length (ws dataBlocks) <= 0 then 
+                            replicate (length (ts dataBlocks)) 1
+                          else map realToFrac (ws dataBlocks)))
+        Right (specHeader, specBlocks) -> 
+            D.Spectrum ([(swMin specHeader, 
+                        (if nLim specHeader <= 1 then 0
+                         else (swMax specHeader - swMin specHeader) / (fromIntegral (nLim specHeader) - 1)))], 
+                         zip (map realToFrac (pty specBlocks)) (replicate (length (pty specBlocks)) 1))
+
+
+encode :: D.Data -> ISDAState
+encode dataOrSpec = 
+    case dataOrSpec of
+        D.Data dat ->
+            let (xs, ys, wgs) = unzip3 dat
+            in (ISDA.InOut.Params (Map.fromList [("CONFIGURATION", "_D")]), 
+                 Left (DataHeader {bands = 3,
+                                  curSegs = 0,
+                                  nData = fromIntegral (length xs),
+                                  tOff = 0,
+                                  fMin = minimum ys,
+                                  fMax = maximum ys,
+                                  isIndex = False},
+                       DataBlocks {ts = map head xs,
+                                  dataSegs = [],
+                                  fs = map realToFrac ys,
+                                  ws = map realToFrac wgs,
+                                  is = []}))        
+        D.Spectrum ([(offset, step)], valuesAndWeights) ->
+                let values = fst $ unzip valuesAndWeights
+                in (ISDA.InOut.Params (Map.fromList [("CONFIGURATION", "_S")]), 
+                         Right (SpecHeader {nLim = fromIntegral (length values), 
+                                           swMin = offset, 
+                                           swMax = offset + (if length values <= 1 then 0 else fromIntegral (length values - 1) * step)}, 
+                               SpecBlocks {pty = map realToFrac values}))
+

@@ -1,0 +1,110 @@
+name:                TSA
+version:             0.0.1
+cabal-version:       >= 1.2
+build-type:          Simple
+license:             AllRightsReserved
+license-file:        ""
+copyright:           maintainer:          stability:           homepage:            package-url:         bug-reports:         synopsis:            description:         .
+category:            
+            author:              tested-with:         data-files:
+            tsa.ico,
+            ui.xml
+data-dir:            res
+extra-source-files:  extra-tmp-files:
+
+executable TSA
+  build-depends:   
+               GUI -any,
+               Math -any,
+               Regression -any,
+               Utils -any,
+               array -any,
+               base -any,
+               cairo -any,
+               containers -any,
+               directory -any,
+               gnuplot -any,
+               random -any,
+               gtk3 -any,
+               transformers -any,
+               ISDA -any,
+               SafeSemaphore -any,
+               statistics -any,
+               vector -any,
+               Astro -any,
+               statistics-linreg -any,
+               mwc-random -any,
+               zlib -any,
+               bytestring -any,
+               utf8-string -any
+  hs-source-dirs:  src
+  ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
+  main-is:         Main.hs
+  other-modules:   
+                 TSA.Extrema,
+                 TSA.LeastSquares,
+                 TSA.GUI.Extrema,
+                 TSA.GUI.LeastSquares,
+                 TSA.GUI.State,
+                 TSA.GUI.Dialog,
+                 TSA.Params,
+                 TSA.GUI.AnalyticSignal,
+                 TSA.GUI.Attractor,
+                 TSA.GUI.Build,
+                 TSA.GUI.Common,
+                 TSA.GUI.Correlation,
+                 TSA.GUI.Data,
+                 TSA.GUI.Envelopes,
+                 TSA.GUI.FFT,
+                 TSA.GUI.Function,
+                 TSA.GUI.Gnu,
+                 TSA.GUI.Graph,
+                 TSA.GUI.IMF,
+                 TSA.GUI.Interpolate,
+                 TSA.GUI.IO,
+                 TSA.GUI.LocalPhase,
+                 TSA.GUI.Log,
+                 TSA.GUI.Markers,
+                 TSA.GUI.Modify,
+                 TSA.GUI.Period,
+                 TSA.GUI.Preferences,
+                 TSA.GUI.Sample,
+                 TSA.GUI.Selection,
+                 TSA.GUI.Statistic,
+                 TSA.Data,
+                 TSA.Period,
+                 TSA.D2,
+                 TSA.GUI.D2
+  extensions:      
+               DoAndIfThenElse,
+               ScopedTypeVariables
+
+executable Bootstrap
+  build-depends:   
+                base >= 4,
+                filelock -any,
+                system-fileio -any,
+                system-filepath -any
+  hs-source-dirs:  src
+  ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
+  main-is:         TSA/Bootstrap/Main.hs
+  extensions:      
+                DoAndIfThenElse,
+                ScopedTypeVariables
+  other-modules:
+
+executable Significance
+  build-depends:   base >= 4
+  hs-source-dirs:  src
+  ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
+  main-is:         TSA/Bootstrap/Significance.hs
+  extensions:      ScopedTypeVariables
+  other-modules:
+
+executable D2
+  build-depends:   base >= 4
+  hs-source-dirs:  src
+  ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
+  main-is:         TSA/Bootstrap/D2.hs
+  extensions:      ScopedTypeVariables
+  other-modules:

@@ -1,0 +1,58 @@
+<ui>
+  <menubar>
+    <menu name="File" action="FileAction">
+      <menuitem action="NewAction"/>
+      <menuitem action="LoadAction"/>
+      <menuitem action="SaveAction"/>
+      <separator/>
+      <menuitem action="ImportAction"/>
+      <menuitem action="ExportAction"/>
+      <menuitem action="LoadAsciiAction"/>
+      <separator/>
+      <menuitem action="ExitAction"/>
+    </menu>
+    <menu name="Data" action="DataAction">
+      <menuitem action="DataSetsAction"/>
+      <separator/>
+      <menuitem action="FunctionAction"/>
+      <menuitem action="StatisticAction"/>
+      <separator/>
+      <menuitem action="ModifyAction"/>
+      <menuitem action="BuildAction"/>
+      <menuitem action="SampleAction"/>
+      <menuitem action="SelectionAction"/>
+    </menu>
+    <menu name="Analyze" action="AnalyzeAction">
+      <menuitem action="LsqAction"/>
+      <menuitem action="InterpolateAction"/>
+      <menuitem action="EnvelopeAction"/>
+      <menuitem action="FftAction"/>
+      <menuitem action="AsAction"/>
+      <menuitem action="LocalPhaseAction"/>
+    </menu>
+    <menu name="Search" action="SearchAction">
+      <menuitem action="FindPeriodAction"/>
+      <menuitem action="D2Action"/>
+      <menuitem action="FindExtremaAction"/>
+      <menuitem action="AttractorAction"/>
+      <menuitem action="CorrelationAction"/>
+    </menu>
+    <menu name="Graph" action="GraphAction">
+      <menuitem action="GraphDataAction"/>
+      <menuitem action="GraphSettingsAction"/>
+      <menuitem action="GraphMarkersAction"/>
+      <separator/>
+      <menuitem action="SaveGnuplotAction"/>
+      <menuitem action="PreviewGnuplotAction"/>
+      <menuitem action="GnuplotSettingsAction"/>
+      <separator/>
+      <menuitem action="SavePDFAction"/>
+      <separator/>
+    </menu>
+    <menu name="Window" action="WindowAction">
+      <menuitem action="PreferencesAction"/>
+      <separator/>
+      <menuitem action="ShowLogAction"/>
+    </menu>
+  </menubar>
+</ui>
