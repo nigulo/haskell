@@ -92,15 +92,15 @@ applyToData func dp names puFunc = do
     resultsPerSubData <- mapM mapOp (zip [0, 1 ..] (dataSet dp))
     let
         (results, bootstrapResults) = unzip resultsPerSubData 
-    return $ zipWith4 (\sdp name results bootstrapResults -> DataParams {
+    return $ zipWith3 (\name results bootstrapResults -> DataParams {
         dataName = name, 
-        dataSet = zipWith (\result bootstrapResults -> 
+        dataSet = zipWith3 (\sdp result bootstrapResults -> 
             SubDataParams {
                     subDataRange = subDataRange sdp,
                     subData = result, 
                     subDataBootstrapSet = bootstrapResults
-                }) results bootstrapResults
-        }) (dataSet dp) names (transpose results) (transpose (trace ("bootstrapResults=" ++ show (transpose bootstrapResults)) bootstrapResults))
+                }) (dataSet dp) results bootstrapResults
+        }) names (transpose results) (transpose bootstrapResults)
 
 applyToData1 :: (Int -> Maybe Int -> Either D.Data (Either S.Spline FS.Functions) -> (Double -> IO ()) -> IO (Either D.Data (Either S.Spline FS.Functions))) 
         -> DataParams 
