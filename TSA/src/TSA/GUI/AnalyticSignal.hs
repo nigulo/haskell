@@ -96,15 +96,15 @@ analyticSignalDialog stateRef = do
                     asImagData = conjugatedData                    
                 }}
                 
-                forkIO $ analyticSignal stateRef (round precision)
+                forkIO $ analyticSignal stateRef (round precision) (amplitudeName, phaseName, frequencyName)
                 return ()
                 
         else
             do
                 widgetDestroy dialog
 
-analyticSignal :: StateRef -> Int -> IO ()
-analyticSignal stateRef precision= 
+analyticSignal :: StateRef -> Int -> (String, String, String) -> IO ()
+analyticSignal stateRef precision (amplitudeName, phaseName, frequencyName) = 
     do
         state <- readMVar stateRef
         g <- getStdGen 
@@ -171,10 +171,10 @@ analyticSignal stateRef precision=
 
             diffVals = zipWith (\(x0, y0, w0) y1 -> (x0, y0 - y1, w0)) newVals primeVals
             newPhase = spectrum1 $ V.fromList diffVals
-        modifyState stateRef $ addDiscreteData amplitude ((commonName . asAmplitudeParams) asParms) (Just (currentGraphTab, selectedGraph))
-        modifyState stateRef $ addDiscreteData phase (((commonName . asPhaseParams) asParms)) (Just (currentGraphTab, selectedGraph))
-        --modifyState stateRef $ addData (Left newPhase) (((commonName . asPhaseParams) asParms) ++ "_") (Just (currentGraphTab, selectedGraph))
-        modifyState stateRef $ addDiscreteData frequency ((commonName . asFrequencyParams) asParms) (Just (currentGraphTab, selectedGraph))
+        modifyState stateRef $ addDiscreteData amplitude amplitudeName (Just (currentGraphTab, selectedGraph))
+        modifyState stateRef $ addDiscreteData phase phaseName (Just (currentGraphTab, selectedGraph))
+        --modifyState stateRef $ addData (Left newPhase) (phaseName ++ "_") (Just (currentGraphTab, selectedGraph))
+        modifyState stateRef $ addDiscreteData frequency frequencyName (Just (currentGraphTab, selectedGraph))
         putStrLn "Tere siin3"
 
 fft :: StateRef -> DataParams -> IO Data

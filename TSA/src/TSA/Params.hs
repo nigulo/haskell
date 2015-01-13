@@ -39,8 +39,11 @@ module TSA.Params (
     updateCommonParams,
     updateLsqParams,
     updateEnvParams,
-    readParams
-    
+    readParams,
+
+    ProgressUpdateFunc,
+    LogFunc,
+    DataUpdateFunc
     ) where
 
 --import Graphics.UI.Gtk hiding (addWidget, Plus, Cross, Circle)
@@ -1310,4 +1313,8 @@ updateLsqParams lsqParms state =
 updateEnvParams :: EnvParams -> Params -> Params
 updateEnvParams envParms state = 
     state {envParams = envParms}
+
+type ProgressUpdateFunc = Double -> IO ()
+type LogFunc = String -> IO ()
+type DataUpdateFunc = Either D.Data (Either S.Spline F.Functions) -> String -> Bool -> IO ()
 

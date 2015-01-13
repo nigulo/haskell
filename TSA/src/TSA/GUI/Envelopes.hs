@@ -18,6 +18,7 @@ import TSA.GUI.Data
 import TSA.GUI.Dialog
 import TSA.GUI.Common
 import GUI.Widget
+import qualified TSA.Envelopes as E
 
 import Utils.Misc
 
@@ -117,27 +118,32 @@ paramsDialog stateRef = do
                 precision <- spinButtonGetValue precisionSpin
                 Just extrema <- comboBoxGetActiveText extremaCombo
                 
+                upperName <- entryGetText upperNameEntry
+                lowerName <- entryGetText lowerNameEntry
                 meanName <- entryGetText meanNameEntry
                 
                 Just selectedData <- getSelectedData dataSetCombo
                 widgetDestroy dialog
 
-                modifyStateParams stateRef $ \params -> params {envParams = EnvParams {
-                        envUpperParams = newUpperParms,
-                        envLowerParams = newLowerParms,
-                        envPrecision = precision,
-                        envExtrema = (if extrema == "Strict" then EnvExtremaStrict else EnvExtremaStatistical),
-                        envMeanParams = updateCommonParams meanName meanParams,
-                        envData = Just selectedData
-                    }}
-                forkIO (envelopes stateRef)
+                let
+                    newEnvParams = EnvParams {
+                            envUpperParams = newUpperParms,
+                            envLowerParams = newLowerParms,
+                            envPrecision = precision,
+                            envExtrema = (if extrema == "Strict" then EnvExtremaStrict else EnvExtremaStatistical),
+                            envMeanParams = updateCommonParams meanName meanParams,
+                            envData = Just selectedData
+                        } 
+
+                modifyStateParams stateRef $ \params -> params {envParams = newEnvParams}
+                forkIO (envelopes stateRef (upperName, lowerName, meanName))
                 return ()
         else
             do
                 widgetDestroy dialog
 
-envelopes :: StateRef -> IO ()
-envelopes stateRef =
+envelopes :: StateRef -> (String, String, String) -> IO ()
+envelopes stateRef (upperName, lowerName, meanName) =
     do
         state <- readMVar stateRef
         g <- getStdGen 
@@ -147,95 +153,6 @@ envelopes stateRef =
             selectedGraph = graphTabSelection graphTabParms
 
             parms = envParams (params state)
-            upperParams = envUpperParams parms
-            lowerParams = envLowerParams parms
-            Just dataParms = envData parms
-            sdp = head $ dataSet $ dataParms
-            Left dat = subData sdp
-            
-        upperSpline <- fitWithSpline_ 
-            (fitPolynomRank upperParams) 
-            (splineNumNodes (fitSplineParams upperParams)) 
-            dat
-            False
-            2
-            (progressUpdate stateRef)
-        let
-            upperSdev = U.stdev dat (Right (Left upperSpline))
-
-            --lowerSpline = fitWithSpline3_ 
-            --    (fitPolynomRank upperParms) 
-            --    (fitNumKnots upperParms) 
-            --    dat;
-            --lowerSdev = R.stdev dat lowerSpline;
-
-            strictExtremaDetection = case envExtrema parms of
-                EnvExtremaStrict -> True
-                _ -> False
-                
-        upperEnv <- envelope 
-            True 
-            (fitPolynomRank upperParams) 
-            (splineNumNodes (fitSplineParams upperParams))
-            (upperSdev / envPrecision parms) 
-            strictExtremaDetection
-            dat
-            (\_ -> return ())
-            (\spline -> 
-                    modifyState stateRef $ addOrUpdateData (Right (Left spline)) ((commonName . fitCommonParams) upperParams) (Just (currentGraphTab, selectedGraph)) True
-               --modifyState stateRef $ \state -> 
-               --    let dataParms = findDataByName ((commonName . fitCommonParams) upperParams) state
-               --    in case dataParms of 
-               --        Just dataParms -> updateData (dataParms {dataSet = [SubDataParams {subData = Right (Left spline), subDataBootstrapSet = []}]}) state
-               --        Nothing -> addSpline spline ((commonName . fitCommonParams) upperParams) (Just (currentGraphTab, selectedGraph)) state
-               )
-            (\dat -> 
-                    modifyState stateRef $ addOrUpdateData (Left dat) (((commonName . fitCommonParams) upperParams) ++ "_") (Just (currentGraphTab, selectedGraph)) True
-                --modifyState stateRef $ \state -> 
-                --    let dataParms = findDataByName (((commonName . fitCommonParams) upperParams) ++ "_") state
-                --    in case dataParms of 
-                --        Just dataParms -> updateData (dataParms {dataSet = [SubDataParams {subData = Left dat, subDataBootstrapSet = []}]}) state
-                --        Nothing -> addDiscreteData dat (((commonName . fitCommonParams) upperParams) ++ "_") (Just (currentGraphTab, selectedGraph)) state
-                )
-            
-        lowerEnv <- envelope 
-            False 
-            (fitPolynomRank lowerParams) 
-            (splineNumNodes (fitSplineParams lowerParams)) 
-            (upperSdev / envPrecision parms) 
-            strictExtremaDetection
-            dat
-            (\_ -> return ())
-            (\spline -> 
-                    modifyState stateRef $ addOrUpdateData (Right (Left spline)) ((commonName . fitCommonParams) lowerParams) (Just (currentGraphTab, selectedGraph)) True
-                --modifyState stateRef $ \state -> 
-                --    let dataParms = findDataByName ((commonName . fitCommonParams) lowerParams) state
-                --    in case dataParms of 
-                --        Just dataParms -> updateData (dataParms {dataSet = [SubDataParams {subData = Right (Left spline), subDataBootstrapSet = []}]}) state
-                --        Nothing -> addSpline spline ((commonName . fitCommonParams) lowerParams) (Just (currentGraphTab, selectedGraph)) state
-                )
-            (\dat -> 
-                    modifyState stateRef $ addOrUpdateData (Left dat) (((commonName . fitCommonParams) lowerParams) ++ "_") (Just (currentGraphTab, selectedGraph)) True
-                --modifyState stateRef $ \state -> 
-                --    let dataParms = findDataByName (((commonName . fitCommonParams) lowerParams) ++ "_") state
-                --    in case dataParms of 
-                --        Just dataParms -> updateData (dataParms {dataSet = [SubDataParams {subData = Left dat, subDataBootstrapSet = []}]}) state
-                --        Nothing -> addDiscreteData dat (((commonName . fitCommonParams) lowerParams) ++ "_") (Just (currentGraphTab, selectedGraph)) state
-                )
-            
-        --modifyState stateRef $ addSpline lowerEnv ((commonName . fitCommonParams) lowerParams) (Just (currentGraphTab, selectedGraph))
-        --modifyState stateRef $ addSpline upperEnv ((commonName . fitCommonParams) upperParams) (Just (currentGraphTab, selectedGraph))
         
-        let envMean = (upperEnv `S.add` lowerEnv) `S.divide` 2
-        modifyState stateRef $ addSpline envMean ((commonName . envMeanParams) parms) (Just (currentGraphTab, selectedGraph))
-        let dataOrSpline = U.binaryOp (F.subtr) (Left dat) (Right (Left envMean)) True g
-        case dataOrSpline of
-            Left d -> modifyState stateRef $ addDiscreteData d ((dataName dataParms) ++ "_r") (Just (currentGraphTab, selectedGraph))
-            Right (Left s) -> modifyState stateRef $ addSpline s ((dataName dataParms) ++ "_r") (Just (currentGraphTab, selectedGraph))
-        
-        --let envMean = U.constantOp (U.binaryOp (Left (U.splineToSpectrum upperEnv 1024)) (Left (U.splineToSpectrum lowerEnv 1024)) (+) True g) 0.5 (*) True
-                    
-        --modifyMVar_ stateRef $ \state -> return $ addData (envMean) (envMeanName parms) (Just (currentGraphTab, selectedGraph)) state
-
-        
-        
+        E.envelopes parms (upperName, lowerName, meanName) (progressUpdate stateRef) (\_ -> return ()) (\dat name update -> modifyState stateRef $ addOrUpdateData dat name (Just (currentGraphTab, selectedGraph)) update)
+        return ()

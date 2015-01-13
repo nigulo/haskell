@@ -1,5 +1,9 @@
 
-module TSA.GUI.Common (modifyState, modifyStateParams, addGraphTab, setNotebookEvents) where
+module TSA.GUI.Common (
+    modifyState, 
+    modifyStateParams, 
+    addGraphTab, 
+    setNotebookEvents) where
 
 import TSA.Params
 import TSA.GUI.State
@@ -121,3 +125,5 @@ setNotebookEvents stateRef =
                             direction <- eventScrollDirection
                             liftIO $ Graph.onMouseScroll stateRef (x, y) direction
         mapM_ mapOp [0 .. numPages - 2] 
+
+

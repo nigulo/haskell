@@ -74,7 +74,8 @@ executable TSA
                  TSA.Data,
                  TSA.Period,
                  TSA.D2,
-                 TSA.GUI.D2
+                 TSA.GUI.D2,
+                 TSA.Envelopes
   extensions:      
                DoAndIfThenElse,
                ScopedTypeVariables
@@ -91,7 +92,7 @@ executable Bootstrap
   extensions:      
                 DoAndIfThenElse,
                 ScopedTypeVariables
-  other-modules:
+  other-modules: TSA.Envelopes
 
 executable Significance
   build-depends:   base >= 4
@@ -99,7 +100,7 @@ executable Significance
   ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
   main-is:         TSA/Bootstrap/Significance.hs
   extensions:      ScopedTypeVariables
-  other-modules:
+  other-modules:   TSA.Envelopes
 
 executable D2
   build-depends:   base >= 4
@@ -107,4 +108,4 @@ executable D2
   ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
   main-is:         TSA/Bootstrap/D2.hs
   extensions:      ScopedTypeVariables
-  other-modules:
+  other-modules:   TSA.Envelopes
