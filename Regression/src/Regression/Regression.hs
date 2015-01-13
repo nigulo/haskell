@@ -183,7 +183,7 @@ fitWithSpline unitPolynoms numNodes dat strict smoothUpTo puFunc =
             setCoefs [[(i, coefs !! (j * numTerms + (termSums !! k) + i)) | i <- [0 .. ranks !! k]] | k <- [0 .. count - 1]] unitPolynoms)
             | j <- [0 .. numPolynoms - 1]]
     time <- getCPUTime >>= \t -> return $ t - time
-    putStrLn "D:" >> print (time `div` 1000000000)
+    --putStrLn "D:" >> print (time `div` 1000000000)
     puFunc $ 0
     return $ spline
 
@@ -313,7 +313,7 @@ envelope upper rank knots sdev strictExtremaDetection dat puFunc splineFunc weig
                     vals2 = V.filter (\(_, _, w) -> w >= 0.25) vals
                     dat2 = data1 $ vals2;
                 
-                putStrLn "VALS: " >> (print vals)
+                --putStrLn "VALS: " >> (print vals)
                 --weightFunc $ Data $ map (\(x, y, w) -> (x, w, w)) $ D.values dat2
                 weightFunc dat2
                 spline <- fitWithSpline_ rank knots dat2 strictExtremaDetection 2 puFunc

@@ -76,7 +76,8 @@ executable TSA
                  TSA.D2,
                  TSA.GUI.D2,
                  TSA.Envelopes,
-                 TSA.AnalyticSignal
+                 TSA.AnalyticSignal,
+                 TSA.HilbertHuang
   extensions:      
                DoAndIfThenElse,
                ScopedTypeVariables
@@ -94,8 +95,6 @@ executable Bootstrap
                 DoAndIfThenElse,
                 ScopedTypeVariables
   other-modules: 
-                 TSA.Envelopes,
-                 TSA.AnalyticSignal
 
 executable Significance
   build-depends:   base >= 4
@@ -104,8 +103,6 @@ executable Significance
   main-is:         TSA/Bootstrap/Significance.hs
   extensions:      ScopedTypeVariables
   other-modules:   
-                   TSA.Envelopes,
-                   TSA.AnalyticSignal
 
 executable D2
   build-depends:   base >= 4
@@ -114,5 +111,11 @@ executable D2
   main-is:         TSA/Bootstrap/D2.hs
   extensions:      ScopedTypeVariables
   other-modules:   
-                   TSA.Envelopes,
-                   TSA.AnalyticSignal
+
+executable HilbertHuang
+  build-depends:   base >= 4
+  hs-source-dirs:  src
+  ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
+  main-is:         TSA/HilbertHuang.hs
+  extensions:      ScopedTypeVariables
+  other-modules:   
