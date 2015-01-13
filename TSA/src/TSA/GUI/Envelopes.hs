@@ -17,6 +17,7 @@ import TSA.GUI.State
 import TSA.GUI.Data
 import TSA.GUI.Dialog
 import TSA.GUI.Common
+import TSA.GUI.Log
 import GUI.Widget
 import qualified TSA.Envelopes as E
 
@@ -154,5 +155,5 @@ envelopes stateRef (upperName, lowerName, meanName) =
 
             parms = envParams (params state)
         
-        E.envelopes parms (upperName, lowerName, meanName) (progressUpdate stateRef) (\_ -> return ()) (\dat name update -> modifyState stateRef $ addOrUpdateData dat name (Just (currentGraphTab, selectedGraph)) update)
+        E.envelopes parms (upperName, lowerName, meanName) (progressUpdate stateRef) (appendLog stateRef) (\dat name update -> modifyState stateRef $ addOrUpdateData dat name (Just (currentGraphTab, selectedGraph)) update)
         return ()
