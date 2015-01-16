@@ -91,7 +91,7 @@ calcDispersions dataParams periodStart' periodEnd' precision method name bootstr
                     let
                         freqDisps = sortBy (\(_, disp1) (_, disp2) -> compare disp1 disp2) $ V.toList $ D.getMinima periodSpec
                         freqs = map fst freqDisps
-                    --logFunc ("Possible freqs for " ++ name ++ "[" ++ show i ++ "] = " ++ (show freqs))
+                    logFunc ("Possible freqs for " ++ name ++ "[" ++ show i ++ "] = " ++ (show freqs))
                     case freqDisps of 
                          [] -> return Nothing
                          ((freq, disp):_) -> return $ Just (1 / freq, (1 - disp) ^ 2)  

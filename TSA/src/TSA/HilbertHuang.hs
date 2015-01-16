@@ -33,6 +33,8 @@ import qualified Statistics.Sample as Sample
 import System.Random
 import System.Random.MWC
 
+sdev = 0.1
+
 main :: IO ()
 main = do --mpiWorld $ \size rank ->
     args <- getArgs
@@ -44,12 +46,13 @@ main = do --mpiWorld $ \size rank ->
         xys :: [(Double, Double)] = map (\line -> let [xStr, yStr] = words line in (read xStr, read yStr)) $ lines $ UTF8.decode $ B.unpack byteStr
 
         dat = D.data1' $ V.fromList xys
-    imf dat
+    imf 1 dat
 
 
-imf :: Data -> IO ()
-imf dat = do
+imf :: Int -> Data -> IO ()
+imf modeNo dat = do
 
+    g <- getStdGen 
     let
         dataParams = DataParams {
             dataName = "data",
@@ -80,8 +83,8 @@ imf dat = do
 
     let
     
-        imfStep :: Double -> Data -> IO Data
-        imfStep sdev dat =
+        imfStep :: Data -> IO Data
+        imfStep dat =
             do
         
                 let
@@ -122,7 +125,20 @@ imf dat = do
                             return dat2
                     else
                         do
-                            imfStep sdev dat2
+                            imfStep dat2
 
-    imf <- imfStep 0.1 dat
-    return ()
+    imfDat <- imfStep dat
+    
+    let
+        byteStr = B.pack (UTF8.encode (concatMap (\(x, y) -> show x ++ " " ++ show y ++ "\n") (V.toList (D.xys1 imfDat))))
+    B.writeFile ("imf" ++ show modeNo ++ ".csv") byteStr
+    
+    let 
+        diff = D.subtr dat imfDat
+        sdev2 = Sample.stdDev (D.ys diff)
+    if sdev2 < sdev
+        then 
+                return ()
+        else
+            do
+                imf (modeNo + 1) diff
