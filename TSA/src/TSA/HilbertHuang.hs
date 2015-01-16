@@ -114,7 +114,7 @@ imf modeNo dat = do
                         } 
         
         
-                Left dat2 <- envelopes envParams ("upper", "lower", "mean") (\_ -> return ()) (putStrLn) (\_ _ _ -> return ())
+                Left dat2 <- envelopes envParams ("upper", "lower", "mean") (\_ -> return ()) (putStrLn) (DataUpdateFunc (\_ _ _ -> return ()))
                 let 
                     sdev2 = U.stdev dat (Left dat2)
                             
@@ -132,6 +132,32 @@ imf modeNo dat = do
     let
         byteStr = B.pack (UTF8.encode (concatMap (\(x, y) -> show x ++ " " ++ show y ++ "\n") (V.toList (D.xys1 imfDat))))
     B.writeFile ("imf" ++ show modeNo ++ ".csv") byteStr
+    
+    let
+        dataUpdateFunc = DataUpdateFunc $ \(Left dat) name _ -> do 
+            case name of
+                "amplitude" -> do
+                    let
+                        byteStr = B.pack (UTF8.encode (concatMap (\(x, y) -> show x ++ " " ++ show y ++ "\n") (V.toList (D.xys1 dat))))
+                    B.writeFile ("amplitude" ++ show modeNo ++ ".csv") byteStr
+                "phase" -> return ()
+                "frequency" -> return () 
+                "conjugated" -> return ()
+        asParams = AnalyticSignalParams {
+                asRealData = Just (DataParams {
+                        dataName = "imf",
+                        dataSet = [
+                            SubDataParams {
+                                subDataRange = U.dataRange (Left imfDat),
+                                subData = (Left imfDat),
+                                subDataBootstrapSet = []
+                            }
+                        ]
+                    }
+                ),
+                asImagData = Nothing
+            }    
+    analyticSignal asParams 0 ("amplitude", "phase", "frequency", "conjugated") (\_ -> return ()) (putStrLn) dataUpdateFunc 
     
     let 
         diff = D.subtr dat imfDat

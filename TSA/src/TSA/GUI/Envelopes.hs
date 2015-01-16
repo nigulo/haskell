@@ -155,5 +155,5 @@ envelopes stateRef (upperName, lowerName, meanName) =
 
             parms = envParams (params state)
         
-        E.envelopes parms (upperName, lowerName, meanName) (progressUpdate stateRef) (appendLog stateRef) (\dat name update -> modifyState stateRef $ addOrUpdateData dat name (Just (currentGraphTab, selectedGraph)) update)
+        E.envelopes parms (upperName, lowerName, meanName) (progressUpdate stateRef) (appendLog stateRef) (DataUpdateFunc (\dat name update -> modifyState stateRef $ addOrUpdateData dat name (Just (currentGraphTab, selectedGraph)) update))
         return ()

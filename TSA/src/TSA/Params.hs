@@ -43,7 +43,7 @@ module TSA.Params (
 
     ProgressUpdateFunc,
     LogFunc,
-    DataUpdateFunc
+    DataUpdateFunc (..)
     ) where
 
 --import Graphics.UI.Gtk hiding (addWidget, Plus, Cross, Circle)
@@ -1316,5 +1316,5 @@ updateEnvParams envParms state =
 
 type ProgressUpdateFunc = Double -> IO ()
 type LogFunc = String -> IO ()
-type DataUpdateFunc = Either D.Data (Either S.Spline F.Functions) -> String -> Bool -> IO ()
+newtype (Eq id) => DataUpdateFunc id = DataUpdateFunc (Either D.Data (Either S.Spline F.Functions) -> id -> Bool -> IO ())
 

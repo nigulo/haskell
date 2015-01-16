@@ -22,8 +22,8 @@ import System.Random
 import Control.Applicative
 
 
-envelopes :: EnvParams -> (String, String, String) -> ProgressUpdateFunc -> LogFunc -> DataUpdateFunc -> IO (Either D.Data (Either S.Spline FS.Functions))
-envelopes parms (upperName, lowerName, meanName) puFunc logFunc dataUpdateFunc =
+envelopes :: EnvParams -> (String, String, String) -> ProgressUpdateFunc -> LogFunc -> DataUpdateFunc String -> IO (Either D.Data (Either S.Spline FS.Functions))
+envelopes parms (upperName, lowerName, meanName) puFunc logFunc (DataUpdateFunc dataUpdateFunc) =
     do
         g <- getStdGen 
         let

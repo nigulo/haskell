@@ -114,6 +114,7 @@ analyticSignal stateRef precision (amplitudeName, phaseName, frequencyName) =
             graphTabParms = (graphTabs state) !! currentGraphTab
             selectedGraph = graphTabSelection graphTabParms
             asParms = asParams (params state)
+            dataParams = fromJust (asRealData asParms)
             
-        AS.analyticSignal asParms precision (amplitudeName, phaseName, frequencyName) (progressUpdate stateRef) (appendLog stateRef) (\dat name update -> modifyState stateRef $ addOrUpdateData dat name (Just (currentGraphTab, selectedGraph)) update) 
+        AS.analyticSignal asParms precision (amplitudeName, phaseName, frequencyName, ((dataName dataParams) ++ "_conj")) (progressUpdate stateRef) (appendLog stateRef) (DataUpdateFunc (\dat name update -> modifyState stateRef $ addOrUpdateData dat name (Just (currentGraphTab, selectedGraph)) update)) 
             

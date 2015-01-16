@@ -27,25 +27,25 @@ import Math.Expression
 import System.Random
 import qualified Data.Vector.Unboxed as V
 
-analyticSignal :: AnalyticSignalParams -> Int -> (String, String, String) -> ProgressUpdateFunc -> LogFunc -> DataUpdateFunc -> IO ()
-analyticSignal asParms precision (amplitudeName, phaseName, frequencyName) puFunc logFunc dataUpdateFunc = 
+analyticSignal :: (Eq id) => AnalyticSignalParams -> Int -> (id, id, id, id) -> ProgressUpdateFunc -> LogFunc -> DataUpdateFunc id -> IO ()
+analyticSignal asParms precision (amplitudeId, phaseId, frequencyId, conjId) puFunc logFunc duf@(DataUpdateFunc dataUpdateFunc) = 
     do
         g <- getStdGen 
         let
-            rd = subData $ head $ dataSet $ fromJust $ asRealData asParms
+            dataParams = fromJust (asRealData asParms)
+            rd = subData $ head $ dataSet $ dataParams
             realData = case rd of
                 Left s -> s
                 Right (Left s) -> sampleAnalyticData_ s [precision] g
                 Right (Right f) -> sampleAnalyticData_ f [precision] g
             
-            
         imagData <- case asImagData asParms of
             Nothing -> 
                 case rd of 
-                    Left _ ->
-                        fft puFunc dataUpdateFunc (fromJust (asRealData asParms))
+                    Left _ -> do
+                        fft puFunc duf dataParams conjId
                     Right s ->
-                        conjugatedCarrierFit dataUpdateFunc (fromJust (asRealData asParms)) precision
+                        conjugatedCarrierFit duf dataParams precision conjId
                         
             Just imag -> return $ 
                 case subData $ head $ dataSet imag of
@@ -90,13 +90,13 @@ analyticSignal asParms precision (amplitudeName, phaseName, frequencyName) puFun
 
             diffVals = zipWith (\(x0, y0, w0) y1 -> (x0, y0 - y1, w0)) newVals primeVals
             newPhase = spectrum1 $ V.fromList diffVals
-        dataUpdateFunc (Left amplitude) amplitudeName False
-        dataUpdateFunc (Left phase) phaseName False
-        dataUpdateFunc (Left frequency) frequencyName False
+        dataUpdateFunc (Left amplitude) amplitudeId False
+        dataUpdateFunc (Left phase) phaseId False
+        dataUpdateFunc (Left frequency) frequencyId False
         putStrLn "Tere siin3"
 
-fft :: ProgressUpdateFunc -> DataUpdateFunc -> DataParams -> IO Data
-fft puFunc dataUpdateFunc dataParams = 
+fft :: (Eq id) => ProgressUpdateFunc -> DataUpdateFunc id -> DataParams -> id -> IO Data
+fft puFunc (DataUpdateFunc dataUpdateFunc) dataParams id = 
     do
         let
             Left s = subData $ head $ dataSet dataParams
@@ -132,11 +132,11 @@ fft puFunc dataUpdateFunc dataParams =
             
             realSpec = spectrum1 $ V.zip3 xs1 (interpolatedValues1 xs1 realSpec1) (V.replicate (V.length xs1) 1.0)
 
-        dataUpdateFunc (Left realSpec) ((dataName dataParams) ++ "_conj") False
+        dataUpdateFunc (Left realSpec) id False
         return realSpec
 
-conjugatedCarrierFit :: DataUpdateFunc -> DataParams -> Int -> IO Data
-conjugatedCarrierFit dataUpdateFunc dataParams precision = do
+conjugatedCarrierFit :: (Eq id) => DataUpdateFunc id -> DataParams -> Int -> id -> IO Data
+conjugatedCarrierFit (DataUpdateFunc dataUpdateFunc) dataParams precision id = do
     g <- getStdGen 
     let 
         sdp = head $ dataSet dataParams
@@ -161,6 +161,6 @@ conjugatedCarrierFit dataUpdateFunc dataParams precision = do
                     ) funcs derivs 
             in
                 P.setModulators newFuncs pol
-    dataUpdateFunc (Right (Left s)) ((dataName dataParams) ++ "_conj") False
+    dataUpdateFunc (Right (Left s)) id False
     return $ sampleAnalyticData_ s [precision] g
     
