@@ -56,7 +56,7 @@ import Utils.Misc
 import Data.Maybe
 --import Text.XML.HXT.Arrow
 import qualified Utils.Xml as Xml
-
+--test
 main = do
     --initGUI
     unsafeInitGUIForThreadedRTS
