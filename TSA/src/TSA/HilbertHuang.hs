@@ -33,7 +33,7 @@ import qualified Statistics.Sample as Sample
 import System.Random
 import System.Random.MWC
 
-sdev = 0.1
+precision = 0.05
 
 main :: IO ()
 main = do --mpiWorld $ \size rank ->
@@ -83,8 +83,8 @@ imf modeNo dat = do
 
     let
     
-        imfStep :: Data -> IO Data
-        imfStep dat =
+        imfStep :: Data -> Double -> IO Data
+        imfStep dat sdev =
             do
         
                 let
@@ -125,9 +125,12 @@ imf modeNo dat = do
                             return dat2
                     else
                         do
-                            imfStep dat2
+                            imfStep dat2 sdev
 
-    imfDat <- imfStep dat
+    let
+        sdev = (Sample.stdDev (D.ys dat)) * precision
+
+    imfDat <- imfStep dat sdev
     
     let
         byteStr = B.pack (UTF8.encode (concatMap (\(x, y) -> show x ++ " " ++ show y ++ "\n") (V.toList (D.xys1 imfDat))))
