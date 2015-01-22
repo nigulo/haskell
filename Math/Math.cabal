@@ -29,6 +29,7 @@ executable Math
                    Math.IOLinearEquations,
                    Math.IOMatrix,
                    Math.IOVector,
+                   Math.IODoubleVector,
                    Math.LinearEquations,
                    Math.Matrix,
                    Math.Vector,
@@ -66,8 +67,11 @@ library
                    Math.Expression,
                    Math.Function,
                    Math.IOLinearEquations,
+                   Math.IODoubleLinearEquations,
                    Math.IOMatrix,
                    Math.IOVector,
+                   Math.IODoubleMatrix,
+                   Math.IODoubleVector,
                    Math.LinearEquations,
                    Math.Matrix,
                    Math.Statistics,
@@ -89,7 +93,9 @@ test-suite MathTests
                    Math.StatisticsTest,
                    CUDALinearEquations,
                    Math.ExpressionTest,
-                   Math.FunctionTest
+                   Math.FunctionTest,
+                   IODoubleVector,
+                   IODoubleMatrix
   extensions:      
                    FlexibleInstances, 
                    ScopedTypeVariables

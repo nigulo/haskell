@@ -10,15 +10,15 @@ module Regression.IOLeastSquares (
     solve) where
 
 import Utils.Misc
-import Math.IOMatrix as M
-import Math.IOVector as V
-import Math.IOLinearEquations (backSubstitution)
+import Math.IODoubleMatrix as M
+import Math.IODoubleVector as V
+import Math.IODoubleLinearEquations (backSubstitution)
 
 import Debug.Trace
 
 newtype IOLSQState = IOLSQState (
-    IOMatrix Double, -- ^ Unit upper trianguilar matrix
-    IOVector Double, -- ^ d or f depending on if Gentleman's or 
+    IODoubleMatrix, -- ^ Unit upper trianguilar matrix
+    IODoubleVector, -- ^ d or f depending on if Gentleman's or 
                    -- ^ Stirlings procedure is used
     Double)        -- ^ e
 
@@ -144,7 +144,7 @@ addConstraint rVect s w (IOLSQState (b, f, e)) =
             e1 = if fm /= 0 then (e + rsp * rsp / fm) else e
         return $ IOLSQState (b, f, e1)
 
-solve :: IOLSQState -> IO (IOVector Double)
+solve :: IOLSQState -> IO IODoubleVector
 solve (IOLSQState (b, _, _)) = backSubstitution b
 
 

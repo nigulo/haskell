@@ -18,9 +18,9 @@ import Regression.Utils
 import Math.Expression
 import Math.Function as F
 import Math.Function as F
-import Math.IOMatrix
-import Math.IOVector
-import Math.IOLinearEquations
+import Math.IODoubleMatrix
+import Math.IODoubleVector
+import Math.IODoubleLinearEquations
 import qualified Math.Vector as Vector
 import qualified Math.Matrix as Matrix
 import qualified Math.LinearEquations as LinearEquations 
@@ -170,7 +170,7 @@ fitWithSpline unitPolynoms numNodes dat strict smoothUpTo puFunc =
     --putStrLn "C1:" >> print (time `div` 1000000000)
     time <- getCPUTime >>= \t -> return $ t - time
     --putStrLn ("C:" ++ show state2) >> print (time `div` 1000000000)
-    coefs <- solve state3 >>= \v -> Math.IOVector.values v
+    coefs <- solve state3 >>= \v -> Math.IODoubleVector.values v
     --coefs <- return $ LSQ.solve state3
     time <- getCPUTime >>= \t -> return $ t - time
     --putStrLn ("CD:" ++ show coefs) >> print (time `div` 1000000000)

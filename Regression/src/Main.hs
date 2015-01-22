@@ -5,7 +5,7 @@ import Regression.IOLeastSquares as LSQ
 import Regression.CUDALeastSquares as CLSQ
 import Math.LinearEquations
 import Math.Matrix as M
-import Math.IOMatrix as IOM
+import Math.IODoubleMatrix as IOM
 import Math.Vector as V
 import Math.Function as F
 import Regression.Polynom
