@@ -6,7 +6,7 @@ import Graphics.UI.Gtk hiding (addWidget)
 import Graphics.UI.Gtk.Layout.VBox
 
 import Regression.Data as D
-import qualified Regression.FFT as F
+import Regression.FFT
 
 import TSA.Params
 import TSA.GUI.State
@@ -150,27 +150,29 @@ fft stateRef name =
                     Just s -> V.length $ D.xs1 s
                     Nothing -> 0
             (reals, realStep) = case fftRealData parms of 
-                Nothing -> (replicate n 0, 0)
-                Just s@(Spectrum (((_, step):_), _)) -> (V.toList (D.ys s), step)
+                Nothing -> (V.replicate n 0, 0)
+                Just s@(Spectrum (((_, step):_), _)) -> (D.ys s, step)
+                Just s@(Spectrum2 ((_, step), _)) -> (D.ys s, step)
             (imags, imagStep) = case fftImagData parms of 
-                Nothing -> (replicate n 0, 0)
-                Just s@(Spectrum (((_, step):_), _)) -> (V.toList (D.ys s), step)
+                Nothing -> (V.replicate n 0, 0)
+                Just s@(Spectrum (((_, step):_), _)) -> (D.ys s, step)
+                Just s@(Spectrum2 ((_, step), _)) -> (D.ys s, step)
             step = max realStep imagStep
-            fftFunc = if fftDirection parms then F.fromTimeToFrequency else F.fromFrequencyToTime
+            fftFunc = if fftDirection parms then fromTimeToFrequency else fromFrequencyToTime
             bandStart = fftBandStart parms
             bandEnd = fftBandEnd parms
             phaseShift = fftPhaseShift parms
             numToAdd = 2 ^ (ceiling (logBase 2 (fromIntegral n))) - n
-            ys1 = trace ("numToAdd: " ++ show numToAdd) $ zipWith (\r i -> (:+) r i) (reals ++ replicate numToAdd 0) (imags ++ replicate numToAdd 0)
+            ys1 = trace ("numToAdd: " ++ show numToAdd) $ V.zipWith (\r i -> (:+) r i) (reals V.++ V.replicate numToAdd 0) (imags V.++ V.replicate numToAdd 0)
         
-        spec1 <- trace ("ys1: " ++ show (length ys1)) $ fftFunc ys1 (n + numToAdd) (phaseShift * pi) (progressUpdate stateRef)
+        spec1 <- trace ("ys1: " ++ show (V.length ys1)) $ fftFunc ys1 phaseShift
         let
-            len = length spec1
+            len = V.length spec1
             specStep = if len == 0 then 0 else 1 / (fromIntegral len * step)
         putStrLn "Tere siin" 
-        realSpec <- return $ D.Spectrum ([(0, specStep)], zip (map realPart spec1) (replicate len 0))
+        realSpec <- return $ D.Spectrum2 ((0, specStep), V.zip (V.map realPart spec1) (V.replicate len 0))
         putStrLn "Tere siin1" 
-        imagSpec <- return $ D.Spectrum ([(0, specStep)], zip (map imagPart spec1) (replicate len 0))
+        imagSpec <- return $ D.Spectrum2 ((0, specStep), V.zip (V.map imagPart spec1) (V.replicate len 0))
         putStrLn $ "Tere siin2:"
         
         --putStrLn $ "realSpec xs:" ++ show (xs realSpec)

@@ -118,16 +118,17 @@ fft puFunc (DataUpdateFunc dataUpdateFunc) dataParams id =
         
 --        s <- F.fromTimeToFrequency ys1 (n + numToAdd) 0
 --        conjugated <- F.fromFrequencyToTime s (n + numToAdd) (-pi / 2)
-        spec <- fromTimeToFrequency (V.toList inerpolatedYs) n 0 puFunc
+        spec <- fromTimeToFrequency inerpolatedYs 0
+        
         --let
         --    s1 = map (\((:+) a b) -> (:+) b (-a)) spec
-        conjugated <- fromFrequencyToTime spec n (pi / 2) puFunc -- actually should be -pi / 2
+        conjugated <- fromFrequencyToTime spec (pi / 2) -- actually should be -pi / 2
         
         let
-            len = length conjugated
+            len = V.length conjugated
             --specStep = if len == 0 then 0 else 1 / (fromIntegral len * step)
 
-            realSpec1 = D.Spectrum ([(minX, step)], zip (map realPart conjugated) (replicate len 0))
+            realSpec1 = D.Spectrum2 ((minX, step), V.zip (V.map realPart conjugated) (V.replicate len 0))
             xs1 = D.xs1 s
             
             realSpec = spectrum1 $ V.zip3 xs1 (interpolatedValues1 xs1 realSpec1) (V.replicate (V.length xs1) 1.0)
