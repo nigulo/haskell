@@ -93,7 +93,6 @@ analyticSignal asParms precision (amplitudeId, phaseId, frequencyId, conjId) puF
         dataUpdateFunc (Left amplitude) amplitudeId False
         dataUpdateFunc (Left phase) phaseId False
         dataUpdateFunc (Left frequency) frequencyId False
-        putStrLn "Tere siin3"
 
 fft :: (Eq id) => ProgressUpdateFunc -> DataUpdateFunc id -> DataParams -> id -> IO Data
 fft puFunc (DataUpdateFunc dataUpdateFunc) dataParams id = 
@@ -111,18 +110,11 @@ fft puFunc (DataUpdateFunc dataUpdateFunc) dataParams id =
             ys = interpolatedValues1 (V.fromList xs) s
             inerpolatedYs = V.map (\r -> (:+) r 0) ys
             n = trace ("inerpolatedYs length: " ++ show (inerpolatedYs)) V.length inerpolatedYs --values
---            interpSpec = spectrum1 $ zip3 xs ys (replicate n 1.0)
---            n = length vals
---            numToAdd = 2 ^ (ceiling (logBase 2 (fromIntegral n))) - n
---            ys1 = trace ("numValues: " ++ show (numToAdd + n)) $ map (\r -> (:+) r 0) ((ys s) ++ replicate numToAdd 0)
         
---        s <- F.fromTimeToFrequency ys1 (n + numToAdd) 0
---        conjugated <- F.fromFrequencyToTime s (n + numToAdd) (-pi / 2)
-        spec <- fromTimeToFrequency inerpolatedYs 0
+        --spec <- fromTimeToFrequency inerpolatedYs 0
+        --conjugated <- fromFrequencyToTime spec (pi / 2) -- actually should be -pi / 2
         
-        --let
-        --    s1 = map (\((:+) a b) -> (:+) b (-a)) spec
-        conjugated <- fromFrequencyToTime spec (pi / 2) -- actually should be -pi / 2
+        conjugated <- fromTimeToTime inerpolatedYs 0 (pi / 2) -- actually should be -pi / 2
         
         let
             len = V.length conjugated

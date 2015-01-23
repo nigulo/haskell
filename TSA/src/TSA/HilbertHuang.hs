@@ -46,10 +46,22 @@ main = do --mpiWorld $ \size rank ->
         xys :: [(Double, Double)] = map (\line -> let [xStr, yStr] = words line in (read xStr, read yStr)) $ lines $ UTF8.decode $ B.unpack byteStr
 
         dat = D.data1' $ V.fromList xys
-    imf 1 dat
+    imfs <- imf 1 dat
+    g <- getStdGen 
+    let 
+        recDat = foldl1 (\dat1 dat2 -> 
+                let 
+                    Left res = U.binaryOp (F.add) (Left dat) (Left dat2) True g
+                in 
+                    res
+            ) imfs
+        diff = D.subtr dat recDat
+        sdev = Sample.stdDev (D.ys dat)
+        sdev2 = Sample.stdDev (D.ys diff)
+    putStrLn $ "Reconstruction error: " ++ show (sdev2 / sdev)
 
 
-imf :: Int -> Data -> IO ()
+imf :: Int -> Data -> IO [Data]
 imf modeNo dat = do
 
     g <- getStdGen 
@@ -64,110 +76,112 @@ imf modeNo dat = do
                 }
             ]
         }
+
     (minimaDp, maximaDp) <- findExtrema dataParams 0 "extrema" (\_ -> return ())
     let
         Left minima = subData $ head $ dataSet minimaDp 
         Left maxima = subData $ head $ dataSet maximaDp
         numExtrema = max (D.dataLength minima) (D.dataLength maxima)
-    numNodes <- 
-        if numExtrema > (D.dataLength dat) `div` 5
-            then do
-                (minimaDp, _) <- findExtrema minimaDp 0 "extrema" (\_ -> return ())
-                (_, maximaDp) <- findExtrema maximaDp 0 "extrema" (\_ -> return ())
-                let
-                    Left minima = subData $ head $ dataSet minimaDp 
-                    Left maxima = subData $ head $ dataSet maximaDp
-                return $ max (D.dataLength minima) (D.dataLength maxima)
-            else return numExtrema
-    putStrLn $ "numNodes:" ++ show numNodes
-
-    let
-    
-        imfStep :: Data -> Double -> IO Data
-        imfStep dat sdev =
-            do
+    if numExtrema > 1
+        then do
+            numNodes <- 
+                if numExtrema > (D.dataLength dat) `div` 5
+                    then do
+                        (minimaDp, _) <- findExtrema minimaDp 0 "extrema" (\_ -> return ())
+                        (_, maximaDp) <- findExtrema maximaDp 0 "extrema" (\_ -> return ())
+                        let
+                            Left minima = subData $ head $ dataSet minimaDp 
+                            Left maxima = subData $ head $ dataSet maximaDp
+                        return $ max (D.dataLength minima) (D.dataLength maxima)
+                    else return numExtrema
+            putStrLn $ "numNodes:" ++ show numNodes
         
-                let
-                    envParams = EnvParams {
-                            envUpperParams = FitParams {
-                                fitPolynomRank = 3,
-                                fitType = FitTypeSpline,
-                                fitSplineParams = SplineParams {splineNumNodes = numNodes}
-                            },
-                            envLowerParams = FitParams {
-                                fitPolynomRank = 3,
-                                fitType = FitTypeSpline,
-                                fitSplineParams = SplineParams {splineNumNodes = numNodes}
-                            },
-                            envPrecision = 10,
-                            envExtrema = EnvExtremaStatistical,
-                            envData = Just (DataParams {
-                                dataName = "data",
+            let
+                sdev = (Sample.stdDev (D.ys dat)) * precision
+                imfStep :: Data -> Double -> IO Data
+                imfStep dat sdev =
+                    do
+                
+                        let
+                            envParams = EnvParams {
+                                    envUpperParams = FitParams {
+                                        fitPolynomRank = 3,
+                                        fitType = FitTypeSpline,
+                                        fitSplineParams = SplineParams {splineNumNodes = numNodes}
+                                    },
+                                    envLowerParams = FitParams {
+                                        fitPolynomRank = 3,
+                                        fitType = FitTypeSpline,
+                                        fitSplineParams = SplineParams {splineNumNodes = numNodes}
+                                    },
+                                    envPrecision = 10,
+                                    envExtrema = EnvExtremaStatistical,
+                                    envData = Just (DataParams {
+                                        dataName = "data",
+                                        dataSet = [
+                                            SubDataParams {
+                                                subDataRange = U.dataRange (Left dat),
+                                                subData = (Left dat),
+                                                subDataBootstrapSet = []
+                                            }
+                                        ]
+                                    })
+                                } 
+                
+                
+                        Left dat2 <- envelopes envParams ("upper", "lower", "mean") (\_ -> return ()) (putStrLn) (DataUpdateFunc (\_ _ _ -> return ()))
+                        let 
+                            sdev2 = U.stdev dat (Left dat2)
+                                    
+                        putStrLn $ "sdev=" ++ show sdev2 ++ ", needed=" ++ show sdev
+                                    
+                        if sdev2 < sdev
+                            then 
+                                    return dat2
+                            else
+                                do
+                                    imfStep dat2 sdev
+        
+            imfDat <- imfStep dat sdev
+            
+            let
+                byteStr = B.pack (UTF8.encode (concatMap (\(x, y) -> show x ++ " " ++ show y ++ "\n") (V.toList (D.xys1 imfDat))))
+            B.writeFile ("imf" ++ show modeNo ++ ".csv") byteStr
+            
+            let
+                dataUpdateFunc = DataUpdateFunc $ \(Left dat) name _ -> do 
+                    case name of
+                        "amplitude" -> do
+                            let
+                                byteStr = B.pack (UTF8.encode (concatMap (\(x, y) -> show x ++ " " ++ show y ++ "\n") (V.toList (D.xys1 dat))))
+                            B.writeFile ("amplitude" ++ show modeNo ++ ".csv") byteStr
+                        "phase" -> return ()
+                        "frequency" -> return () 
+                        "conjugated" -> return ()
+                asParams = AnalyticSignalParams {
+                        asRealData = Just (DataParams {
+                                dataName = "imf",
                                 dataSet = [
                                     SubDataParams {
-                                        subDataRange = U.dataRange (Left dat),
-                                        subData = (Left dat),
+                                        subDataRange = U.dataRange (Left imfDat),
+                                        subData = (Left imfDat),
                                         subDataBootstrapSet = []
                                     }
                                 ]
-                            })
-                        } 
-        
-        
-                Left dat2 <- envelopes envParams ("upper", "lower", "mean") (\_ -> return ()) (putStrLn) (DataUpdateFunc (\_ _ _ -> return ()))
-                let 
-                    sdev2 = U.stdev dat (Left dat2)
-                            
-                putStrLn $ "sdev=" ++ show sdev2 ++ ", needed=" ++ show sdev
-                            
-                if sdev2 < sdev
-                    then 
-                            return dat2
-                    else
-                        do
-                            imfStep dat2 sdev
-
-    let
-        sdev = (Sample.stdDev (D.ys dat)) * precision
-
-    imfDat <- imfStep dat sdev
-    
-    let
-        byteStr = B.pack (UTF8.encode (concatMap (\(x, y) -> show x ++ " " ++ show y ++ "\n") (V.toList (D.xys1 imfDat))))
-    B.writeFile ("imf" ++ show modeNo ++ ".csv") byteStr
-    
-    let
-        dataUpdateFunc = DataUpdateFunc $ \(Left dat) name _ -> do 
-            case name of
-                "amplitude" -> do
-                    let
-                        byteStr = B.pack (UTF8.encode (concatMap (\(x, y) -> show x ++ " " ++ show y ++ "\n") (V.toList (D.xys1 dat))))
-                    B.writeFile ("amplitude" ++ show modeNo ++ ".csv") byteStr
-                "phase" -> return ()
-                "frequency" -> return () 
-                "conjugated" -> return ()
-        asParams = AnalyticSignalParams {
-                asRealData = Just (DataParams {
-                        dataName = "imf",
-                        dataSet = [
-                            SubDataParams {
-                                subDataRange = U.dataRange (Left imfDat),
-                                subData = (Left imfDat),
-                                subDataBootstrapSet = []
                             }
-                        ]
-                    }
-                ),
-                asImagData = Nothing
-            }    
-    analyticSignal asParams 0 ("amplitude", "phase", "frequency", "conjugated") (\_ -> return ()) (putStrLn) dataUpdateFunc 
-    
-    let 
-        diff = D.subtr dat imfDat
-        sdev2 = Sample.stdDev (D.ys diff)
-    if sdev2 < sdev
-        then 
-                return ()
+                        ),
+                        asImagData = Nothing
+                    }    
+            analyticSignal asParams 0 ("amplitude", "phase", "frequency", "conjugated") (\_ -> return ()) (putStrLn) dataUpdateFunc 
+            
+            let 
+                diff = D.subtr dat imfDat
+            --    sdev2 = Sample.stdDev (D.ys diff)
+            --if sdev2 < sdev
+            --    then 
+            --            return ()
+            --    else
+            --        do
+            imf (modeNo + 1) diff >>= \otherImfs -> return (imfDat:otherImfs)
         else
-            do
-                imf (modeNo + 1) diff
+            return [dat]
