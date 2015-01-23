@@ -32,6 +32,7 @@ import qualified Statistics.Sample as Sample
 
 import System.Random
 import System.Random.MWC
+import System.Random.MWC.Distributions
 
 precision = 0.05
 
@@ -40,26 +41,105 @@ main = do --mpiWorld $ \size rank ->
     args <- getArgs
     let
         fileName = head args
+        noisePercent :: Double = if (length args > 1) then read (args !! 1) else 0
+        count :: Double = if (length args > 2) then read (args !! 2) else 1
 
     byteStr <- B.readFile fileName
     let
         xys :: [(Double, Double)] = map (\line -> let [xStr, yStr] = words line in (read xStr, read yStr)) $ lines $ UTF8.decode $ B.unpack byteStr
 
         dat = D.data1' $ V.fromList xys
-    imfs <- imf 1 dat
-    g <- getStdGen 
-    let 
-        recDat = foldl1 (\dat1 dat2 -> 
-                let 
-                    Left res = U.binaryOp (F.add) (Left dat) (Left dat2) True g
-                in 
-                    res
-            ) imfs
-        diff = D.subtr dat recDat
         sdev = Sample.stdDev (D.ys dat)
+        noiseSdev = sdev * noisePercent
+    
+    g <- getStdGen 
+    gen <- createSystemRandom
+
+    
+    imfSums <- foldM (\res _ -> do
+        datWithNoise <- if noisePercent > 0 
+            then do
+                valsWithNoise <-
+                    V.mapM (\(x, y, w) -> do
+                            r :: Double <- asGenIO (normal 0 noiseSdev) gen
+                            return (x, y + r, w)
+                        ) (D.values1 dat)
+                return $ D.data1 valsWithNoise
+            else 
+                return dat
+
+        imfs <- imf 1 datWithNoise
+        if length res == 0 
+            then
+                return imfs
+            else
+                return $ zipWith (\dat1 dat2 -> 
+                        let 
+                            Left datSum = U.binaryOp (F.add) (Left dat) (Left dat2) True g
+                        in 
+                            datSum
+                    ) res imfs 
+        ) [] [1 .. count]
+    
+    let
+        imfMeans = if count > 1 
+            then
+                map (\dat ->
+                        let 
+                            Left datMean = U.constantOp (F.mult) (Left dat) (1 / count) True
+                        in 
+                            datMean
+                    ) imfSums
+            else
+                imfSums
+                
+    zipWithM_ (\modeNo dat -> do
+            storeData dat ("imf" ++ show modeNo)
+            calcAnalyticSignal dat modeNo
+        ) [1 ..] imfMeans
+        
+    let 
+        recDat = foldl1 (\res dat -> 
+                let 
+                    Left datSum = U.binaryOp (F.add) (Left res) (Left dat) True g
+                in 
+                    datSum
+            ) imfMeans
+        diff = D.subtr dat recDat
         sdev2 = Sample.stdDev (D.ys diff)
     putStrLn $ "Reconstruction error: " ++ show (sdev2 / sdev)
 
+storeData :: Data -> String -> IO ()
+storeData dat name = do
+    let
+        byteStr = B.pack (UTF8.encode (concatMap (\(x, y) -> show x ++ " " ++ show y ++ "\n") (V.toList (D.xys1 dat))))
+    B.writeFile (name ++ ".csv") byteStr
+
+calcAnalyticSignal :: Data -> Int -> IO ()
+calcAnalyticSignal imfDat modeNo = do
+    let
+        dataUpdateFunc = DataUpdateFunc $ \(Left dat) name _ -> do 
+            case name of
+                "amplitude" -> do
+                    storeData dat ("amplitude" ++ show modeNo)
+                "phase" -> return ()
+                "frequency" -> return () 
+                "conjugated" -> return ()
+        asParams = AnalyticSignalParams {
+                asRealData = Just (DataParams {
+                        dataName = "imf",
+                        dataSet = [
+                            SubDataParams {
+                                subDataRange = U.dataRange (Left imfDat),
+                                subData = (Left imfDat),
+                                subDataBootstrapSet = []
+                            }
+                        ]
+                    }
+                ),
+                asImagData = Nothing
+            }    
+    analyticSignal asParams 0 ("amplitude", "phase", "frequency", "conjugated") (\_ -> return ()) (putStrLn) dataUpdateFunc 
 
 imf :: Int -> Data -> IO [Data]
 imf modeNo dat = do
@@ -81,7 +161,7 @@ imf modeNo dat = do
     let
         Left minima = subData $ head $ dataSet minimaDp 
         Left maxima = subData $ head $ dataSet maximaDp
-        numExtrema = max (D.dataLength minima) (D.dataLength maxima)
+        numExtrema = min (D.dataLength minima) (D.dataLength maxima)
     if numExtrema > 1
         then do
             numNodes <- 
@@ -92,8 +172,8 @@ imf modeNo dat = do
                         let
                             Left minima = subData $ head $ dataSet minimaDp 
                             Left maxima = subData $ head $ dataSet maximaDp
-                        return $ max (D.dataLength minima) (D.dataLength maxima)
-                    else return numExtrema
+                        return $ (min (D.dataLength minima) (D.dataLength maxima)) - 1
+                    else return (numExtrema - 1)
             putStrLn $ "numNodes:" ++ show numNodes
         
             let
@@ -144,35 +224,8 @@ imf modeNo dat = do
         
             imfDat <- imfStep dat sdev
             
-            let
-                byteStr = B.pack (UTF8.encode (concatMap (\(x, y) -> show x ++ " " ++ show y ++ "\n") (V.toList (D.xys1 imfDat))))
-            B.writeFile ("imf" ++ show modeNo ++ ".csv") byteStr
-            
-            let
-                dataUpdateFunc = DataUpdateFunc $ \(Left dat) name _ -> do 
-                    case name of
-                        "amplitude" -> do
-                            let
-                                byteStr = B.pack (UTF8.encode (concatMap (\(x, y) -> show x ++ " " ++ show y ++ "\n") (V.toList (D.xys1 dat))))
-                            B.writeFile ("amplitude" ++ show modeNo ++ ".csv") byteStr
-                        "phase" -> return ()
-                        "frequency" -> return () 
-                        "conjugated" -> return ()
-                asParams = AnalyticSignalParams {
-                        asRealData = Just (DataParams {
-                                dataName = "imf",
-                                dataSet = [
-                                    SubDataParams {
-                                        subDataRange = U.dataRange (Left imfDat),
-                                        subData = (Left imfDat),
-                                        subDataBootstrapSet = []
-                                    }
-                                ]
-                            }
-                        ),
-                        asImagData = Nothing
-                    }    
-            analyticSignal asParams 0 ("amplitude", "phase", "frequency", "conjugated") (\_ -> return ()) (putStrLn) dataUpdateFunc 
+            --storeData imfDat ("imf" ++ show modeNo)
+            --calcAnalyticSignal imfDat modeNo
             
             let 
                 diff = D.subtr dat imfDat
