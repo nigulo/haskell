@@ -41,21 +41,6 @@ paramsDialog stateRef = do
     vBox <- vBoxNew False 2
     boxPackStart contentBox vBox PackGrow 2
     
-    --label <- labelNew $ Just "Fast fourier transform"
-    --addWidget Nothing label dialog
-
-    bandStartAdjustment <- adjustmentNew (fftBandStart parms) 0 10000 1 1 1
-    bandStartSpin <- spinButtonNew bandStartAdjustment 1 0
-    addWidget (Just "Band start: ") bandStartSpin dialog
-
-    bandEndAdjustment <- adjustmentNew (fftBandEnd parms) 0 10000 1 1 1
-    bandEndSpin <- spinButtonNew bandEndAdjustment 1 0
-    addWidget (Just "Band end: ") bandEndSpin dialog
-
-    numSamplesAdjustment <- adjustmentNew (fromIntegral (fftNumSamples parms)) 2 16384 1 1 1
-    numSamplesSpin <- spinButtonNew numSamplesAdjustment 1 0
-    addWidget (Just "Num. samples: ") numSamplesSpin dialog
-
     fftNameEntry <- entryNew
     fftNameEntry `entrySetText` (getNameWithNo commonParams)
     addWidget (Just "FFT name: ") fftNameEntry dialog
@@ -99,9 +84,6 @@ paramsDialog stateRef = do
     if response == ResponseOk 
         then
             do
-                start <- spinButtonGetValue bandStartSpin
-                end <- spinButtonGetValue bandEndSpin
-                samples <- spinButtonGetValue numSamplesSpin
                 name <- entryGetText fftNameEntry
                 direction <- comboBoxGetActiveText directionCombo
                 
@@ -112,9 +94,6 @@ paramsDialog stateRef = do
                 
                 modifyStateParams stateRef $ \params -> params {fftParams = FftParams {
                     fftCommonParams = updateCommonParams name commonParams,
-                    fftBandStart = start,
-                    fftBandEnd = end,
-                    fftNumSamples = round samples,
                     fftDirection = (direction == Just "Time -> Frequency"),
                     fftPhaseShift = phaseShift,
                     fftRealData = case selectedRealSpec of 
@@ -159,8 +138,6 @@ fft stateRef name =
                 Just s@(Spectrum2 ((_, step), _)) -> (D.ys s, step)
             step = max realStep imagStep
             fftFunc = if fftDirection parms then fromTimeToFrequency else fromFrequencyToTime
-            bandStart = fftBandStart parms
-            bandEnd = fftBandEnd parms
             phaseShift = fftPhaseShift parms
             numToAdd = 2 ^ (ceiling (logBase 2 (fromIntegral n))) - n
             ys1 = trace ("numToAdd: " ++ show numToAdd) $ V.zipWith (\r i -> (:+) r i) (reals V.++ V.replicate numToAdd 0) (imags V.++ V.replicate numToAdd 0)

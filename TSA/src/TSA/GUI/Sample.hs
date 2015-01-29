@@ -10,6 +10,7 @@ import Regression.Data as D
 import Regression.Utils as U
 import qualified Math.Function as F
 import qualified Math.Expression as E
+import qualified Data.Vector.Unboxed as V
 
 import TSA.Params
 import TSA.GUI.State
@@ -66,6 +67,10 @@ sampleDialog stateRef = do
     randomnessSpin <- spinButtonNew randomnessAdjustment 1 0
     addWidget (Just "Randomness: ") randomnessSpin dialog
 
+    dataTypeCombo <- createComboBox ["Data", "Spectrum"]
+    comboBoxSetActive dataTypeCombo 0
+    addWidget (Just "Type: ") dataTypeCombo dialog
+
     widgetShowAll dialog
     response <- dialogRun dialog
     
@@ -78,6 +83,7 @@ sampleDialog stateRef = do
                 selectedData2 <- getSelectedData dataSetCombo2
                 count <- spinButtonGetValue countSpin
                 randomness <- spinButtonGetValue randomnessSpin
+                dataType <- comboBoxGetActive dataTypeCombo
                 widgetDestroy dialog
 
                 g <- getStdGen 
@@ -112,7 +118,8 @@ sampleDialog stateRef = do
                                     sequence $ zipWith (\xMin xMax -> getXs xMin xMax) xMin xMax
                 samples <- calcConcurrently_ (\d -> return (U.getValues xs d)) (map (\sdp -> subData sdp) (dataSet selectedData))
                 let
-                    subDataParams = map (\sample -> SubDataParams {subData = Left (D.data2' sample), subDataBootstrapSet = []}) samples
+                    dataCreateFunc = if dataType == 0 then D.data2' else D.spectrum1' . V.fromList . map (\((x:_), y) -> (x, y))
+                    subDataParams = map (\sample -> SubDataParams {subData = Left (dataCreateFunc sample), subDataBootstrapSet = []}) samples
      
                 modifyState stateRef $ addDataParams (DataParams {dataSet = subDataParams, dataName = name}) (Just (currentGraphTab, selectedGraph))
 

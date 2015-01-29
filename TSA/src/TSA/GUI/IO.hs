@@ -79,7 +79,7 @@ loadAsciiDialog stateRef = do
 data ColumnType = ColGeneral | ColJD | ColYear | ColMonth | ColDay | ColYYYYMMDD | ColError deriving (Eq)
 columnTypes = [ColGeneral, ColJD, ColYear, ColMonth, ColDay, ColYYYYMMDD, ColError]
 
-dataFormatDialog :: StateRef -> ([ColumnType] -> [[String]] -> String -> IO ()) -> [String] -> IO ()
+dataFormatDialog :: StateRef -> ([ColumnType] -> [[String]] -> String -> Bool -> IO ()) -> [String] -> IO ()
 dataFormatDialog stateRef callback lines = do
     state <- readMVar stateRef
     
@@ -90,6 +90,8 @@ dataFormatDialog stateRef callback lines = do
     icon <- windowGetIcon win
     assistant `set` [windowTitle := "Format data columns", windowIcon := icon]
     
+    ------------------------
+    -- Page 1
     page1 <- vBoxNew False 0
     assistantSetPageType assistant page1 AssistantPageConfirm
     headerLabel <- labelNew $ Just "First rows of data:"
@@ -119,6 +121,8 @@ dataFormatDialog stateRef callback lines = do
     --assistant `set` [assistantChildComplete := True]
     assistantAppendPage assistant page1
     
+    ------------------------
+    -- Page 2
     page2 <- vBoxNew False 0
     headerLabel <- labelNew $ Just "Columns:"
     addWidgetToVBox Nothing headerLabel PackNatural page2
@@ -126,6 +130,9 @@ dataFormatDialog stateRef callback lines = do
     addWidgetToVBox Nothing table PackNatural page2
     nameEntry <- entryNew
     addWidgetToVBox (Just "Name: ") nameEntry PackNatural page2
+    dataTypeCombo <- createComboBox ["Data", "Spectrum"]
+    comboBoxSetActive dataTypeCombo 0
+    addWidgetToVBox (Just "Type: ") dataTypeCombo PackNatural page2
     assistantAppendPage assistant page2
     
     widgetShowAll assistant
@@ -192,7 +199,8 @@ dataFormatDialog stateRef callback lines = do
             let
                 (colTypes, selectedCols) = unzip $ catMaybes colTypesAndCols
             name <- entryGetText nameEntry
-            callback colTypes selectedCols name
+            dataType <- comboBoxGetActive dataTypeCombo
+            callback colTypes selectedCols name (dataType == 0)
             widgetDestroy assistant 
         return ()
     return ()
@@ -208,9 +216,9 @@ readValue ColYYYYMMDD val =
         result
 readValue _ val = read val
 
-readAscii :: StateRef -> String -> [ColumnType] -> [[String]] -> String -> IO ()
-readAscii stateRef _ [] _ _ = return ()
-readAscii stateRef fileName colTypes cols name = do
+readAscii :: StateRef -> String -> [ColumnType] -> [[String]] -> String -> Bool -> IO ()
+readAscii stateRef _ [] _ _ _ = return ()
+readAscii stateRef fileName colTypes cols name dataOrSpectrum = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
     let
@@ -232,15 +240,16 @@ readAscii stateRef fileName colTypes cols name = do
             numCols = if ymdToYears then length colTypes - 2 else length colTypes    
             is1d = numCols == 1 || numCols == 2 && ColError `elem` colTypes 
             is2d = numCols == 2 || numCols == 3 && ColError `elem` colTypes 
+            dataCreateFunc = if dataOrSpectrum then D.data1 else D.spectrum1
             dat = 
                 if is1d then 
-                        D.data1 $ V.fromList $ map (\line -> 
+                        dataCreateFunc $ V.fromList $ map (\line -> 
                             if length line == 1 
                                 then (head line, 1, 1) 
                                 else (head line, 1, last line)) dataLines
                 else if is2d 
                     then
-                        D.data1 $ V.fromList $ map (\line -> 
+                        dataCreateFunc $ V.fromList $ map (\line -> 
                             if length line == 2 
                                 then (head line, last line, 1) 
                                 else (head line, line !! 1, last line)) dataLines
@@ -254,6 +263,7 @@ readAscii stateRef fileName colTypes cols name = do
     modifyMVar_ stateRef $ \state -> return $ addDiscreteData dat (if name == "" then fileName else name) (Just (currentGraphTab, selectedGraph)) state
 
 -------------------------------------------------------------------------------
+-- Import/Export from ISDA
 
 importData :: StateRef -> IO ()
 importData stateRef = do

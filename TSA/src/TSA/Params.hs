@@ -264,9 +264,6 @@ instance Xml.XmlElement ImfParams where
 
 data FftParams = FftParams {
     fftDirection :: Bool,
-    fftBandStart :: Double,
-    fftBandEnd :: Double,
-    fftNumSamples :: Int,
     fftPhaseShift :: Double,
     fftRealData :: Maybe D.Data,
     fftImagData :: Maybe D.Data,
@@ -277,8 +274,7 @@ instance Xml.XmlElement FftParams where
     toElement params = 
         Xml.element "fftparams" 
             [("direction", show (fftDirection params)),
-             ("bandstart", show (fftBandStart params)), ("bandend", show (fftBandEnd params)),
-             ("numsamples", show (fftNumSamples params)), ("phaseshift", show (fftPhaseShift params))
+             ("phaseshift", show (fftPhaseShift params))
             ] 
             (
                 [Left (Xml.element "realdata" [] (
@@ -297,9 +293,6 @@ instance Xml.XmlElement FftParams where
     fromElement e = 
         FftParams {
             fftDirection = read $ Xml.attrValue e "direction",
-            fftBandStart = read $ Xml.attrValue e "bandstart",
-            fftBandEnd = read $ Xml.attrValue e "bandend",
-            fftNumSamples = read $ Xml.attrValue e "numsamples",
             fftPhaseShift = read $ Xml.attrValue e "phaseshift",
             fftCommonParams = Xml.fromElement (Xml.contentElement e commonParamsXmlElementName),
             fftRealData =
@@ -1069,9 +1062,6 @@ newParams =
             },
             fftParams = FftParams {
                 fftDirection = True,
-                fftBandStart = 0,
-                fftBandEnd = 10,
-                fftNumSamples = 1024,
                 fftPhaseShift = 0,
                 fftRealData = Nothing,
                 fftImagData = Nothing,
