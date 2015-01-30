@@ -34,6 +34,12 @@ import Control.Applicative
 
 import System.Random
 
+typeMappings = M.fromList [
+        ("Remove neighbour", ["Outside", "Inside"]),
+        ("Convert", ["Data to spectrum", "Spectrum to data"]),
+        ("_", ["y", "x"])
+    ]
+
 modifyDialog :: StateRef -> IO ()
 modifyDialog stateRef = do
     state <- readMVar stateRef
@@ -86,7 +92,8 @@ modifyDialog stateRef = do
         "Find neighbour",
         "Scale",
         "Add noise",
-        "Interpolate"
+        "Interpolate",
+        "Convert"
         ]
     comboBoxSetActive opCombo (modifyOp parms)
     addWidget (Just "Operation: ") opCombo dialog
@@ -105,6 +112,22 @@ modifyDialog stateRef = do
     constant2Adjustment <- adjustmentNew (modifyConstant parms) 0 (2**52) 1 1 1
     constant2Spin <- spinButtonNew constant2Adjustment 1 10
     addWidget (Just "Constant 2: ") constant2Spin dialog
+
+    let
+        updateWidgets =
+            do
+                listStore <- comboBoxGetModelText typeCombo
+                numRows <- listStoreGetSize listStore
+                mapM_ (\_ -> comboBoxRemoveText typeCombo 0) [1 .. numRows]
+                Just op <- comboBoxGetActiveText opCombo
+                case M.lookup op typeMappings of
+                    Just types -> mapM_ (\t -> comboBoxAppendText typeCombo t) types
+                    Nothing -> mapM_ (\t -> comboBoxAppendText typeCombo t) (typeMappings M.! "_")
+
+    after dialog realize updateWidgets
+    on opCombo changed updateWidgets
+
+
 
     widgetShowAll dialog
     response <- dialogRun dialog
@@ -361,7 +384,7 @@ modifyDialog stateRef = do
                                                         filterFunc [] res (Just lastVal) = res ++ [lastVal]
                                                         filterFunc (val:vals) [] Nothing = filterFunc vals [] (Just val)
                                                         filterFunc (val@(x, y, _):vals) res (Just lastVal@(lastX, lastY, _)) = 
-                                                            if (t == "y") && x > lastX + constant || (t == "x") && x < lastX + constant 
+                                                            if (t == "Outside") && x > lastX + constant || (t == "Inside") && x < lastX + constant 
                                                                 then filterFunc vals (res ++ [lastVal]) (Just val) 
                                                                 else 
                                                                     if y > lastY 
