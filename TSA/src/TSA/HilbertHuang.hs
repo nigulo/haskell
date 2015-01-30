@@ -35,6 +35,7 @@ import System.Random.MWC
 import System.Random.MWC.Distributions
 
 precision = 0.05
+numLinesToSkip = 1
 
 main :: IO ()
 main = do --mpiWorld $ \size rank ->
@@ -46,7 +47,7 @@ main = do --mpiWorld $ \size rank ->
 
     byteStr <- B.readFile fileName
     let
-        xys :: [(Double, Double)] = map (\line -> let [xStr, yStr] = words line in (read xStr, read yStr)) $ lines $ UTF8.decode $ B.unpack byteStr
+        xys :: [(Double, Double)] = map (\line -> let [xStr, yStr] = words line in (read xStr, read yStr)) $ drop numLinesToSkip $ lines $ UTF8.decode $ B.unpack byteStr
 
         dat = D.data1' $ V.fromList xys
         sdev = Sample.stdDev (D.ys dat)
