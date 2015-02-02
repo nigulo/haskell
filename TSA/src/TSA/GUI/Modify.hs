@@ -34,11 +34,103 @@ import Control.Applicative
 
 import System.Random
 
+data ModifyOp = Add 
+        | Subtract 
+        | Mean 
+        | Multiply 
+        | Invert -- only 2d data
+        | Union
+        | Intersection
+        | Complement
+        | Join
+        | Split
+        | SegmentByMarkers
+        | SegmentByCount
+        | SegmentByGaps
+        | Unsegment
+        | SetWeights
+        | MovingAverage
+        | JDToYear
+        | YearToJD
+        | Round
+        | RemoveNeighbour
+        | FindNeighbour
+        | Scale
+        | AddNoise
+        | Interpolate
+        | Convert 
+        deriving (Eq, Ord, Show, Read)
+
+getOpText :: ModifyOp -> String
+getOpText SegmentByMarkers = "Segment by markers" 
+getOpText SegmentByCount = "Segment by count" 
+getOpText SegmentByGaps = "Segment by gaps" 
+getOpText SetWeights = "Set weights" 
+getOpText MovingAverage = "Moving average" 
+getOpText JDToYear = "JD to year" 
+getOpText YearToJD = "Year to JD" 
+getOpText RemoveNeighbour = "Remove neighbour" 
+getOpText FindNeighbour = "Find neighbour" 
+getOpText AddNoise = "Add noise" 
+getOpText op = show op 
+
+modifyOps = [Add, 
+        Subtract, 
+        Mean,
+        Multiply, 
+        Invert, -- only 2d data
+        Union,
+        Intersection,
+        Complement,
+        Join,
+        Split,
+        SegmentByMarkers,
+        SegmentByCount,
+        SegmentByGaps,
+        Unsegment,
+        SetWeights,
+        MovingAverage,
+        JDToYear,
+        YearToJD,
+        Round,
+        RemoveNeighbour,
+        FindNeighbour,
+        Scale,
+        AddNoise,
+        Interpolate,
+        Convert]
+
+getModifyOp :: Int -> ModifyOp
+getModifyOp i = modifyOps !! i
+
+data ModifyOpType = 
+    Outside
+    | Inside
+    | ToSpectrum
+    | ToData
+    | Y
+    | X 
+    deriving (Eq, Show, Read)
+
+getTypeText :: ModifyOpType -> String
+getTypeText ToSpectrum = "To spectrum"
+getTypeText ToData = "To data"
+getTypeText Y = "y"
+getTypeText X = "x"
+getTypeText opType = show opType
+
 typeMappings = M.fromList [
-        ("Remove neighbour", ["Outside", "Inside"]),
-        ("Convert", ["Data to spectrum", "Spectrum to data"]),
-        ("_", ["y", "x"])
+        (RemoveNeighbour, [Outside, Inside]),
+        (Convert, [ToSpectrum, ToData])
     ]
+
+getOpTypes :: ModifyOp -> [ModifyOpType]
+getOpTypes op = case M.lookup op typeMappings of 
+    Just types -> types
+    Nothing -> [Y, X]
+
+getOpType :: ModifyOp -> Int -> ModifyOpType
+getOpType op i = (getOpTypes op)  !! i
 
 modifyDialog :: StateRef -> IO ()
 modifyDialog stateRef = do
@@ -68,33 +160,7 @@ modifyDialog stateRef = do
     dataSetCombo1 <- dataSetComboNew2 (\_ -> True) state False
     addWidget (Just "Data set 1: ") (getComboBox dataSetCombo1) dialog
 
-    opCombo <- createComboBox [
-        "Add", 
-        "Subtract", 
-        "Mean", 
-        "Multiply", 
-        "Invert", -- only 2d data
-        "Union",
-        "Intersection",
-        "Complement",
-        "Join",
-        "Split",
-        "Segment by markers",
-        "Segment by count",
-        "Segment by gaps",
-        "Unsegment",
-        "Set weights",
-        "Moving average",
-        "JD to year",
-        "Year to JD",
-        "Round",
-        "Remove neighbour",
-        "Find neighbour",
-        "Scale",
-        "Add noise",
-        "Interpolate",
-        "Convert"
-        ]
+    opCombo <- createComboBox (map (getOpText) modifyOps)
     comboBoxSetActive opCombo (modifyOp parms)
     addWidget (Just "Operation: ") opCombo dialog
 
@@ -119,10 +185,8 @@ modifyDialog stateRef = do
                 listStore <- comboBoxGetModelText typeCombo
                 numRows <- listStoreGetSize listStore
                 mapM_ (\_ -> comboBoxRemoveText typeCombo 0) [1 .. numRows]
-                Just op <- comboBoxGetActiveText opCombo
-                case M.lookup op typeMappings of
-                    Just types -> mapM_ (\t -> comboBoxAppendText typeCombo t) types
-                    Nothing -> mapM_ (\t -> comboBoxAppendText typeCombo t) (typeMappings M.! "_")
+                opNo <- comboBoxGetActive opCombo
+                mapM_ (\t -> comboBoxAppendText typeCombo t) (map (getTypeText) (getOpTypes (getModifyOp opNo)))
 
     after dialog realize updateWidgets
     on opCombo changed updateWidgets
@@ -139,22 +203,22 @@ modifyDialog stateRef = do
                 
                 selectedData1 <- getSelectedData dataSetCombo1
                 selectedData2 <- getSelectedData dataSetCombo2
-                Just op <- comboBoxGetActiveText opCombo
                 opNo <- comboBoxGetActive opCombo
-                Just t <- comboBoxGetActiveText typeCombo
                 typeNo <- comboBoxGetActive typeCombo
                 constant <- spinButtonGetValue constantSpin
                 constant2 <- spinButtonGetValue constant2Spin
                 widgetDestroy dialog
 
                 let
+                    op = getModifyOp opNo
+                    opType = getOpType op typeNo
                     graphTabParms = (graphTabs state) !! currentGraphTab
                     selectedGraph = graphTabSelection graphTabParms
                     segments = graphSegments ((graphTabGraphs graphTabParms) !! selectedGraph)
                     modify (name, selectedData1) = 
                         case selectedData2 of
                             Just sd2 ->
-                                if (op == "Union") || (op == "Intersection") || op == "Complement"
+                                if (op == Union) || (op == Intersection) || op == Complement
                                     then
                                         if isDiscrete selectedData1 && isDiscrete sd2 then do
                                                 let
@@ -162,34 +226,19 @@ modifyDialog stateRef = do
                                                         let
                                                             Left ds2 = getSubDataAt sd2 i
                                                             func = case op of
-                                                                "Union" -> union
-                                                                "Intersection" -> intersect
-                                                                "Complement" -> (\\)
+                                                                Union -> union
+                                                                Intersection -> intersect
+                                                                Complement -> (\\)
                                                             vals = V.fromList $ func (V.toList (D.values1 ds1)) (V.toList (D.values1 ds2)) 
                                                         return $ Left (D.data1 vals)
                                                                                 
                                                 result <- applyToData1 func selectedData1 name (progressUpdate stateRef)
                                                 modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                                             else return ()
-                                else if (op == "Join")
+                                else if (op == Join)
                                     then
                                         modifyState stateRef $ addDataParams (merge name selectedData1 sd2) (Just (currentGraphTab, selectedGraph))
-                                else if op == "Segment by data points" then
-                                        if isDiscrete selectedData1 && isDiscrete sd2 then do
-                                            let
-                                                Left d2 = subData $ head $ dataSet sd2
-                                                filteredSegments = V.toList $ D.xs1 d2
-                                                mapOp sdp =
-                                                    let
-                                                        Left d = subData sdp 
-                                                        xMin = D.xMin1 d
-                                                        xMax = D.xMax1 d
-                                                        ds = zipWith (\xLeft xRight -> SubDataParams {subDataRange = ([xLeft], [xRight]), subData = Left (D.subSet1 (xLeft, xRight) d), subDataBootstrapSet = []}) (xMin:filteredSegments) (filteredSegments ++ [xMax])
-                                                    in
-                                                        ds
-                                            modifyState stateRef $ addDataParams (DataParams {dataName = name, dataSet = concat (map mapOp (dataSet selectedData1))}) (Just (currentGraphTab, selectedGraph))
-                                        else return ()
-                                else if (take 7 op == "Segment") 
+                                else if (take 7 (getOpText op) == "Segment") 
                                     then do
                                             let
                                                 d = subData $ head $ dataSet selectedData1
@@ -208,9 +257,9 @@ modifyDialog stateRef = do
                                                     }
                                                 minsMaxs = map minMax (dataSet sd2)
                                                 gaps = zipWith (\(_, minX) (maxX, _) -> (minX, maxX)) (init minsMaxs) (tail minsMaxs)
-                                                result = if op == "Segment by gaps" then map mapOp gaps else map mapOp minsMaxs 
+                                                result = if op == SegmentByGaps then map mapOp gaps else map mapOp minsMaxs 
                                             modifyState stateRef $ addDataParams (DataParams {dataName = name, dataSet = result}) (Just (currentGraphTab, selectedGraph))
-                                else if op == "Find neighbour" then
+                                else if op == FindNeighbour then
                                         if isDiscrete selectedData1 && isDiscrete sd2 then do
                                             let
                                                 Left d1 = subData $ head $ dataSet selectedData1
@@ -230,14 +279,14 @@ modifyDialog stateRef = do
                                     let
                                         mapOp sdp1 sdp2 = SubDataParams {
                                                 subDataRange = subDataRange sdp1,
-                                                subData = U.binaryOp (getOp op) (subData sdp1) (subData sdp2) (t == "y") g, 
+                                                subData = U.binaryOp (getModifyFunc op) (subData sdp1) (subData sdp2) (opType == Y) g, 
                                                 subDataBootstrapSet = []
                                             }
                                         result = zipWith mapOp (dataSet selectedData1) (dataSet sd2) 
                                     modifyState stateRef $ addDataParams (DataParams {dataName = name, dataSet = result}) (Just (currentGraphTab, selectedGraph))
                             Nothing -> 
                                 case op of
-                                    "Invert" ->
+                                    Invert ->
                                         if isDiscrete selectedData1 then do
                                                 let
                                                     func i j (Left ds1) _ =
@@ -249,11 +298,11 @@ modifyDialog stateRef = do
                                                 result <- applyToData1 func selectedData1 name (progressUpdate stateRef)
                                                 modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                                             else return ()
-                                    "Split" ->
+                                    Split ->
                                         mapM_ (\(i, sdp) -> 
                                             modifyState stateRef $ addDataParams (DataParams {dataName = name ++ show i, dataSet = [sdp]}) (Just (currentGraphTab, selectedGraph))
                                             ) (zip [1, 2 ..] (dataSet selectedData1))
-                                    "Segment by markers" ->
+                                    SegmentByMarkers ->
                                         if isDiscrete selectedData1 && segments /= [] then do
                                             let
                                                 sortedSegments1 = sort segments
@@ -282,7 +331,7 @@ modifyDialog stateRef = do
                                                         ds
                                             modifyState stateRef $ addDataParams (DataParams {dataName = name, dataSet = concat (map mapOp (dataSet selectedData1))}) (Just (currentGraphTab, selectedGraph))
                                         else return ()
-                                    "Segment by count" ->
+                                    SegmentByCount ->
                                         if isDiscrete selectedData1 then do
                                             let
                                                 mapOp sdp =
@@ -305,7 +354,7 @@ modifyDialog stateRef = do
                                                         catMaybes ds
                                             modifyState stateRef $ addDataParams (DataParams {dataName = name, dataSet = concat (map mapOp (dataSet selectedData1))}) (Just (currentGraphTab, selectedGraph))
                                         else return ()
-                                    "Segment by gaps" ->
+                                    SegmentByGaps ->
                                         if isDiscrete selectedData1 then do
                                             let
                                                 splitByGaps (Left d) = splitByGaps' (D.xMin1 d) (V.toList (D.values1 d)) [] where
@@ -332,7 +381,7 @@ modifyDialog stateRef = do
                                                             else splitByGaps' x vals (segment ++ [(x, y, w)])
                                             modifyState stateRef $ addDataParams (DataParams {dataName = name, dataSet = splitByGaps (subData (head (dataSet selectedData1)))}) (Just (currentGraphTab, selectedGraph))
                                         else return ()
-                                    "Unsegment" ->
+                                    Unsegment ->
                                         if isDiscrete selectedData1 then do
                                             let
                                                 unsegment (SubDataParams _ (Left d) _:[]) = D.values1 d
@@ -350,41 +399,41 @@ modifyDialog stateRef = do
                                                         }]
                                             }) (Just (currentGraphTab, selectedGraph))
                                         else return ()
-                                    "Set weights" ->
+                                    SetWeights ->
                                         if isDiscrete selectedData1 then do
                                             dataWithWeights <- applyToData1 (\_ _ (Left dat) _ -> return (Left (D.setW (V.replicate (D.dataLength dat) constant) dat))) selectedData1 name (progressUpdate stateRef)
                                             modifyState stateRef $ addDataParams dataWithWeights (Just (currentGraphTab, selectedGraph))
                                         else return ()
-                                    --"Moving average" ->
-                                    "JD to year" ->
+                                    --MovingAverage ->
+                                    JDToYear ->
                                         if isDiscrete selectedData1 then do
                                             dataWithWeights <- applyToData1 (\_ _ (Left dat) _ -> return (Left (D.data1 (V.map (\(x, y, w) -> let TropicalYears year = toTropicalYears (JD x) in (year, y, w) ) (D.values1 dat))))) selectedData1 name (progressUpdate stateRef)
                                             modifyState stateRef $ addDataParams dataWithWeights (Just (currentGraphTab, selectedGraph))
                                         else return ()
-                                    "Year to JD" ->
+                                    YearToJD ->
                                         if isDiscrete selectedData1 then do
                                             dataWithWeights <- applyToData1 (\_ _ (Left dat) _ -> return (Left (D.data1 (V.map (\(x, y, w) -> let JD jd = toJD (TropicalYears x) in (jd, y, w) ) (D.values1 dat))))) selectedData1 name (progressUpdate stateRef)
                                             modifyState stateRef $ addDataParams dataWithWeights (Just (currentGraphTab, selectedGraph))
                                         else return ()
-                                    "Round" ->
+                                    Round ->
                                         if isDiscrete selectedData1 then do
                                             dataWithWeights <- applyToData1 (\_ _ (Left dat) _ -> 
                                                 return (Left (D.data1 (V.map (\(x, y, w) -> 
                                                     let 
                                                         e = 10 ^ (round constant) 
                                                     in 
-                                                 if (t == "y") then (x, (fromIntegral (round (y * e))) / e, w) 
+                                                 if (opType == Y) then (x, (fromIntegral (round (y * e))) / e, w) 
                                                         else ((fromIntegral (round (x * e))) / e, y, w)) (D.values1 dat))))) selectedData1 name (progressUpdate stateRef)
                                             modifyState stateRef $ addDataParams dataWithWeights (Just (currentGraphTab, selectedGraph))
                                         else return ()
-                                    "Remove neighbour" ->
+                                    RemoveNeighbour ->
                                         if isDiscrete selectedData1 then do
                                             dataWithWeights <- applyToData1 (\_ _ (Left dat) _ -> do
                                                 let 
                                                         filterFunc [] res (Just lastVal) = res ++ [lastVal]
                                                         filterFunc (val:vals) [] Nothing = filterFunc vals [] (Just val)
                                                         filterFunc (val@(x, y, _):vals) res (Just lastVal@(lastX, lastY, _)) = 
-                                                            if (t == "Outside") && x > lastX + constant || (t == "Inside") && x < lastX + constant 
+                                                            if (opType == Outside) && x > lastX + constant || (opType == Inside) && x < lastX + constant 
                                                                 then filterFunc vals (res ++ [lastVal]) (Just val) 
                                                                 else 
                                                                     if y > lastY 
@@ -395,7 +444,7 @@ modifyDialog stateRef = do
                                                         ) selectedData1 name (progressUpdate stateRef)
                                             modifyState stateRef $ addDataParams dataWithWeights (Just (currentGraphTab, selectedGraph))
                                         else return ()
-                                    "Scale" ->
+                                    Scale ->
                                         if isDiscrete selectedData1 && constant /= 0 
                                         then do
                                             let 
@@ -403,14 +452,14 @@ modifyDialog stateRef = do
                                                     do
                                                         let
                                                             Left dat = d 
-                                                            (maxVal, minVal) = if (t == "y") then (D.yMax dat, D.yMin dat) else (D.xMax1 dat, D.xMin1 dat)
+                                                            (maxVal, minVal) = if (opType == Y) then (D.yMax dat, D.yMin dat) else (D.xMax1 dat, D.xMin1 dat)
                                                             f = F.function ("(x-" ++ show minVal ++")*" ++ show constant ++ "/(" ++ show (maxVal - minVal) ++ ")")
-                                                        return $ constantOp f d 0 (t == "y")
+                                                        return $ constantOp f d 0 (opType == Y)
                                             result <- applyToData1 func selectedData1 name (progressUpdate stateRef)
                                             modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                                         else
                                             return ()
-                                    "Add noise" ->
+                                    AddNoise ->
                                         if isDiscrete selectedData1 && constant /= 0 
                                         then do
                                             let 
@@ -418,13 +467,13 @@ modifyDialog stateRef = do
                                                     do
                                                         let
                                                             Left dat = d 
-                                                            newVals = zipWith (\(x, y, w) r -> if (t == "y") then (x, y + r, w) else (x + r, y, w)) (V.toList (D.values1 dat)) (randomRs (-constant, constant) g)
+                                                            newVals = zipWith (\(x, y, w) r -> if (opType == Y) then (x, y + r, w) else (x + r, y, w)) (V.toList (D.values1 dat)) (randomRs (-constant, constant) g)
                                                         return $ Left (D.data1 (V.fromList newVals))
                                             result <- applyToData1 func selectedData1 name (progressUpdate stateRef)
                                             modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                                         else
                                             return ()
-                                    "Interpolate" ->
+                                    Interpolate ->
                                         if isDiscrete selectedData1 && constant > 0
                                         then do
                                             let 
@@ -444,10 +493,27 @@ modifyDialog stateRef = do
                                             modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                                         else
                                             return ()
+                                    Convert ->
+                                        if isDiscrete selectedData1 && TSA.Data.is2d selectedData1 
+                                        then do
+                                            let 
+                                                func i j d _ = 
+                                                    do
+                                                        let
+                                                            Left dat = d
+                                                            dataCreateFunc = case typeNo of
+                                                                0 -> D.spectrum1
+                                                                1 -> D.data1
+                                                            newDat = dataCreateFunc (D.values1 dat)
+                                                        return $ Left newDat
+                                            result <- applyToData1 func selectedData1 name (progressUpdate stateRef)
+                                            modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
+                                        else
+                                            return ()
                                     otherwise ->
                                         if constant /= 0 
                                         then do
-                                            let func i j d _ = return $ constantOp (getOp op) d constant (t == "y")
+                                            let func i j d _ = return $ constantOp (getModifyFunc op) d constant (opType == Y)
                                             result <- applyToData1 func selectedData1 name (progressUpdate stateRef)
                                             modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                                         else
@@ -468,9 +534,9 @@ modifyDialog stateRef = do
             do
                 widgetDestroy dialog
 
-getOp :: String -> F.Function Double
-getOp "Add" = F.add
-getOp "Subtract" = F.subtr
-getOp "Mean" = (F.function "(x+y)/2")
-getOp "Multiply" = F.mult
+getModifyFunc :: ModifyOp -> F.Function Double
+getModifyFunc Add = F.add
+getModifyFunc Subtract = F.subtr
+getModifyFunc Mean = (F.function "(x+y)/2")
+getModifyFunc Multiply = F.mult
     

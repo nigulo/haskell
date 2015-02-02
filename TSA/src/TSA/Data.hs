@@ -3,6 +3,7 @@ module TSA.Data (
     isAnalytic,
     isContinuous,
     isDiscrete,
+    is2d,
     ---------------
     merge,
     applyToData,
@@ -18,8 +19,8 @@ module TSA.Data (
 import Debug.Trace
 import qualified Data.Map as M
 
-import Regression.Data as D
-import Regression.AnalyticData as AD
+import qualified Regression.Data as D
+import qualified Regression.AnalyticData as AD
 import Regression.Functions as FS
 import Regression.Spline as S
 import Regression.Utils as U
@@ -62,6 +63,13 @@ isDiscrete dp =
     case subData (head (dataSet dp)) of 
              Left _ -> True
              Right _ -> False
+
+is2d :: DataParams -> Bool
+is2d dp =
+    case subData (head (dataSet dp)) of 
+             Left d -> D.is2d d
+             Right (Left s) -> AD.is2d s
+             Right (Right f) -> AD.is2d f
 
 merge :: String -> DataParams -> DataParams -> DataParams
 merge name dp1 dp2 = 
@@ -124,7 +132,7 @@ calculateWeights dp dropBootstrapData = dp {dataSet = map mapOp (dataSet dp)} wh
                             vars = foldl1' (\ys1 ys2 -> V.zipWith (\y1 y2 -> y1 + y2) ys1 ys2) $ map (\bsd -> V.zipWith (\(_, yb, _) (_, y, _) -> (y - yb) * (y - yb) / fromIntegral len) (D.values1 bsd) vals) bsData
                             newValues = V.zipWith (\(x, y, _) var -> (x, y, 1 / var)) vals vars
                           in
-                            sdp {subData = Left (data1 newValues), subDataBootstrapSet = if dropBootstrapData then [] else bootstrap}
+                            sdp {subData = Left (D.data1 newValues), subDataBootstrapSet = if dropBootstrapData then [] else bootstrap}
                       else sdp
                 otherwise -> sdp 
 
