@@ -86,7 +86,7 @@ calcMoon2 moonElements (sunLong, sunMean) date =
         Rad node = toRad longAscNode
         n = clipAngleRad node -- Long asc node
         MeanLongitude longitude = epochData moonElements
-        Rad meanLongitude = toRad $ calcAngleElement longitude (trace ("d=" ++ show d) d)
+        Rad meanLongitude = toRad $ calcAngleElement longitude d
         m = clipAngleRad meanLongitude -- Mean anomaly
         Rad i = toRad $ calcAngleElement (inclination moonElements) ctys
         lM = clipAngleRad $ n + w + m
@@ -96,7 +96,7 @@ calcMoon2 moonElements (sunLong, sunMean) date =
         f = clipAngleRad $ lM - n -- Moon's argument of latitude
         
         e = calcElement (eccentricity moonElements) ctys
-        eccAnomaly = calcEccAnomaly (trace ("m=" ++ show m ) m) e
+        eccAnomaly = calcEccAnomaly m e
         trueAnomaly = calcTrueAnomaly eccAnomaly e
         ClosedOrbitElements (a, _) _ = elementsByOrbitType moonElements 
         EarthRadii aInEarthRadii = toEarthRadii a
@@ -110,7 +110,7 @@ calcMoon2 moonElements (sunLong, sunMean) date =
         longPerturbations = Deg $
             -1.274 * sin (m - d2) -- evection
             +0.658 * sin d2 -- variation
-            -0.186 * sin mS -- ywarly ecuation
+            -0.186 * sin mS -- yearly equation
             -0.059 * sin (2 * m - d2)
             -0.057 * sin (m - d2 + mS)
             +0.053 * sin (m + d2)

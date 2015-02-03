@@ -314,5 +314,6 @@ calcPlanetRiseSet date planet earth lat long =
                                         gmtSet1 = gstToGMT gstSet1 date
                                     in
                                         Just ((gmtRise1, riseAzi1), (gmtSet1, setAzi1))
+                                Nothing -> Nothing
                         Nothing -> Nothing
             Nothing -> Nothing
