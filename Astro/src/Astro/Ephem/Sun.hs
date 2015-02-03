@@ -1,7 +1,8 @@
 module Astro.Ephem.Sun (
     calcSun,
     calcSunRiseSet,
-    calcSunRiseSet'
+    calcSunRiseSet',
+    sunRisesAndSets
     ) where
     
 import Astro.Ephem.OrbitalElements
@@ -11,6 +12,8 @@ import Astro.Ephem.Types
 import Astro.Ephem.Time
 import Astro.Ephem.Utils
 import Debug.Trace
+import Data.Time.Calendar hiding (diffDays)
+import Data.Time.Calendar.MonthDay
 
 -- | Calculates the ecliptical longitude and mean anomaly of the sun
 calcSun :: 
@@ -140,4 +143,29 @@ calcSunRiseSet' date earth lat useCorrection =
             Nothing -> Nothing
     in
         riseSet
-            
+
+sunRisesAndSets :: Integer -- ^ year
+    -> Maybe (Int, Maybe Int) -- ^ month, day
+    -> OrbitalElements -- ^ earth
+    -> Lat -- ^ latitude
+    -> Long -- ^ longitude
+    -> Int -- ^ time zone
+    -> [(Date, Maybe (((Hours, Angle), (Hours, Angle))))] -- ^ sun rise and set
+sunRisesAndSets year maybeMonthAndDay elements lat long timeZone =
+    let
+        leapYear = isLeapYear year
+        dates = 
+            case maybeMonthAndDay of
+                Just (month, maybeDay) -> case maybeDay of
+                    Just day -> [YMD year month (fromIntegral day)]
+                    Nothing -> map (\day -> YMD year month (fromIntegral day)) [1 .. monthLength leapYear month]
+                Nothing -> concatMap (\month -> map (\day -> YMD year month (fromIntegral day)) [1 .. monthLength leapYear month]) [1 .. 12]
+        gmtToLTMapOp (date, riseSet) =
+            case riseSet of
+                Just ((rise, riseAzi), (set, setAzi)) -> (date, Just ((gmtToLT rise timeZone, riseAzi), (gmtToLT set timeZone, setAzi))) 
+                Nothing -> (date, Nothing)
+        sunRiseSets = map (gmtToLTMapOp) $ map (\date -> (date, calcSunRiseSet date elements lat long)) dates
+        
+    in
+        sunRiseSets
+

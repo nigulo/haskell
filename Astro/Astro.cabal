@@ -59,14 +59,20 @@ executable Almanac
   main-is:         Astro/Almanac/Main.hs
 
 executable Converter
-  build-depends:   base >= 4,
+  build-depends:   
+                   base >= 4,
                    system-fileio -any,
                    system-filepath -any,
                    bytestring -any,
                    utf8-string -any
-
   hs-source-dirs:  src
   ghc-options:     -Wall -rtsopts
   main-is:         Converter.hs
   extensions:      DoAndIfThenElse
+
+executable Sun
+  build-depends:   base >= 4
+  hs-source-dirs:  src
+  ghc-options:     -Wall -rtsopts
+  main-is:         Astro/Ephem/SunMain.hs
 

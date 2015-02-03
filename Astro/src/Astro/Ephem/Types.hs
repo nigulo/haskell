@@ -29,7 +29,11 @@ module Astro.Ephem.Types (
     j2000,
     toAU,
     toKm,
-    toEarthRadii
+    toEarthRadii,
+    absAngle,
+    sgnAngle,
+    toLatitude,
+    toLongitude
 ) where
 
 import Data.Time.Calendar hiding (diffDays)
@@ -188,6 +192,22 @@ hoursToAngle (Hrs x) =
 hoursToAngle hours@(HMS _ _ _) =
     toDMS $ hoursToAngle $ toHrs hours
 
+absAngle :: Angle -> Angle
+absAngle (Deg x) = Deg (abs x) 
+absAngle (DMS d m s) = DMS (abs d) (abs m) (abs s) 
+absAngle (Rad x) = Rad (abs x)
+absAngle (Sec x) = Sec (abs x)
+
+sgnAngle :: Angle -> Double
+sgnAngle (Deg x) = signum x 
+sgnAngle dms@(DMS d m s) = 
+    let
+        Deg deg = toDeg dms
+    in
+        signum deg 
+sgnAngle (Rad x) = signum x
+sgnAngle (Sec x) = signum x
+
 --------------------------------------------------------------------------------
 -- Use this function to construct dates that are not in standard
 toValidYMD :: Date -> Date
@@ -326,3 +346,15 @@ toEarthRadii :: Distance -> Distance
 toEarthRadii dist@(AU _) = toEarthRadii (toKm dist)
 toEarthRadii (Km dist) = EarthRadii (dist / 6378.1)
 toEarthRadii (EarthRadii dist) = EarthRadii dist
+
+toLatitude :: Angle -> Lat
+toLatitude angle = 
+    if sgnAngle angle < 0 
+        then Lat (absAngle angle) S
+        else Lat angle N
+
+toLongitude :: Angle -> Long
+toLongitude angle = 
+    if sgnAngle angle < 0 
+        then Long (absAngle angle) W
+        else Long angle E

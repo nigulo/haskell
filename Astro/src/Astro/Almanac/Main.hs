@@ -25,7 +25,7 @@ import Astro.Ephem.Time
 import Astro.Ephem.Coords
 import Astro.Ephem.Utils
 import Astro.Ephem.OrbitalElements
-import Astro.Ephem.Sun
+import Astro.Ephem.Sun hiding (main)
 import Astro.Ephem.CelestialBody
 import Data.Time.Calendar
 import Data.Time.Calendar.MonthDay

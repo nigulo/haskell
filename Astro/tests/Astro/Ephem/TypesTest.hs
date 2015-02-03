@@ -45,6 +45,34 @@ test_hoursToAngle = do
     assertEqualAngle (Deg 203.2335345) (hoursToAngle (Hrs 13.5489023))
     assertEqualAngle (DMS 85 52 15.000000000013642) (hoursToAngle (HMS 5 43 29))
 
+test_absAngle = do 
+    assertEqualAngle (DMS 17 35 12) (absAngle (DMS 17 35 12))
+    assertEqualAngle (DMS 256 52 34.82400000009875) (absAngle (DMS (-256) 52 34.82400000009875))
+    assertEqualAngle (DMS 0 52 34.82399999999984) (absAngle (DMS 0 (-52) 34.82399999999984))
+    assertEqualAngle (DMS 0 0 34.8239988) (absAngle (DMS 0 0 (-34.8239988)))
+    assertEqualAngle (Deg 256.87634) (absAngle (Deg 256.87634))
+    assertEqualAngle (Deg 256.87634) (absAngle (Deg (-256.87634)))
+    assertEqualAngle (Rad 2.904488) (absAngle (Rad 2.904488))
+    assertEqualAngle (Rad 2.904488) (absAngle (Rad (-2.904488)))
+    assertEqualAngle (Sec 924754.824) (absAngle (Sec 924754.824))
+    assertEqualAngle (Sec 924754.824) (absAngle (Sec (-924754.824)))
+
+test_sgnAngle = do 
+    assertEqual 1 (sgnAngle (DMS 17 35 12))
+    assertEqual (-1) (sgnAngle (DMS (-256) 52 34.82400000009875))
+    assertEqual (-1) (sgnAngle (DMS 0 (-52) 34.82399999999984))
+    assertEqual (-1) (sgnAngle (DMS 0 0 (-34.8239988)))
+    assertEqual 0 (sgnAngle (DMS 0 0 0))
+    assertEqual 1 (sgnAngle (Deg 256.87634))
+    assertEqual (-1) (sgnAngle (Deg (-256.87634)))
+    assertEqual 0 (sgnAngle (Deg 0))
+    assertEqual 1 (sgnAngle (Rad 2.904488))
+    assertEqual (-1) (sgnAngle (Rad (-2.904488)))
+    assertEqual 0 (sgnAngle (Rad 0))
+    assertEqual 1 (sgnAngle (Sec 924754.824))
+    assertEqual (-1) (sgnAngle (Sec (-924754.824)))
+    assertEqual 0 (sgnAngle (Sec 0))
+
 test_toHMS = do 
     assertEqualHours (HMS 18 31 27) (toHMS (HMS 18 31 27))
     assertEqualHours (HMS 18 31 27.012000000005685) (toHMS (Hrs 18.52417))
@@ -91,3 +119,12 @@ test_TJDToYMD = do
 
 test_diffDays = do
     assertEqual (-522) (diffDays (YMD 1978 7 27) (ymd 1980 1 0))
+    
+test_toLatitude = do
+    assertEqual (Lat (Deg 30) N) (toLatitude (Deg 30))
+    assertEqual (Lat (Deg 30) S) (toLatitude (Deg (-30)))
+
+test_toLongitude = do
+    assertEqual (Long (Deg 30) E) (toLongitude (Deg 30))
+    assertEqual (Long (Deg 30) W) (toLongitude (Deg (-30)))
+    
