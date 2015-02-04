@@ -29,5 +29,20 @@ main = do
                             Nothing
                     ) 
             else Nothing
-        sunRiseSets = sunRisesAndSets year maybeMonthAndDay earth2000 (toLatitude (Deg lat)) (toLongitude (Deg long)) timeZone
-    print sunRiseSets
+        sunRiseSets = sunRisesAndSets year maybeMonthAndDay earth2000a (toLatitude (Deg lat)) (toLongitude (Deg long)) timeZone
+        
+        formatRiseSet (date, maybeRiseSet) = 
+            let
+                YMD y m d = toYMD date
+                riseSet = case maybeRiseSet of
+                    Just ((rise, _), (set, _)) -> 
+                        let
+                            HMS hr mr sr = toHMS rise 
+                            HMS hs ms ss = toHMS set
+                        in
+                            show hr ++ ":" ++ show mr ++ ":" ++ show (round sr) ++ " " ++ show hs ++ ":" ++ show ms ++ ":" ++ show (round ss) 
+                    Nothing -> ""
+            in
+                show y ++ "-" ++ show m ++ "-" ++ show (floor d) ++ " " ++ riseSet ++ "\n"
+    putStrLn $ "Date Rise Set"
+    putStrLn $ concatMap (formatRiseSet) sunRiseSets
