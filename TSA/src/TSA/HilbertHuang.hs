@@ -74,27 +74,28 @@ main = do --mpiWorld $ \size rank ->
             then
                 return imfs
             else
-                return $ zipWith (\dat1 dat2 -> 
+                return $ zipWith (\(freq1, dat1) (freq2, dat2) -> 
                         let 
                             Left datSum = U.binaryOp (F.add) (Left dat) (Left dat2) True g
                         in 
-                            datSum
+                            (freq1 + freq2, datSum)
                     ) res imfs 
         ) [] [1 .. count]
     
     let
         imfMeans = if count > 1 
             then
-                map (\dat ->
+                map (\(freq, dat) ->
                         let 
                             Left datMean = U.constantOp (F.mult) (Left dat) (1 / count) True
                         in 
-                            datMean
+                            (freq / count, datMean)
                     ) imfSums
             else
                 imfSums
                 
-    zipWithM_ (\modeNo dat -> do
+    zipWithM_ (\modeNo (freq, dat) -> do
+            putStrLn $ "Mode " ++ show modeNo ++ ", mean frequency: " ++ show freq
             storeData dat ("imf" ++ show modeNo)
             calcAnalyticSignal dat modeNo
         ) [1 ..] imfMeans
@@ -105,7 +106,7 @@ main = do --mpiWorld $ \size rank ->
                     Left datSum = U.binaryOp (F.add) (Left res) (Left dat) True g
                 in 
                     datSum
-            ) imfMeans
+            ) (map (snd) imfMeans)
         diff = D.subtr dat recDat
         sdev2 = Sample.stdDev (D.ys diff)
     putStrLn $ "Reconstruction error: " ++ show (sdev2 / sdev)
@@ -122,6 +123,7 @@ calcAnalyticSignal imfDat modeNo = do
         dataUpdateFunc = DataUpdateFunc $ \(Left dat) name _ -> do 
             case name of
                 "amplitude" -> do
+                    putStrLn $ "Mean amplitude: " ++ show (Sample.mean (D.ys dat))
                     storeData dat ("amplitude" ++ show modeNo)
                 "phase" -> return ()
                 "frequency" -> return () 
@@ -142,7 +144,8 @@ calcAnalyticSignal imfDat modeNo = do
             }    
     analyticSignal asParams 0 ("amplitude", "phase", "frequency", "conjugated") (\_ -> return ()) (putStrLn) dataUpdateFunc 
 
-imf :: Int -> Data -> IO [Data]
+imf :: Int -> Data 
+    -> IO [(Double, Data)] -- ^ Mean frequency and data
 imf modeNo dat = do
 
     g <- getStdGen 
@@ -236,6 +239,6 @@ imf modeNo dat = do
             --            return ()
             --    else
             --        do
-            imf (modeNo + 1) diff >>= \otherImfs -> return (imfDat:otherImfs)
+            imf (modeNo + 1) diff >>= \otherImfs -> return ((fromIntegral numNodes / (D.xMax1 imfDat - D.xMin1 imfDat) , imfDat):otherImfs)
         else
-            return [dat]
+            return [(0, dat)]
