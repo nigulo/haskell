@@ -9,7 +9,6 @@ module Regression.IOLeastSquares (
     addConstraint, 
     solve) where
 
-import Utils.Misc
 import Math.IODoubleMatrix as M
 import Math.IODoubleVector as V
 import Math.IODoubleLinearEquations (backSubstitution)

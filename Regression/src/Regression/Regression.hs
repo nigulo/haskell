@@ -7,7 +7,6 @@ module Regression.Regression (
 
 import Debug.Trace
 import Regression.Data as D
-import Utils.Misc
 import Utils.List
 import Regression.AnalyticData as AD
 import Regression.Spline as S
@@ -26,6 +25,7 @@ import qualified Math.Matrix as Matrix
 import qualified Math.LinearEquations as LinearEquations 
 
 import Control.Concurrent
+import Control.Monad
 import System.CPUTime
 import qualified Data.Vector.Unboxed as V
 
@@ -80,7 +80,7 @@ fitWithSpline unitPolynoms numNodes dat strict smoothUpTo puFunc =
             in
                 forSteps 0 1 dat []
         numPolynoms = length steps                
-        forData i (lsqState, dat) = do
+        forData (lsqState, dat) i = do
             let
                 xLeft = x1 + sum (take i steps)
                 (datLeft, datRight) = split1 (xLeft + (steps !! i)) dat
@@ -88,28 +88,25 @@ fitWithSpline unitPolynoms numNodes dat strict smoothUpTo puFunc =
                 --vals = D.values1 $ D.subSet1 (xLeft, xLeft + (steps !! i)) dat
                 leadingZeroCoefs = replicate (numTerms * i) 0
                 trailingZeroCoefs = replicate (numTerms * (numPolynoms - i - 1)) 0
-                forj j lsqState = do
+                forj lsqState j = do
                     let 
                         (x, y, w) = vals V.! j
                         xVect =
                             leadingZeroCoefs ++ 
                             concat (P.getValues x unitPolynoms) ++
                             trailingZeroCoefs
-                    --threadDelay 100
                     --puFunc $ (fromIntegral i + (fromIntegral j / (fromIntegral (length xs - 1)))) / (fromIntegral numPolynoms - 1) / 2
                     --putStrLn $ show $ xVect ++ [y] ++ [w]
                     LSQ.addMeasurement xVect y w lsqState
-            state <- forM__ 0 (V.length vals - 1) lsqState $ {-# SCC "forj" #-} forj
-            --state <- foldl (\x f -> x >>= f) (return lsqState) [forj j vals | j <- [0 .. length vals - 1]]
-            --print state
+            state <- foldM (forj) lsqState [0 .. V.length vals - 1]
             puFunc $ fromIntegral i / (fromIntegral numPolynoms - 1) / 2
             return (state, datRight)
         
-        forConstraints i lsqState = do
+        forConstraints lsqState i = do
             let
                 numInitialTerms = replicate (numTerms * i) 0
                 numFinalTerms = replicate (numTerms * (numPolynoms - i - 2)) 0
-                forConstraint j vals state = do
+                forConstraint vals state j = do
                     let 
                         termsBefore = replicate (sum [length (vals !! k) | k <- [0 .. j - 1]]) 0
                         termsAfter = replicate (sum [length (vals !! k) | k <- [j + 1 .. length vals - 1]]) 0
@@ -126,22 +123,19 @@ fitWithSpline unitPolynoms numNodes dat strict smoothUpTo puFunc =
                             ) 0 0 state
                     return st
                 xRight = x1 + sum (take (i + 1) steps)
-                continuity state = do
-                    let vals = P.getValues xRight unitPolynoms 
-                    forM_ 0 (length vals - 1) vals state $ {-# SCC "forConstraint" #-} forConstraint
+                vals = P.getValues xRight unitPolynoms 
+                continuity state = foldM (forConstraint vals) state [0 .. length vals - 1]
                 smoothness state = 
                     if (smoothUpTo >= 1) then
                         do
                             let tangents = P.getTangents xRight unitPolynoms
-
-                            forM_ 0 (length tangents - 1) tangents state forConstraint
+                            foldM (forConstraint tangents) state [0 .. length tangents - 1]
                     else return state
                 smoothness2 state = 
                     if (smoothUpTo >=2) then
                         do
                             let derivatives = P.getDerivatives 2 xRight unitPolynoms
-
-                            forM_ 0 (length derivatives - 1) derivatives state forConstraint
+                            foldM (forConstraint derivatives) state [0 .. length derivatives - 1]
                     else return state
            
             s1 <- continuity lsqState
@@ -152,28 +146,11 @@ fitWithSpline unitPolynoms numNodes dat strict smoothUpTo puFunc =
             puFunc $ 0.5 + fromIntegral i / (fromIntegral numPolynoms - 2) / 2
             return s3
          
-    --puFunc $ 0
-    time <- getCPUTime
-    time <- getCPUTime >>= \t -> return $ t - time
-    --putStrLn "A:" >> print (time `div` 1000000000)
     state <- LSQ.initialize (numTerms * numPolynoms)
-    --putStrLn "A1:" >> print (time `div` 1000000000)
-    (state1, _) <- forM__ 0 (numPolynoms - 1) (state, dat) ${-# SCC "forData" #-} forData
-    --putStrLn "A2:" >> print (time `div` 1000000000)
-    --puFunc $ 0.5
-    time <- getCPUTime >>= \t -> return $ t - time
-    --putStrLn ("B:"  ++ show state1) >> print (time `div` 1000000000)
-    state2 <- LSQ.invert state1
-    --putStrLn "B1:" >> print (time `div` 1000000000)
-    --putStrLn ("BC:"  ++ show state1) >> print (time `div` 1000000000)
-    state3 <- forM__ 0 (numPolynoms - 2) state1 $ {-# SCC "forConstraints" #-} forConstraints
-    --putStrLn "C1:" >> print (time `div` 1000000000)
-    time <- getCPUTime >>= \t -> return $ t - time
-    --putStrLn ("C:" ++ show state2) >> print (time `div` 1000000000)
+    (state1, _) <- foldM (forData) (state, dat) [0 .. numPolynoms - 1]
+    LSQ.invert state1
+    state3 <- foldM (forConstraints) state1 [0 .. numPolynoms - 2]
     coefs <- solve state3 >>= \v -> Math.IODoubleVector.values v
-    --coefs <- return $ LSQ.solve state3
-    time <- getCPUTime >>= \t -> return $ t - time
-    --putStrLn ("CD:" ++ show coefs) >> print (time `div` 1000000000)
         
     puFunc $ 0.5
     let 
@@ -182,8 +159,6 @@ fitWithSpline unitPolynoms numNodes dat strict smoothUpTo puFunc =
             [x1 + (sum (take (j + 1) steps))], 
             setCoefs [[(i, coefs !! (j * numTerms + (termSums !! k) + i)) | i <- [0 .. ranks !! k]] | k <- [0 .. count - 1]] unitPolynoms)
             | j <- [0 .. numPolynoms - 1]]
-    time <- getCPUTime >>= \t -> return $ t - time
-    --putStrLn "D:" >> print (time `div` 1000000000)
     puFunc $ 0
     return $ spline
 
