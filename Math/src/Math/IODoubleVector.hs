@@ -18,7 +18,6 @@ import Debug.Trace
 import Data.Array.IO
 import Utils.Misc
 
-
 newtype IODoubleVector = IODoubleVector (IOUArray Int Double)
 
 -- creates a new vector

@@ -17,8 +17,8 @@ import Regression.Utils
 import Math.Expression
 import Math.Function as F
 import Math.Function as F
-import Math.IODoubleMatrix
-import Math.IODoubleVector
+import Math.IODoubleMatrix as IOM
+import Math.IODoubleVector as IOV
 import Math.IODoubleLinearEquations
 import qualified Math.Vector as Vector
 import qualified Math.Matrix as Matrix
@@ -79,49 +79,78 @@ fitWithSpline unitPolynoms numNodes dat strict smoothUpTo puFunc =
                                 else forSteps (i + numSteps) 1 datRight (steps ++ [stepLength])
             in
                 forSteps 0 1 dat []
-        numPolynoms = length steps                
+        numPolynoms = length steps
+        p = numTerms * numPolynoms
+    xVect <- IOV.nullVector (p + 1)
+    let
+        inds = V.generate (p + 1) (\i -> i) 
         forData (lsqState, dat) i = do
             let
                 xLeft = x1 + sum (take i steps)
                 (datLeft, datRight) = split1 (xLeft + (steps !! i)) dat
                 vals = D.values1 datLeft
                 --vals = D.values1 $ D.subSet1 (xLeft, xLeft + (steps !! i)) dat
-                leadingZeroCoefs = replicate (numTerms * i) 0
-                trailingZeroCoefs = replicate (numTerms * (numPolynoms - i - 1)) 0
+                leadingZeroCoefs = V.replicate (numTerms * i) 0
+                trailingZeroCoefs = V.replicate (numTerms * (numPolynoms - i - 1)) 0
                 forj lsqState j = do
                     let 
                         (x, y, w) = vals V.! j
-                        xVect =
-                            leadingZeroCoefs ++ 
-                            concat (P.getValues x unitPolynoms) ++
-                            trailingZeroCoefs
+                        polynomCoefs = V.fromList $ concat (P.getValues x unitPolynoms)
+                        --xVect = 
+                        --    leadingZeroCoefs V.++ 
+                        --    polynomCoefs V.++
+                        --    trailingZeroCoefs `V.snoc` y
+                        inds2 = V.drop (V.length leadingZeroCoefs) inds
+                        inds3 = V.drop (V.length polynomCoefs) inds2
                     --puFunc $ (fromIntegral i + (fromIntegral j / (fromIntegral (length xs - 1)))) / (fromIntegral numPolynoms - 1) / 2
                     --putStrLn $ show $ xVect ++ [y] ++ [w]
-                    LSQ.addMeasurement xVect y w lsqState
+                    
+                    V.zipWithM_ (\coef i -> IOV.set i coef xVect) leadingZeroCoefs inds
+                    V.zipWithM_ (\coef i -> IOV.set i coef xVect) polynomCoefs inds2
+                    V.zipWithM_ (\coef i -> IOV.set i coef xVect) trailingZeroCoefs inds3
+                    IOV.set p y xVect
+                    LSQ.addMeasurement xVect w lsqState
             state <- foldM (forj) lsqState [0 .. V.length vals - 1]
             puFunc $ fromIntegral i / (fromIntegral numPolynoms - 1) / 2
             return (state, datRight)
         
         forConstraints lsqState i = do
             let
-                numInitialTerms = replicate (numTerms * i) 0
-                numFinalTerms = replicate (numTerms * (numPolynoms - i - 2)) 0
+                numInitialTerms = V.replicate (numTerms * i) 0
+                numFinalTerms = V.replicate (numTerms * (numPolynoms - i - 2)) 0
                 forConstraint vals state j = do
                     let 
-                        termsBefore = replicate (sum [length (vals !! k) | k <- [0 .. j - 1]]) 0
-                        termsAfter = replicate (sum [length (vals !! k) | k <- [j + 1 .. length vals - 1]]) 0
-                    st <- 
-                        LSQ.addConstraint (
-                                numInitialTerms ++ 
-                                termsBefore ++ 
-                                vals !! j ++
-                                termsAfter ++ 
-                                termsBefore ++ 
-                                (map (\val -> -val) (vals !! j)) ++
-                                termsAfter ++ 
-                                numFinalTerms
-                            ) 0 0 state
-                    return st
+                        termsBefore = V.replicate (sum [length (vals !! k) | k <- [0 .. j - 1]]) 0
+                        termsAfter = V.replicate (sum [length (vals !! k) | k <- [j + 1 .. length vals - 1]]) 0
+                        valsJ = V.fromList $ vals !! j
+                        negValsJ = V.map (\val -> -val) valsJ
+                        --rVect =
+                        --    numInitialTerms ++ 
+                        --    termsBefore ++ 
+                        --    valsJ ++
+                        --    termsAfter ++ 
+                        --    termsBefore ++ 
+                        --    negValsJ ++
+                        --    termsAfter ++ 
+                        --    numFinalTerms ++ 
+                        --    [0]
+                        inds2 = V.drop (V.length numInitialTerms) inds
+                        inds3 = V.drop (V.length termsBefore) inds2
+                        inds4 = V.drop (V.length valsJ) inds3
+                        inds5 = V.drop (V.length termsAfter) inds4
+                        inds6 = V.drop (V.length termsBefore) inds5
+                        inds7 = V.drop (V.length negValsJ) inds6
+                        inds8 = V.drop (V.length termsAfter) inds7
+                    V.zipWithM_ (\coef i -> IOV.set i coef xVect) numInitialTerms inds
+                    V.zipWithM_ (\coef i -> IOV.set i coef xVect) termsBefore inds2
+                    V.zipWithM_ (\coef i -> IOV.set i coef xVect) valsJ inds3
+                    V.zipWithM_ (\coef i -> IOV.set i coef xVect) termsAfter inds4
+                    V.zipWithM_ (\coef i -> IOV.set i coef xVect) termsBefore inds5
+                    V.zipWithM_ (\coef i -> IOV.set i coef xVect) negValsJ inds6
+                    V.zipWithM_ (\coef i -> IOV.set i coef xVect) termsAfter inds7
+                    V.zipWithM_ (\coef i -> IOV.set i coef xVect) numFinalTerms inds8
+                    IOV.set p 0 xVect
+                    LSQ.addConstraint xVect 0 state
                 xRight = x1 + sum (take (i + 1) steps)
                 vals = P.getValues xRight unitPolynoms 
                 continuity state = foldM (forConstraint vals) state [0 .. length vals - 1]
@@ -146,11 +175,11 @@ fitWithSpline unitPolynoms numNodes dat strict smoothUpTo puFunc =
             puFunc $ 0.5 + fromIntegral i / (fromIntegral numPolynoms - 2) / 2
             return s3
          
-    state <- LSQ.initialize (numTerms * numPolynoms)
+    state <- LSQ.initialize p
     (state1, _) <- foldM (forData) (state, dat) [0 .. numPolynoms - 1]
     LSQ.invert state1
     state3 <- foldM (forConstraints) state1 [0 .. numPolynoms - 2]
-    coefs <- solve state3 >>= \v -> Math.IODoubleVector.values v
+    coefs <- solve state3 >>= \v -> IOV.values v
         
     puFunc $ 0.5
     let 

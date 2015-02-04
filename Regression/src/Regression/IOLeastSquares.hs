@@ -37,17 +37,17 @@ initialize p =
 --   using 'addConstraint'. In case there are no constraints to impose
 --   immediately call solve to obtain the LSQ estimate.
 addMeasurement ::
-          [Double] -- ^ array of x values
-       -> Double        -- ^ y value
+          IODoubleVector -- ^ first p elements is an array of x values, last value is y value (NB! will be modified)
        -> Double        -- ^ weight of the measurement (0 = don't use)
        -> IOLSQState      -- previous state of calculation
        -> IO (IOLSQState)      -- next state of calculation
-addMeasurement _ _ 0 state = return state 
-addMeasurement xVect y w (IOLSQState (b, d, e)) =
+addMeasurement _ 0 state = return state 
+addMeasurement x w (IOLSQState (b, d, e)) =
     do 
-        x <- vector (xVect ++ [y])
+        p <- getLength x >>= \len -> return (len - 1)
+        pCheck <- M.getNumRows b
+        if (p /= pCheck) then putStrLn "addMeasurement: illegal input vector" else return ()
         let 
-            p = length xVect
             fori i =
                 do
                     h <- V.get i x 
@@ -97,16 +97,16 @@ invert (IOLSQState (_, d, _)) =
 -- | Adds a next row of constraints to the computation. If you have
 --   finished adding constraints, call 'solve' to obtain the LSQ estimate.
 addConstraint ::
-          [Double] -- ^ array of r values
-       -> Double        -- ^ s value
+          IODoubleVector -- ^ first p elements is an array of r values, last value is s value (NB! will be modified)
        -> Double        -- ^ weight of the constraint (0 = infinite)
        -> IOLSQState      -- previous state of calculation
        -> IO (IOLSQState)      -- next state of calculation
-addConstraint rVect s w (IOLSQState (b, f, e)) = 
+addConstraint r w (IOLSQState (b, f, e)) = 
     do 
-        r <- vector (rVect ++ [s])
+        p <- getLength r >>= \len -> return (len - 1)
+        pCheck <- M.getNumRows b
+        if (p /= pCheck) then putStrLn "addConstraint: illegal input vector" else return ()
         let
-            p = length rVect
             fori i =
                 do 
                     h <- V.get i r

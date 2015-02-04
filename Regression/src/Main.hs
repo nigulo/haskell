@@ -6,15 +6,17 @@ import Regression.CUDALeastSquares as CLSQ
 import Math.LinearEquations
 import Math.Matrix as M
 import Math.IODoubleMatrix as IOM
+import Math.IODoubleVector as IOV
 import Math.Vector as V
 import Math.Function as F
 import Regression.Polynom
 import Regression.Functions
 import Regression.AnalyticData as AD
-import Utils.Misc
+--import Utils.Misc
 import System.Random
 import System.CPUTime
 
+import Control.Monad
 import qualified Data.Vector.Unboxed as V
 
 --------------------------------------------------------------------------------
@@ -147,9 +149,11 @@ gentleman :: [[Double]] -> [Double] -> [Double] -> (IO LSQ.IOLSQState)
 gentleman x y w = do
     let 
         xMatrix = M.matrix x
-        yVect = V.vector y
     initialState <- LSQ.initialize (M.getNumColumns xMatrix)
-    forM__ 0 (length y - 1) initialState (\i state -> LSQ.addMeasurement (x !! i) (y !! i) (w !! i) state)
+    foldM (\state i -> do
+            xVect <- IOV.vector (x !! i ++ [y !! i])
+            LSQ.addMeasurement xVect (w !! i) state
+        ) initialState [0 .. length y - 1]  
 
 cudaGentleman :: [[Double]] -> [Double] -> [Double] -> CLSQ.LSQState
 cudaGentleman x y w =
