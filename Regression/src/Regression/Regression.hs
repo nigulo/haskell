@@ -90,8 +90,9 @@ fitWithSpline unitPolynoms numNodes dat strict smoothUpTo puFunc =
                 (datLeft, datRight) = split1 (xLeft + (steps !! i)) dat
                 vals = D.values1 datLeft
                 --vals = D.values1 $ D.subSet1 (xLeft, xLeft + (steps !! i)) dat
-                leadingZeroCoefs = V.replicate (numTerms * i) 0
-                trailingZeroCoefs = V.replicate (numTerms * (numPolynoms - i - 1)) 0
+                --leadingZeroCoefs = V.replicate (numTerms * i) 0
+                --trailingZeroCoefs = V.replicate (numTerms * (numPolynoms - i - 1)) 0
+                inds1 = V.take (numTerms * i) inds
                 forj lsqState j = do
                     let 
                         (x, y, w) = vals V.! j
@@ -100,14 +101,14 @@ fitWithSpline unitPolynoms numNodes dat strict smoothUpTo puFunc =
                         --    leadingZeroCoefs V.++ 
                         --    polynomCoefs V.++
                         --    trailingZeroCoefs `V.snoc` y
-                        inds2 = V.drop (V.length leadingZeroCoefs) inds
+                        inds2 = V.drop (V.length inds1) inds
                         inds3 = V.drop (V.length polynomCoefs) inds2
                     --puFunc $ (fromIntegral i + (fromIntegral j / (fromIntegral (length xs - 1)))) / (fromIntegral numPolynoms - 1) / 2
                     --putStrLn $ show $ xVect ++ [y] ++ [w]
                     
-                    V.zipWithM_ (\coef i -> IOV.set i coef xVect) leadingZeroCoefs inds
+                    V.mapM_ (\i -> IOV.set i 0 xVect) inds1
                     V.zipWithM_ (\coef i -> IOV.set i coef xVect) polynomCoefs inds2
-                    V.zipWithM_ (\coef i -> IOV.set i coef xVect) trailingZeroCoefs inds3
+                    V.mapM_ (\i -> IOV.set i 0 xVect) inds3
                     IOV.set p y xVect
                     LSQ.addMeasurement xVect w lsqState
             state <- foldM (forj) lsqState [0 .. V.length vals - 1]
@@ -116,12 +117,15 @@ fitWithSpline unitPolynoms numNodes dat strict smoothUpTo puFunc =
         
         forConstraints lsqState i = do
             let
-                numInitialTerms = V.replicate (numTerms * i) 0
-                numFinalTerms = V.replicate (numTerms * (numPolynoms - i - 2)) 0
+                --numInitialTerms = V.replicate (numTerms * i) 0
+                --numFinalTerms = V.replicate (numTerms * (numPolynoms - i - 2)) 0
+                inds1 = V.take (numTerms * i) inds
                 forConstraint vals state j = do
                     let 
-                        termsBefore = V.replicate (sum [length (vals !! k) | k <- [0 .. j - 1]]) 0
-                        termsAfter = V.replicate (sum [length (vals !! k) | k <- [j + 1 .. length vals - 1]]) 0
+                        numTermsBefore = sum [length (vals !! k) | k <- [0 .. j - 1]]
+                        numTermsAfter = sum [length (vals !! k) | k <- [j + 1 .. length vals - 1]]
+                        --termsBefore = V.replicate numTermsBefore 0
+                        --termsAfter = V.replicate numTermsAfter 0
                         valsJ = V.fromList $ vals !! j
                         negValsJ = V.map (\val -> -val) valsJ
                         --rVect =
@@ -134,21 +138,21 @@ fitWithSpline unitPolynoms numNodes dat strict smoothUpTo puFunc =
                         --    termsAfter ++ 
                         --    numFinalTerms ++ 
                         --    [0]
-                        inds2 = V.drop (V.length numInitialTerms) inds
-                        inds3 = V.drop (V.length termsBefore) inds2
+                        inds2 = V.drop (V.length inds1) inds
+                        inds3 = V.drop (numTermsBefore) inds2
                         inds4 = V.drop (V.length valsJ) inds3
-                        inds5 = V.drop (V.length termsAfter) inds4
-                        inds6 = V.drop (V.length termsBefore) inds5
+                        inds5 = V.drop (numTermsAfter) inds4
+                        inds6 = V.drop (numTermsBefore) inds5
                         inds7 = V.drop (V.length negValsJ) inds6
-                        inds8 = V.drop (V.length termsAfter) inds7
-                    V.zipWithM_ (\coef i -> IOV.set i coef xVect) numInitialTerms inds
-                    V.zipWithM_ (\coef i -> IOV.set i coef xVect) termsBefore inds2
+                        inds8 = V.drop (numTermsAfter) inds7
+                    V.mapM_ (\i -> IOV.set i 0 xVect) inds1
+                    V.mapM_ (\i -> IOV.set i 0 xVect) inds2
                     V.zipWithM_ (\coef i -> IOV.set i coef xVect) valsJ inds3
-                    V.zipWithM_ (\coef i -> IOV.set i coef xVect) termsAfter inds4
-                    V.zipWithM_ (\coef i -> IOV.set i coef xVect) termsBefore inds5
+                    V.mapM_ (\i -> IOV.set i 0 xVect) inds4
+                    V.mapM_ (\i -> IOV.set i 0 xVect) inds5
                     V.zipWithM_ (\coef i -> IOV.set i coef xVect) negValsJ inds6
-                    V.zipWithM_ (\coef i -> IOV.set i coef xVect) termsAfter inds7
-                    V.zipWithM_ (\coef i -> IOV.set i coef xVect) numFinalTerms inds8
+                    V.mapM_ (\i -> IOV.set i 0 xVect) inds7
+                    V.mapM_ (\i -> IOV.set i 0 xVect) inds8
                     IOV.set p 0 xVect
                     LSQ.addConstraint xVect 0 state
                 xRight = x1 + sum (take (i + 1) steps)
