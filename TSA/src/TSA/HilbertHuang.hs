@@ -95,7 +95,7 @@ main = do --mpiWorld $ \size rank ->
                 imfSums
                 
     zipWithM_ (\modeNo (freq, dat) -> do
-            putStrLn $ "Mode " ++ show modeNo ++ ", mean frequency: " ++ show freq
+            putStr $ show modeNo ++ ": " ++ show freq ++ " "
             storeData dat ("imf" ++ show modeNo)
             calcAnalyticSignal dat modeNo
         ) [1 ..] imfMeans
@@ -123,7 +123,7 @@ calcAnalyticSignal imfDat modeNo = do
         dataUpdateFunc = DataUpdateFunc $ \(Left dat) name _ -> do 
             case name of
                 "amplitude" -> do
-                    putStrLn $ "Mean amplitude: " ++ show (Sample.mean (D.ys dat))
+                    putStrLn $ show (Sample.mean (D.ys dat))
                     storeData dat ("amplitude" ++ show modeNo)
                 "phase" -> return ()
                 "frequency" -> return () 
