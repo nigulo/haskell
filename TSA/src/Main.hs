@@ -365,6 +365,12 @@ main = do
             return True
         ) 200
 
+    timeoutAdd (
+        do
+            modifyMVar_ stateRef $ \state -> return $ updateGuiChanged True state
+            return True
+        ) 1000
+
     numCapabilities <- getNumCapabilities
     putStrLn $ "numCapabilities: " ++ (show numCapabilities)
     exists <- doesFileExist "current.stsz"

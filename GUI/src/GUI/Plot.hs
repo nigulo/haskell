@@ -196,7 +196,16 @@ plot canvas settings maybeFileName =
         case maybeFileName of
             Nothing ->
                 do
+                    surface <- createImageSurface FormatRGB24 w h
+                    renderWith surface (mapM_ (\(plotSettings, plotData) -> plot' plotSettings plotData) settings)
+                    surfaceFlush surface
+                    surfaceFinish surface
+                                        
                     drawWindowBeginPaintRect win (Gtk.Rectangle 0 0 w h)
+--                    renderWithDrawWindow win $ do
+--                        setSourceSurface surface 0 0
+--                        setOperator OperatorSource
+--                        paint
                     renderWithDrawWindow win $
                         mapM_ (\(plotSettings, plotData) -> plot' plotSettings plotData) settings
                     drawWindowEndPaint win

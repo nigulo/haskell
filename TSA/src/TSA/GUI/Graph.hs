@@ -876,6 +876,7 @@ printGraph stateRef = do
     dialog <- fileChooserDialogNew (Just "Save graph") (Just (getWindow state)) FileChooserActionSave [("Cancel", ResponseCancel), ("Save", ResponseAccept)]
     fileFilter <- fileFilterNew
     fileFilter `fileFilterAddPattern` "*.PDF"
+    fileFilter `fileFilterAddPattern` "*.pdf"
 
     (castToFileChooser dialog) `fileChooserAddFilter` fileFilter
     (castToFileChooser dialog) `fileChooserSetFilter` fileFilter
@@ -886,6 +887,7 @@ printGraph stateRef = do
         then
             do
                 widgetDestroy dialog
+                modifyMVar_ stateRef $ \state -> return $ updateGuiChanged True state
                 drawGraph stateRef file
         else 
             widgetDestroy dialog
