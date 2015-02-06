@@ -7,6 +7,7 @@ import Test.Framework
 import {-@ HTF_TESTS @-} Astro.Ephem.TypesTest
 import {-@ HTF_TESTS @-} Astro.Ephem.CoordsTest
 import {-@ HTF_TESTS @-} Astro.Ephem.TimeTest
+import {-@ HTF_TESTS @-} Astro.Ephem.UtilsTest
 import {-@ HTF_TESTS @-} Astro.Ephem.SunTest
 import {-@ HTF_TESTS @-} Astro.Ephem.CelestialBodyTest
 import {-@ HTF_TESTS @-} Astro.Ephem.MoonTest

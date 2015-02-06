@@ -34,7 +34,8 @@ test-suite EphemTests
                    Astro.Ephem.TimeTest,
                    Astro.Ephem.TypesTest,
                    Astro.Ephem.SunTest,
-                   Astro.Ephem.MoonTest
+                   Astro.Ephem.MoonTest,
+                   Astro.Ephem.UtilsTest
 
 executable Astro
   build-depends:   

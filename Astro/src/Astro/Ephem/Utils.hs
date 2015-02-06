@@ -21,20 +21,44 @@ clipAngle (Deg x) = Deg $ clipAngleDeg x
 clipAngleRad :: Double -> Double
 clipAngleRad angle
     | angle >= 0 && angle < pi2 = angle
-    | angle < 0 = clipAngleRad (angle + pi2)
-    | otherwise = clipAngleRad (angle - pi2)
+    | angle < 0 =
+        let
+            (n, f) = properFraction (angle / pi2)
+        in
+            pi2 + pi2 * f
+    | otherwise = 
+        let
+            (n, f) = properFraction (angle / pi2)
+        in
+            pi2 * f
 
 clipAngleDeg :: Double -> Double
 clipAngleDeg angle
     | angle >= 0 && angle < 360 = angle
-    | angle < 0 = clipAngleDeg (angle + 360)
-    | otherwise = clipAngleDeg (angle - 360)
+    | angle < 0 = 
+        let
+            (n, f) = properFraction (angle / 360)
+        in
+            360 + 360 * f
+    | otherwise = 
+        let
+            (n, f) = properFraction (angle / 360)
+        in
+            360 * f
 
 clipHour :: Double -> Double
 clipHour hour
     | hour >= 0 && hour < 24 = hour
-    | hour < 0 = clipHour (hour + 24)
-    | otherwise = clipHour (hour - 24)
+    | hour < 0 = 
+            let
+            (n, f) = properFraction (hour / 24)
+        in
+            24 + 24 * f
+    | otherwise = 
+            let
+            (n, f) = properFraction (hour / 24)
+        in
+            24 * f
 
 
 calcElement :: (Double, Double) -> Double -> Double
