@@ -127,18 +127,22 @@ calcSunRiseSet' date earth lat useCorrection =
                 case calcRiseSet sunRA2 sunDec2 lat False of
                     Just ((Hrs st2r, _), (Hrs st2s, _)) ->
                         let 
+                            diffT st1 st2 =
+                                if st2 < st1 then 
+                                    if st2 + 24 - st1 < st1 - st2 then st1 - st2 - 24 else (st1 - st2)
+                                    else if st1 + 24 - st2 < st2 - st1 then (st1 + 24 - st2) else (st1 - st2)
                             -- this stuff here must be reconsidered, the number 12 is chosen arbitrarily, the only constraint is that it must be 
                             -- greather than the maximum possible difference between st1 and st2
-                            (st2r', st1r') = 
-                                if st2r - st1r < -12 then (st2r + 24, st1r) 
-                                    else if st2r - st1r > 12 then (st2r, st1r + 24)
-                                    else (st2r, st1r)
-                            (st2s', st1s') =
-                                if st2s - st1s < -12 then (st2s + 24, st1s) 
-                                    else if st2s - st1s > 12 then (st2s, st1s + 24)
-                                    else (st2s, st1s)
+                            --(st2r', st1r') = 
+                            --    if st2r - st1r < -12 then (st2r + 24, st1r) 
+                            --        else if st2r - st1r > 12 then (st2r, st1r + 24)
+                            --        else (st2r, st1r)
+                            --(st2s', st1s') =
+                            --    if st2s - st1s < -12 then (st2s + 24, st1s) 
+                            --        else if st2s - st1s > 12 then (st2s, st1s + 24)
+                            --        else (st2s, st1s)
                         in
-                            Just (Hrs (clipHour (24.07 * st1r / (24.07 + st1r' - st2r') - deltaT)), Hrs (clipHour (24.07 * st1s / (24.07 + st1s' - st2s') + deltaT)))
+                            Just (Hrs (clipHour (24.07 * st1r / (24.07 + (diffT st1r st2r)) - deltaT)), Hrs (clipHour (24.07 * st1s / (24.07 + (diffT st1s st2s)) + deltaT)))
                     Nothing -> Nothing
             Nothing -> Nothing
     in
