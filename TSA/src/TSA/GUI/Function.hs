@@ -10,6 +10,7 @@ import TSA.GUI.Common
 import TSA.GUI.Data
 
 import GUI.Plot
+import GUI.Widget
 
 import Math.Function as F
 import Math.Expression
@@ -91,7 +92,7 @@ functionDialog stateRef = do
 
     on okButton buttonActivated $
         do
-            name <- entryGetText nameEntry
+            name <- entryGetString nameEntry
             startIter <- textBufferGetStartIter functionTextBuffer
             endIter <- textBufferGetEndIter functionTextBuffer
             f <- textBufferGetText functionTextBuffer startIter endIter False

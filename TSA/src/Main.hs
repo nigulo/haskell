@@ -2,6 +2,7 @@
 module Main (Main.main) where
 
 import Graphics.UI.Gtk
+import System.Glib.UTFString
 import qualified Data.Map as Map
 import qualified Data.List as List
 import qualified Data.Char as Char
@@ -253,7 +254,7 @@ main = do
     on win keyPressEvent $
         do
             keyName <- eventKeyName 
-            liftIO $ Graph.onKeyDown stateRef keyName
+            liftIO $ Graph.onKeyDown stateRef (glibToString keyName)
     
     {-
     let
@@ -274,7 +275,7 @@ main = do
     ----------------------------------------------------------------------------
     standardGroup <- actionGroupNew "standard"
     mapM_ (actionGroupAddAction standardGroup) [fileAct, dataAct, analyzeAct, searchAct,  graphAct, windowAct]
-    mapM_ (\act -> actionGroupAddActionWithAccel standardGroup act Nothing)
+    mapM_ (\act -> actionGroupAddAction standardGroup act)
       [newAct,
        loadAct,
        saveAct,

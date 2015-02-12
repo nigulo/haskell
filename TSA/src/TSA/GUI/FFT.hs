@@ -66,7 +66,7 @@ paramsDialog stateRef = do
             do
                 --selectedRealSpec <- getSelectedData realSpectrumCombo
                 --numSamples <- spinButtonGetValue numSamplesSpin
-                fftName <- entryGetText fftNameEntry
+                fftName <- entryGetString fftNameEntry
                 sensitivity <- 
                     if length fftName <= 0 -- || fromIntegral (round (logBase numSamples 2)) /= (logBase numSamples 2)
                         then return False 
@@ -84,8 +84,8 @@ paramsDialog stateRef = do
     if response == ResponseOk 
         then
             do
-                name <- entryGetText fftNameEntry
-                direction <- comboBoxGetActiveText directionCombo
+                name <- entryGetString fftNameEntry
+                direction <- comboBoxGetActiveString directionCombo
                 
                 selectedRealSpec <- getSelectedData realSpectrumCombo
                 selectedImagSpec <- getSelectedData imagSpectrumCombo

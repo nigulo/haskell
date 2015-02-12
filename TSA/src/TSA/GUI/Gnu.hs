@@ -19,9 +19,11 @@ import TSA.GUI.Dialog
 import TSA.GUI.Data
 
 import GUI.Plot
+import GUI.Widget
 
 import Utils.Misc
 import Utils.List
+import Utils.IO
 import Data.Monoid
 import Data.Char
 import Data.List as List
@@ -51,6 +53,7 @@ import qualified Graphics.Gnuplot.Graph.TwoDimensional as Graph2D
 import qualified Graphics.Gnuplot.Graph.ThreeDimensional as Graph3D
 import Graphics.Gnuplot.Plot.TwoDimensional (linearScale)
 import Graphics.Gnuplot.ColorSpecification (rgb8)
+import qualified Graphics.Gnuplot.File as File
 
 import Data.Array (listArray)
 import qualified Data.Vector.Unboxed as V
@@ -120,7 +123,16 @@ previewDialog stateRef = do
         wxt = WXT.persist WXT.cons
         grphTabParams = (graphTabs state) !! currentTabIndex
     forkIO $ doPlot state grphTabParams (\d -> do Plot.plot wxt d; return ())
+    forkIO $ doPlot state grphTabParams (\d -> do
+            let (script, dataSets) = Plot.fileContents "." wxt d
+            stringToFile "preview.gp" script
+            mapM_ (\dat -> do
+                    stringToFile (File.name dat) (File.content dat)
+                ) dataSets
+            return ()
+        )
     return ()
+
 
 paramsDialog :: StateRef -> IO ()
 paramsDialog stateRef = do 
@@ -179,14 +191,14 @@ paramsDialog stateRef = do
     widgetShowAll dialog
     response <- dialogRun dialog
 
-    title <- entryGetText titleEntry
-    xLabel <- entryGetText xLabelEntry
-    yLabel <- entryGetText yLabelEntry
-    cbLabel <- entryGetText cbLabelEntry
-    font <- entryGetText fontEntry
-    xTicks <- entryGetText xTicksEntry
-    yTicks <- entryGetText yTicksEntry
-    border <- entryGetText borderEntry
+    title <- entryGetString titleEntry
+    xLabel <- entryGetString xLabelEntry
+    yLabel <- entryGetString yLabelEntry
+    cbLabel <- entryGetString cbLabelEntry
+    font <- entryGetString fontEntry
+    xTicks <- entryGetString xTicksEntry
+    yTicks <- entryGetString yTicksEntry
+    border <- entryGetString borderEntry
     fontSize <- spinButtonGetValue fontSizeSpin
     negativePalette <- toggleButtonGetActive paletteNegativeCheck
      

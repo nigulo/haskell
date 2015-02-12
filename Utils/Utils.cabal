@@ -12,7 +12,9 @@ executable Utils
                    filepath -any,
                    pretty -any,
                    random -any,
-                   time -any
+                   time -any,
+                   bytestring -any,
+                   utf8-string -any
   hs-source-dirs:  src
   ghc-options:     -O2 -fexcess-precision
   main-is:         Main.hs
@@ -37,7 +39,7 @@ library
                    time -any,
                    vector -any,
                    SafeSemaphore ==0.9.*,
-                   HTF >=0.11.2 && <0.12,
+                   HTF > 0.9,
                    bytestring -any,
                    utf8-string -any
   hs-source-dirs:   src

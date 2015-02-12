@@ -1,11 +1,19 @@
 
-module Utils.IO (readArray, readValue, writeArray, writeValue) where
+module Utils.IO (
+    readArray, 
+    readValue, 
+    writeArray, 
+    writeValue,
+    stringToFile,
+    stringFromFile) where
 
 import System.IO
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array
 import Foreign.Ptr
 import Foreign.Storable
+import qualified Data.ByteString as B
+import Codec.Binary.UTF8.String as UTF8
 
 -- Reads an array from stream given by handle
 readArray :: Storable a => Handle -> {-- Handle of open stream --}
@@ -54,3 +62,14 @@ writeValue handle value = do
                         poke ptrData value
                         hPutBuf handle ptrData (sizeOf value)
                         free ptrData
+
+stringToFile :: String -> String -> IO ()
+stringToFile fileName str = do
+    let
+        byteStr = B.pack (UTF8.encode str)
+    B.writeFile fileName byteStr
+
+stringFromFile :: String -> IO String
+stringFromFile fileName = do
+    byteStr <- B.readFile fileName
+    return $ UTF8.decode $ B.unpack byteStr

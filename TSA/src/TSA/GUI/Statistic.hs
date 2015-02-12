@@ -14,6 +14,7 @@ import Utils.Concurrent
 import Utils.List
 import Utils.Str
 import GUI.Plot
+import GUI.Widget
 
 import Data.Map
 import Data.List as List
@@ -105,7 +106,7 @@ statisticDialog stateRef = do
                             on addButton buttonActivated $
                                 do
                                     state <- readMVar stateRef
-                                    name <- entryGetText nameEntry
+                                    name <- entryGetString nameEntry
                                     startIter <- textBufferGetStartIter statisticTextBuffer
                                     endIter <- textBufferGetEndIter statisticTextBuffer
                                     text <- textBufferGetText statisticTextBuffer startIter endIter False
@@ -182,7 +183,7 @@ statisticDialog stateRef = do
                                     startIter <- textBufferGetStartIter statisticTextBuffer
                                     endIter <- textBufferGetEndIter statisticTextBuffer
                                     statisticStr <- textBufferGetText statisticTextBuffer startIter endIter False
-                                    varValDefsStr <- entryGetText varValDefsEntry
+                                    varValDefsStr <- entryGetString varValDefsEntry
                                     modifyStateParams stateRef $ \params -> updateStatistic (
                                         statParams {statisticDefinition = statisticStr, 
                                         statisticVarValsDef = varValDefsStr
@@ -205,8 +206,8 @@ statisticDialog stateRef = do
                                                 startIter <- textBufferGetStartIter statisticTextBuffer
                                                 endIter <- textBufferGetEndIter statisticTextBuffer
                                                 text <- textBufferGetText statisticTextBuffer startIter endIter False
-                                                name <- entryGetText nameEntry
-                                                varValDefsStr <- entryGetText varValDefsEntry
+                                                name <- entryGetString nameEntry
+                                                varValDefsStr <- entryGetString varValDefsEntry
                                                 (currentGraphTab, _) <- getCurrentGraphTab state
                                                 
                                                 let

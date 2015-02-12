@@ -56,7 +56,7 @@ paramsDialog stateRef = do
         toggleFitButton = 
             do
                 selectedData <- getSelectedData dataSetCombo
-                fitName <- entryGetText nameEntry
+                fitName <- entryGetString nameEntry
                 sensitivity <-
                     case selectedData of 
                         Just _ -> if length fitName <= 0 then return False 
@@ -79,8 +79,8 @@ paramsDialog stateRef = do
     if response == ResponseOk 
         then
             do
-                name <- entryGetText nameEntry
-                Just method <- comboBoxGetActiveText methodCombo
+                name <- entryGetString nameEntry
+                Just method <- comboBoxGetActiveString methodCombo
                 methodNo <- comboBoxGetActive methodCombo
                 Just selectedData <- getSelectedData dataSetCombo
                 widgetDestroy dialog

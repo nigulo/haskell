@@ -76,7 +76,7 @@ paramsDialog stateRef = do
                 newLowerParams <- getFitParams lowerFitWidgets lowerParams
 
                 precision <- spinButtonGetValue precisionSpin
-                name <- entryGetText imfNameEntry
+                name <- entryGetString imfNameEntry
                 
                 Just selectedData <- getSelectedData dataSetCombo
                 widgetDestroy dialog

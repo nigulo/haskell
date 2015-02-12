@@ -8,6 +8,7 @@ import TSA.GUI.Common
 import TSA.GUI.Data
 import Utils.List
 import GUI.Plot
+import GUI.Widget
 
 import Math.Function as F
 import Math.Expression

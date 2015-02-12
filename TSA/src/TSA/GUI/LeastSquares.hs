@@ -24,6 +24,8 @@ import TSA.GUI.Dialog
 import TSA.GUI.Common
 import TSA.GUI.Log
 
+import GUI.Widget
+
 import Utils.Misc
 import Utils.Xml
 
@@ -69,7 +71,7 @@ paramsDialog stateRef = do
         toggleFitButton = 
             do
                 selectedData <- getSelectedData dataSetCombo
-                fitName <- entryGetText nameEntry
+                fitName <- entryGetString nameEntry
                 sensitivity <-
                     case selectedData of 
                         Just _ -> if length fitName <= 0 then return False 
@@ -97,7 +99,7 @@ paramsDialog stateRef = do
                 
                 newFitParams <- getFitParams fitWidgets fitParams
                 
-                name <- entryGetText nameEntry
+                name <- entryGetString nameEntry
                 
                 widgetDestroy dialog
                 

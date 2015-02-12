@@ -39,6 +39,7 @@ import Utils.Misc
 import Utils.Math
 import Utils.List
 import GUI.Plot as Plot
+import GUI.Widget
 
 import Control.Concurrent.MVar
 import Data.IORef
@@ -150,7 +151,7 @@ settingsDialog stateRef = do
                     then 
                         do
 
-                            name <- entryGetText nameEntry
+                            name <- entryGetString nameEntry
                             granularity <- rangeGetValue granularityScale
                             automatic <- toggleButtonGetActive automaticCheck
                             left <- spinButtonGetValue leftSpin

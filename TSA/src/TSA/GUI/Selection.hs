@@ -16,8 +16,8 @@ import TSA.GUI.State
 import TSA.GUI.Data
 import TSA.GUI.Dialog
 import TSA.GUI.Common
-import GUI.Widget
 import GUI.Plot
+import GUI.Widget
 
 import Utils.Misc
 
@@ -88,9 +88,9 @@ selectionDialog stateRef = do
     if response == ResponseOk 
         then
             do
-                suffix <- entryGetText nameEntry
+                suffix <- entryGetString nameEntry
                 opNo <- comboBoxGetActive opCombo
-                Just op <- comboBoxGetActiveText opCombo
+                Just op <- comboBoxGetActiveString opCombo
                 modifyOriginal <- toggleButtonGetActive modifyOriginalCheck
                 left <- spinButtonGetValue leftSpin
                 right <- spinButtonGetValue rightSpin

@@ -26,6 +26,7 @@ library
                     base -any,
                     containers -any,
                     gtk3 -any,
+                    glib -any,
                     cairo -any,
                     transformers -any,
                     vector -any

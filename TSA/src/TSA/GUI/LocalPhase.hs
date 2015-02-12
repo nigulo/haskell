@@ -22,6 +22,8 @@ import TSA.GUI.Dialog
 import TSA.GUI.Common
 import TSA.GUI.Log
 
+import GUI.Widget
+
 import Utils.Misc
 import Utils.Concurrent
 
@@ -92,7 +94,7 @@ localPhaseDialog stateRef = do
     if response == ResponseOk 
         then
             do
-                name <- entryGetText nameEntry
+                name <- entryGetString nameEntry
                 Just selectedData <- getSelectedData dataSetCombo
                 period <- spinButtonGetValue periodSpin
                 maxPeriod <- spinButtonGetValue maxPeriodSpin

@@ -83,9 +83,9 @@ paramsDialog stateRef = do
         toggleFitButton = 
             do
                 selectedData <- getSelectedData dataSetCombo
-                upperName <- entryGetText upperNameEntry
-                lowerName <- entryGetText lowerNameEntry
-                meanName <- entryGetText meanNameEntry
+                upperName <- entryGetString upperNameEntry
+                lowerName <- entryGetString lowerNameEntry
+                meanName <- entryGetString meanNameEntry
                 sensitivity <-
                     case selectedData of 
                         Just _ -> if length upperName <= 0 
@@ -117,11 +117,11 @@ paramsDialog stateRef = do
                 newLowerParms <- getFitParams lowerFitWidgets lowerParams
 
                 precision <- spinButtonGetValue precisionSpin
-                Just extrema <- comboBoxGetActiveText extremaCombo
+                Just extrema <- comboBoxGetActiveString extremaCombo
                 
-                upperName <- entryGetText upperNameEntry
-                lowerName <- entryGetText lowerNameEntry
-                meanName <- entryGetText meanNameEntry
+                upperName <- entryGetString upperNameEntry
+                lowerName <- entryGetString lowerNameEntry
+                meanName <- entryGetString meanNameEntry
                 
                 Just selectedData <- getSelectedData dataSetCombo
                 widgetDestroy dialog

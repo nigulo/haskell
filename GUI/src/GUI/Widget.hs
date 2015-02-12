@@ -6,7 +6,10 @@ module GUI.Widget (
     itemChooserNew,
     itemChooserToWidget,
     itemChooserGetChoice,
-    createComboBox
+    createComboBox,
+    comboBoxGetActiveString,
+    comboBoxAppendString,
+    entryGetString
     ) where
 
 import Data.List
@@ -16,6 +19,7 @@ import Graphics.UI.Gtk.ModelView.ListStore
 import Graphics.UI.Gtk.ModelView.TreeView
 import Graphics.UI.Gtk.ModelView.TreeSelection
 import Graphics.UI.Gtk.ModelView.TreeViewColumn
+import System.Glib.UTFString
 
 import Control.Monad.IO.Class
 
@@ -191,7 +195,22 @@ createComboBox options =
     do
         comboBox <- comboBoxNew --WithEntry
         comboBoxSetModelText comboBox
-        mapM_ (comboBoxAppendText comboBox) options
+        mapM_ (\str -> comboBoxAppendText comboBox (stringToGlib str)) options
         return comboBox
         
+comboBoxGetActiveString :: ComboBox -> IO (Maybe String)
+comboBoxGetActiveString comboBox = do
+    maybeText <- comboBoxGetActiveText comboBox
+    case maybeText of
+        Just text -> return $ Just $ glibToString text
+        Nothing -> return Nothing
+    
+comboBoxAppendString :: ComboBox -> String -> IO ()
+comboBoxAppendString comboBox str = do
+    comboBoxAppendText comboBox (stringToGlib str)
+    return ()
 
+entryGetString :: Entry -> IO String
+entryGetString entry = do
+    text <- entryGetText entry
+    return (glibToString text)

@@ -25,6 +25,7 @@ import Utils.Misc
 
 import Data.IORef
 import Data.Maybe
+import Data.String
 import qualified Data.Map as M
 import qualified Data.Vector.Unboxed as V
 import Data.List
@@ -186,7 +187,7 @@ modifyDialog stateRef = do
                 numRows <- listStoreGetSize listStore
                 mapM_ (\_ -> comboBoxRemoveText typeCombo 0) [1 .. numRows]
                 opNo <- comboBoxGetActive opCombo
-                mapM_ (\t -> comboBoxAppendText typeCombo t) (map (getTypeText) (getOpTypes (getModifyOp opNo)))
+                mapM_ (\t -> comboBoxAppendText typeCombo (fromString t)) (map (getTypeText) (getOpTypes (getModifyOp opNo)))
 
     after dialog realize updateWidgets
     on opCombo changed updateWidgets
@@ -199,7 +200,7 @@ modifyDialog stateRef = do
     if response == ResponseOk 
         then
             do
-                name <- entryGetText nameEntry
+                name <- entryGetString nameEntry
                 
                 selectedData1 <- getSelectedData dataSetCombo1
                 selectedData2 <- getSelectedData dataSetCombo2

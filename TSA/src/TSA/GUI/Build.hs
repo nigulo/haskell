@@ -70,13 +70,13 @@ buildDialog stateRef = do
     if response == ResponseOk 
         then
             do
-                name <- entryGetText nameEntry
+                name <- entryGetString nameEntry
                 
                 Just selectedData1 <- getSelectedData dataSetCombo1
                 Just selectedData2 <- getSelectedData dataSetCombo2
-                Just t1 <- comboBoxGetActiveText typeCombo1
+                Just t1 <- comboBoxGetActiveString typeCombo1
                 typeNo1 <- comboBoxGetActive typeCombo1
-                Just t2 <- comboBoxGetActiveText typeCombo2
+                Just t2 <- comboBoxGetActiveString typeCombo2
                 typeNo2 <- comboBoxGetActive typeCombo2
                 widgetDestroy dialog
 

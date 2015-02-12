@@ -81,7 +81,7 @@ findPeriodDialog stateRef = do
     if response == ResponseOk 
         then
             do
-                name <- entryGetText nameEntry
+                name <- entryGetString nameEntry
                 Just selectedData <- getSelectedData dataSetCombo
                 methodNo <- comboBoxGetActive methodCombo
                 periodStart <- spinButtonGetValue periodStartSpin

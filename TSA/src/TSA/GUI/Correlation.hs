@@ -70,7 +70,7 @@ correlationDialog stateRef = do
     if response == ResponseOk 
         then
             do
-                name <- entryGetText nameEntry
+                name <- entryGetString nameEntry
                 precision <- spinButtonGetValue precisionSpin
                 
                 Just selectedData1 <- getSelectedData dataSetCombo1

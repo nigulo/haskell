@@ -7,7 +7,7 @@ module TSA.GUI.Dialog (
     addSeparator,
     addFitWidgets,
     getFitParams,
-    dialogWithTitle
+    dialogWithTitle,
 ) where
 
 import Graphics.UI.Gtk hiding (addWidget)
@@ -164,7 +164,7 @@ addFitWidgets fitParams state dialog = do
 
 getFitParams :: FitWidgets -> FitParams -> IO (FitParams)
 getFitParams (FitWidgets nameEntry rankSpin periodSpin harmonicsSpin typeCombo numNodesSpin slowHarmonicCoverageFactorSpin slowHarmonicsSpin) fitParams = do
-    name <- entryGetText nameEntry
+    name <- entryGetString nameEntry
     rank <- spinButtonGetValueAsInt rankSpin
     period <- spinButtonGetValue periodSpin
     harmonics <- spinButtonGetValueAsInt harmonicsSpin

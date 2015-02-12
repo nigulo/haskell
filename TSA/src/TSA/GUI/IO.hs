@@ -57,7 +57,7 @@ loadAsciiDialog stateRef = do
 
     widgetShowAll dialog
     response <- dialogRun dialog
-    --name <- entryGetText nameEntry
+    --name <- entryGetString nameEntry
     file <- fileChooserGetFilename (castToFileChooser dialog)
     
     if response == ResponseAccept && (file /= Nothing)
@@ -146,9 +146,9 @@ dataFormatDialog stateRef callback lines = do
         useTab <- toggleButtonGetActive tabCheck
         useComma <- toggleButtonGetActive commaCheck
         useSemicolon <- toggleButtonGetActive semicolonCheck
-        separatorIndicesStr <- entryGetText separatorIndicesEntry
+        separatorIndicesStr <- entryGetString separatorIndicesEntry
         omitSeparators <- toggleButtonGetActive omitSeparatorsCheck
-        skippedRowsStr <- entryGetText skipRowsEntry
+        skippedRowsStr <- entryGetString skipRowsEntry
         let
             separatorOffset = if omitSeparators then 1 else 0 
             separatorIndices :: [Int] = sort $ map (read) $ filter (\ind -> trim ind /= "") $ concat $ map (splitBy ';') $ concat $ map (splitBy ',') $ words separatorIndicesStr
@@ -198,7 +198,7 @@ dataFormatDialog stateRef callback lines = do
                 ) (zip [0, 1 ..] typeCombos)
             let
                 (colTypes, selectedCols) = unzip $ catMaybes colTypesAndCols
-            name <- entryGetText nameEntry
+            name <- entryGetString nameEntry
             dataType <- comboBoxGetActive dataTypeCombo
             callback colTypes selectedCols name (dataType == 0)
             widgetDestroy assistant 
@@ -283,7 +283,7 @@ importData stateRef = do
 
     widgetShowAll dialog
     response <- dialogRun dialog
-    --name <- entryGetText nameEntry
+    --name <- entryGetString nameEntry
     file <- fileChooserGetFilename (castToFileChooser dialog)
     
     if response == ResponseAccept && (file /= Nothing)

@@ -77,7 +77,7 @@ sampleDialog stateRef = do
     if response == ResponseOk 
         then
             do
-                name <- entryGetText nameEntry
+                name <- entryGetString nameEntry
                 
                 Just selectedData <- getSelectedData dataSetCombo
                 selectedData2 <- getSelectedData dataSetCombo2

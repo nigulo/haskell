@@ -21,6 +21,7 @@ import TSA.GUI.Common
 import TSA.GUI.Log
 import qualified TSA.AnalyticSignal as AS
 
+import GUI.Widget
 import Utils.Misc
 
 import Data.IORef
@@ -81,9 +82,9 @@ analyticSignalDialog stateRef = do
     if response == ResponseOk 
         then
             do
-                amplitudeName <- entryGetText amplitudeEntry
-                phaseName <- entryGetText phaseEntry
-                frequencyName <- entryGetText frequencyEntry
+                amplitudeName <- entryGetString amplitudeEntry
+                phaseName <- entryGetString phaseEntry
+                frequencyName <- entryGetString frequencyEntry
                                 
                 Just realData <- getSelectedData realCombo
                 conjugatedData <- getSelectedData conjugatedCombo

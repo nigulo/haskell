@@ -58,6 +58,7 @@ import TSA.GUI.State
 import TSA.GUI.Dialog
 import GUI.Widget
 import GUI.Plot
+import GUI.Widget
 import Utils.Misc
 import Utils.List
 import Utils.Concurrent
@@ -68,6 +69,7 @@ import Data.Either
 import Data.Maybe
 import Control.Concurrent.MVar
 import Data.List
+import Data.String
 import Control.Applicative
 
 import Control.Concurrent.SSem as SSem
@@ -340,7 +342,7 @@ dataSetComboNew2 filterFunc state allowNothing = do
         dataNamesAndSets = map (\dp -> (dataName dp, dp)) $ filter filterFunc (dataParams (params state)) where
         --dataNames = map dataName $ filter filterFunc (dataParams state) where
         nameDataMap = M.fromList dataNamesAndSets
-    mapM_ (comboBoxAppendText dataSetCombo) (fst (unzip dataNamesAndSets))
+    mapM_ (\str -> comboBoxAppendText dataSetCombo (fromString str)) (fst (unzip dataNamesAndSets))
     if allowNothing then comboBoxSetActive dataSetCombo 0 else return ()
     return (dataSetCombo, nameDataMap)
 
@@ -350,7 +352,7 @@ getComboBox (combo, _) = combo
 getSelectedData :: DataComboBox -> IO (Maybe DataParams)
 getSelectedData (comboBox, nameDataMap) = 
     do
-        selectedText <- comboBoxGetActiveText comboBox
+        selectedText <- comboBoxGetActiveString comboBox
         case selectedText of
             Just text -> return $ M.lookup text nameDataMap
             Nothing -> return Nothing
