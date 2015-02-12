@@ -119,9 +119,9 @@ sampleDialog stateRef = do
                 samples <- calcConcurrently_ (\d -> return (U.getValues xs d)) (map (\sdp -> subData sdp) (dataSet selectedData))
                 let
                     dataCreateFunc = if dataType == 0 then D.data2' else D.spectrum1' . V.fromList . map (\((x:_), y) -> (x, y))
-                    subDataParams = map (\sample -> SubDataParams {subData = Left (dataCreateFunc sample), subDataBootstrapSet = []}) samples
+                    subDataParams = map (\sample -> createSubDataParams__ (Left (dataCreateFunc sample))) samples
      
-                modifyState stateRef $ addDataParams (DataParams {dataSet = subDataParams, dataName = name}) (Just (currentGraphTab, selectedGraph))
+                modifyState stateRef $ addDataParams (createDataParams_ name subDataParams) (Just (currentGraphTab, selectedGraph))
 
                 modifyStateParams stateRef $ \params -> params {sampleParams = SampleParams {
                         sampleCommonParams = updateCommonParams name commonParams,

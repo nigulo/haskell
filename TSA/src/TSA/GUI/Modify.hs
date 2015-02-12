@@ -248,18 +248,17 @@ modifyDialog stateRef = do
                                                     Right (Left s) -> (AD.xMins s, AD.xMaxs s)  
                                                     Right (Right f) -> (AD.xMins f, AD.xMaxs f)
                                                 mapOp (minX, maxX) = 
-                                                    SubDataParams {
-                                                        subDataRange = (minX, maxX),
-                                                        subData = case d of
+                                                    createSubDataParams 
+                                                        (minX, maxX)
+                                                        (case d of
                                                             Left d -> Left (D.subSet1 (head minX, head maxX) d)
                                                             Right (Left (AnalyticData [(_, _, s)])) -> Right $ Left (AnalyticData [(minX, maxX, s)])
-                                                            Right (Right (AnalyticData [(_, _, f)])) -> Right $ Right (AnalyticData [(minX, maxX, f)]), 
-                                                        subDataBootstrapSet = []
-                                                    }
+                                                            Right (Right (AnalyticData [(_, _, f)])) -> Right $ Right (AnalyticData [(minX, maxX, f)])) 
+                                                        []
                                                 minsMaxs = map minMax (dataSet sd2)
                                                 gaps = zipWith (\(_, minX) (maxX, _) -> (minX, maxX)) (init minsMaxs) (tail minsMaxs)
                                                 result = if op == SegmentByGaps then map mapOp gaps else map mapOp minsMaxs 
-                                            modifyState stateRef $ addDataParams (DataParams {dataName = name, dataSet = result}) (Just (currentGraphTab, selectedGraph))
+                                            modifyState stateRef $ addDataParams (createDataParams_ name result) (Just (currentGraphTab, selectedGraph))
                                 else if op == FindNeighbour then
                                         if isDiscrete selectedData1 && isDiscrete sd2 then do
                                             let
@@ -278,13 +277,12 @@ modifyDialog stateRef = do
                                         else return ()
                                 else do
                                     let
-                                        mapOp sdp1 sdp2 = SubDataParams {
-                                                subDataRange = subDataRange sdp1,
-                                                subData = U.binaryOp (getModifyFunc op) (subData sdp1) (subData sdp2) (opType == Y) g, 
-                                                subDataBootstrapSet = []
-                                            }
+                                        mapOp sdp1 sdp2 = createSubDataParams
+                                                (subDataRange sdp1)
+                                                (U.binaryOp (getModifyFunc op) (subData sdp1) (subData sdp2) (opType == Y) g) 
+                                                []
                                         result = zipWith mapOp (dataSet selectedData1) (dataSet sd2) 
-                                    modifyState stateRef $ addDataParams (DataParams {dataName = name, dataSet = result}) (Just (currentGraphTab, selectedGraph))
+                                    modifyState stateRef $ addDataParams (createDataParams_ name result) (Just (currentGraphTab, selectedGraph))
                             Nothing -> 
                                 case op of
                                     Invert ->
@@ -301,7 +299,7 @@ modifyDialog stateRef = do
                                             else return ()
                                     Split ->
                                         mapM_ (\(i, sdp) -> 
-                                            modifyState stateRef $ addDataParams (DataParams {dataName = name ++ show i, dataSet = [sdp]}) (Just (currentGraphTab, selectedGraph))
+                                            modifyState stateRef $ addDataParams (createDataParams_ (name ++ show i) [sdp]) (Just (currentGraphTab, selectedGraph))
                                             ) (zip [1, 2 ..] (dataSet selectedData1))
                                     SegmentByMarkers ->
                                         if isDiscrete selectedData1 && segments /= [] then do
@@ -322,15 +320,14 @@ modifyDialog stateRef = do
                                                                 let
                                                                     seg = D.subSet1 (xLeft, xRight) d
                                                                 in
-                                                                    SubDataParams {
-                                                                            subDataRange = ([xLeft], [xRight]),
-                                                                            subData = Left seg, 
-                                                                            subDataBootstrapSet = []
-                                                                        }
+                                                                    createSubDataParams 
+                                                                            ([xLeft], [xRight])
+                                                                            (Left seg) 
+                                                                            []
                                                             ) (init sortedSegments) (tail sortedSegments)
                                                     in
                                                         ds
-                                            modifyState stateRef $ addDataParams (DataParams {dataName = name, dataSet = concat (map mapOp (dataSet selectedData1))}) (Just (currentGraphTab, selectedGraph))
+                                            modifyState stateRef $ addDataParams (createDataParams_ name (concat (map mapOp (dataSet selectedData1)))) (Just (currentGraphTab, selectedGraph))
                                         else return ()
                                     SegmentByCount ->
                                         if isDiscrete selectedData1 then do
@@ -345,15 +342,15 @@ modifyDialog stateRef = do
                                                                 let
                                                                     seg = D.subSet1 (xLeft, xLeft + subSetLength) d
                                                                 in
-                                                                    if dataLength seg > 0 then Just (SubDataParams {
-                                                                            subDataRange = ([xLeft], [xLeft + subSetLength]),
-                                                                            subData = Left seg, 
-                                                                            subDataBootstrapSet = []
-                                                                        }) else Nothing
+                                                                    if dataLength seg > 0 then Just (createSubDataParams
+                                                                            ([xLeft], [xLeft + subSetLength])
+                                                                            (Left seg)
+                                                                            []
+                                                                        ) else Nothing
                                                             ) [xMin, xMin + subSetLength .. xMax - subSetLength]
                                                     in
                                                         catMaybes ds
-                                            modifyState stateRef $ addDataParams (DataParams {dataName = name, dataSet = concat (map mapOp (dataSet selectedData1))}) (Just (currentGraphTab, selectedGraph))
+                                            modifyState stateRef $ addDataParams (createDataParams_ name (concat (map mapOp (dataSet selectedData1)))) (Just (currentGraphTab, selectedGraph))
                                         else return ()
                                     SegmentByGaps ->
                                         if isDiscrete selectedData1 then do
@@ -363,42 +360,29 @@ modifyDialog stateRef = do
                                                         let
                                                             d = data1 (V.fromList segment)
                                                         in
-                                                            [SubDataParams {
-                                                                subDataRange = (D.xMins d, D.xMaxs d),
-                                                                subData = Left d, 
-                                                                subDataBootstrapSet = []
-                                                            }]
+                                                            [createSubDataParams__ (Left d)]
                                                     splitByGaps' lastX ((x, y, w):vals) segment =
                                                         if (x - lastX > constant) 
                                                             then 
                                                                 let
                                                                     d = data1 (V.fromList segment)
                                                                 in
-                                                                    SubDataParams {
-                                                                            subDataRange = (D.xMins d, D.xMaxs d),
-                                                                            subData = Left d, 
-                                                                            subDataBootstrapSet = []
-                                                                        }:splitByGaps' x vals [(x, y, w)]
+                                                                    createSubDataParams__ (Left d):splitByGaps' x vals [(x, y, w)]
                                                             else splitByGaps' x vals (segment ++ [(x, y, w)])
-                                            modifyState stateRef $ addDataParams (DataParams {dataName = name, dataSet = splitByGaps (subData (head (dataSet selectedData1)))}) (Just (currentGraphTab, selectedGraph))
+                                            modifyState stateRef $ addDataParams (createDataParams_ name (splitByGaps (subData (head (dataSet selectedData1))))) (Just (currentGraphTab, selectedGraph))
                                         else return ()
                                     Unsegment ->
                                         if isDiscrete selectedData1 then do
                                             let
                                                 unsegment (SubDataParams _ (Left d) _:[]) = D.values1 d
                                                 unsegment (SubDataParams _ (Left d) _:sdps) = D.values1 d V.++ unsegment sdps
-                                            modifyState stateRef $ addDataParams (DataParams {
-                                                dataName = name, 
-                                                dataSet = 
+                                            modifyState stateRef $ addDataParams (createDataParams_ name 
+                                                ( 
                                                     let 
                                                         d = D.data1 (sortVectorBy (\(x1, _, _) (x2, _, _) -> compare x1 x2) (unsegment (dataSet selectedData1)))
                                                     in
-                                                        [SubDataParams {
-                                                            subDataRange = (D.xMins d, D.xMaxs d),
-                                                            subData = Left d,
-                                                            subDataBootstrapSet = []
-                                                        }]
-                                            }) (Just (currentGraphTab, selectedGraph))
+                                                        [createSubDataParams__ (Left d)]
+                                                )) (Just (currentGraphTab, selectedGraph))
                                         else return ()
                                     SetWeights ->
                                         if isDiscrete selectedData1 then do

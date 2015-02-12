@@ -61,15 +61,7 @@ main = do --mpiWorld $ \size rank ->
     g <- getStdGen 
     if rank == 0 then
         do
-            let splineParams = DataParams {
-                dataName = "spline" ++ show rank,
-                dataSet = [
-                    SubDataParams {
-                        subData = Right (Left spline),
-                        subDataBootstrapSet = []
-                    }
-                ]
-            }
+            let splineParams = createDataParams_ ("spline" ++ show rank) [createSubDataParams__ (Right (Left spline))]
             let 
                 Left diff = U.binaryOp F.subtr (Left dat) (Right (Left spline)) True g
             Xml.renderToFile (Xml.toDocument diff) "diff"

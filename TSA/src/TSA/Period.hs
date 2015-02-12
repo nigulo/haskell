@@ -82,10 +82,7 @@ calcDispersions dataParams periodStart' periodEnd' precision method name bootstr
                 ) (zip (dataSet dataParams) prevInfos)
             let
                 (subDispersions, infos) = unzip subDispersionsAndInfo
-                dispersions = DataParams {
-                        dataName = name, 
-                        dataSet = map (\sd -> SubDataParams {subDataRange = U.dataRange sd, subData = sd, subDataBootstrapSet = []}) subDispersions
-                    }
+                dispersions = createDataParams_ name (map (\sd -> createSubDataParams__ sd) subDispersions)
                     
             bestPeriods <- mapM (\(i, SubDataParams _ (Left periodSpec) _) -> do
                     let

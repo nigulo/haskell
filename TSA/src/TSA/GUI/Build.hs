@@ -92,13 +92,13 @@ buildDialog stateRef = do
                                 "x" -> D.xs1 d2
                                 "y" -> D.ys d2
                         in
-                                SubDataParams {subData = Left (D.data1' (V.zip xs ys )), subDataBootstrapSet = []}
+                            createSubDataParams__ (Left (D.data1' (V.zip xs ys )))
                     result = zipWith mapOp (dataSet selectedData1) (dataSet selectedData2) 
                     
                     graphTabParms = (graphTabs state) !! currentGraphTab
                     selectedGraph = graphTabSelection graphTabParms
 
-                modifyState stateRef $ addDataParams (DataParams {dataName = name, dataSet = result}) (Just (currentGraphTab, selectedGraph))
+                modifyState stateRef $ addDataParams (createDataParams_ name result) (Just (currentGraphTab, selectedGraph))
 
                 modifyStateParams stateRef $ \params -> params {buildParams = BuildParams {
                         buildCommonParams = updateCommonParams name commonParams

@@ -13,7 +13,12 @@ module TSA.Data (
     getDataType,
     getSubDataAt,
     dataRange,
-    reshuffleData
+    reshuffleData,
+    createDataParams,
+    createDataParams_,
+    createSubDataParams,
+    createSubDataParams_,
+    createSubDataParams__
     ) where
 
 import Debug.Trace
@@ -75,6 +80,7 @@ merge :: String -> DataParams -> DataParams -> DataParams
 merge name dp1 dp2 = 
         DataParams {
             dataName = name, 
+            dataDesc = name,
             dataSet = (dataSet dp1) ++ (dataSet dp2)
         }
 
@@ -102,6 +108,7 @@ applyToData func dp names puFunc = do
         (results, bootstrapResults) = unzip resultsPerSubData 
     return $ zipWith3 (\name results bootstrapResults -> DataParams {
         dataName = name, 
+        dataDesc = "",
         dataSet = zipWith3 (\sdp result bootstrapResults -> 
             SubDataParams {
                     subDataRange = subDataRange sdp,
@@ -146,4 +153,35 @@ getDataType dp =
 
 getSubDataAt :: DataParams -> Int -> Either D.Data (Either S.Spline FS.Functions)
 getSubDataAt dp i = subData (dataSet dp !! i)
+
+createDataParams :: String -> String -> [SubDataParams] -> DataParams
+createDataParams name desc dat =
+    DataParams {
+        dataName = name,
+        dataDesc = desc, 
+        dataSet = dat
+    }
+
+createDataParams_ :: String -> [SubDataParams] -> DataParams
+createDataParams_ name dat = createDataParams name name dat
+
+createSubDataParams :: ([Double], [Double]) 
+    -> Either D.Data (Either S.Spline FS.Functions) 
+    -> [Either D.Data (Either S.Spline FS.Functions)]
+    -> SubDataParams
+createSubDataParams range dat bootstrapSet =
+    SubDataParams {
+        subDataRange = range,
+        subData = dat,
+        subDataBootstrapSet = bootstrapSet
+    }
+
+createSubDataParams_ :: Either D.Data (Either S.Spline FS.Functions) 
+    -> [Either D.Data (Either S.Spline FS.Functions)]
+    -> SubDataParams
+createSubDataParams_ dat bootstrapSet = createSubDataParams (U.dataRange dat) dat bootstrapSet
+
+createSubDataParams__ :: Either D.Data (Either S.Spline FS.Functions) 
+    -> SubDataParams
+createSubDataParams__ dat = createSubDataParams (U.dataRange dat) dat []
 

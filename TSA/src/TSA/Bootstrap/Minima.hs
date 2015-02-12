@@ -8,6 +8,7 @@ import Regression.Bootstrap as B
 import TSA.LeastSquares
 import TSA.Extrema
 import TSA.Params
+import TSA.Data
 
 import System.Random
 
@@ -25,16 +26,8 @@ main = do --mpiWorld $ \size rank ->
     --fitParams <- Xml.parseFromFile "fitparams" "fitparams" >>= \doc -> return (Xml.fromDocument doc)
     g <- getStdGen 
     do
-            let splineParams = DataParams {
-                dataName = "spline",
-                dataSet = [
-                    SubDataParams {
-                        subData = Right (Left spline),
-                        subDataBootstrapSet = []
-                    }
-                ]
-            }
             let 
+                splineParams = createDataParams_ "spline" [createSubDataParams__ (Right (Left spline))]
                 Left diff = U.binaryOp F.subtr (Left dat) (Right (Left spline)) True g
             Xml.renderToFile (Xml.toDocument diff) "diff"
             splineExtrema <- findExtrema splineParams 1000000 (dataName splineParams) (\_ -> return ())

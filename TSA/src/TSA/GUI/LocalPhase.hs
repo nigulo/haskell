@@ -10,7 +10,7 @@ import Regression.Regression as R
 import Regression.Data as D
 import Regression.AnalyticData as AD
 import Regression.Functions as FS
-import Regression.Utils
+import Regression.Utils as U
 
 --import Isda.InOut
 
@@ -193,7 +193,7 @@ localPhase stateRef dataParams period maxPeriod epoch precision name calculateCo
                         Just d -> map (\grp -> V.map (\(x, f, y, w) -> (x, f, if f < -0.3 then getBarCodeValue d x else y, w)) grp) expandedGroups
                         Nothing -> expandedGroups
                 in
-                    SubDataParams {subData = Left (Data3 $ foldl' (\res v -> res V.++ v) V.empty expandedGroupsWithBarCode), subDataBootstrapSet = []}
+                    createSubDataParams__ (Left (Data3 $ foldl' (\res v -> res V.++ v) V.empty expandedGroupsWithBarCode))
             ) (dataSet dataParams)
 
     if calculatePhaseDispersion
@@ -230,10 +230,9 @@ localPhase stateRef dataParams period maxPeriod epoch precision name calculateCo
                             sortedDispersions = V.map (\(period, (d, g)) -> (period, d / (fromIntegral g - 1))) $ V.fromList globalDispersions
                             sortedBSDispersions = map (\phaseDispersions -> V.map (\(period, (d, g)) -> (period, d / (fromIntegral g - 1))) phaseDispersions) globalBSDispersions
                         appendLog stateRef ("Minimum Phase dispersion for " ++ name ++ " " ++ show no ++ ", period = " ++ (show minPhaseDispersionPeriod) ++ ": " ++ (show minPhaseDispersion))
-                        return $ (SubDataParams {
-                                subData = Left (data1' sortedDispersions), 
-                                subDataBootstrapSet = map (\sortedDispersions -> Left (data1' sortedDispersions)) sortedBSDispersions
-                                }, 
+                        return $ (createSubDataParams_ 
+                                    (Left (data1' sortedDispersions)) 
+                                    (map (\sortedDispersions -> Left (data1' sortedDispersions)) sortedBSDispersions), 
                                 ((xmax + xmin) / 2, minPhaseDispersionPeriod), 
                                 (map (\(minPhaseDispersionPeriod, _) -> ((xmax + xmin) / 2, minPhaseDispersionPeriod)) minBSPeriodsAndDispersions),
                                 globalDispersions, 
@@ -257,7 +256,7 @@ localPhase stateRef dataParams period maxPeriod epoch precision name calculateCo
                             ) (transpose globalDispersions)
                         (minGlobalPhaseDispersionPeriod, minGlobalPhaseDispersion) = minimumBy (\(_, d1) (_, d2) -> compare d1 d2) globalPersAndDisps
                 appendLog stateRef ("Minimum Global Phase dispersion for " ++ name ++ ", period = " ++ (show minGlobalPhaseDispersionPeriod) ++ ": " ++ (show minGlobalPhaseDispersion))
-                modifyState stateRef $ addDataParams (DataParams {dataName = name ++ "_gdisp", dataSet = [SubDataParams {subData = Left (data1' (V.fromList globalPersAndDisps)), subDataBootstrapSet = []}]}) (Just (currentGraphTab, selectedGraph))
+                modifyState stateRef $ addDataParams (createDataParams_ (name ++ "_gdisp") [createSubDataParams__ (Left (data1' (V.fromList globalPersAndDisps)))]) (Just (currentGraphTab, selectedGraph))
                 --modifyState stateRef $ addDataParams (DataParams {dataName = name ++ "_disp", dataSet = phaseDispersions}) (Just (currentGraphTab, selectedGraph))
                 --modifyState stateRef $ addDataParams (calculateWeights (DataParams {dataName = name ++ "_periods", 
                 --        dataSet = [SubDataParams {
@@ -289,7 +288,7 @@ localPhase stateRef dataParams period maxPeriod epoch precision name calculateCo
                     hClose handle
                     ) (zip [1, 2 ..] colorData)
                 
-                modifyState stateRef $ (addDataParams (DataParams {dataName = name, dataSet = colorData}) (Just (currentGraphTab, selectedGraph)))
+                modifyState stateRef $ (addDataParams (createDataParams_ name colorData) (Just (currentGraphTab, selectedGraph)))
         else
             return ()
     --mapM_ (\stat -> modifyState stateRef $ (addDataParams stat (Just (currentGraphTab, selectedGraph)))) (drop 3 stats)

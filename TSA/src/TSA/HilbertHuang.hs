@@ -10,6 +10,7 @@ import TSA.Extrema
 import TSA.Envelopes
 import TSA.AnalyticSignal
 import TSA.Params
+import TSA.Data
 
 import Data.List as List
 import System.Random
@@ -129,17 +130,7 @@ calcAnalyticSignal imfDat modeNo = do
                 "frequency" -> return () 
                 "conjugated" -> return ()
         asParams = AnalyticSignalParams {
-                asRealData = Just (DataParams {
-                        dataName = "imf",
-                        dataSet = [
-                            SubDataParams {
-                                subDataRange = U.dataRange (Left imfDat),
-                                subData = (Left imfDat),
-                                subDataBootstrapSet = []
-                            }
-                        ]
-                    }
-                ),
+                asRealData = Just (createDataParams_ "imf" [createSubDataParams__ (Left imfDat)]),
                 asImagData = Nothing
             }    
     analyticSignal asParams 0 ("amplitude", "phase", "frequency", "conjugated") (\_ -> return ()) (putStrLn) dataUpdateFunc 
@@ -150,16 +141,7 @@ imf modeNo dat = do
 
     g <- getStdGen 
     let
-        dataParams = DataParams {
-            dataName = "data",
-            dataSet = [
-                SubDataParams {
-                    subDataRange = U.dataRange (Left dat),
-                    subData = (Left dat),
-                    subDataBootstrapSet = []
-                }
-            ]
-        }
+        dataParams = createDataParams_ "data" [createSubDataParams__ (Left dat)]
 
     (minimaDp, maximaDp) <- findExtrema dataParams 0 "extrema" (\_ -> return ())
     let
@@ -202,13 +184,7 @@ imf modeNo dat = do
                                     envExtrema = EnvExtremaStatistical,
                                     envData = Just (DataParams {
                                         dataName = "data",
-                                        dataSet = [
-                                            SubDataParams {
-                                                subDataRange = U.dataRange (Left dat),
-                                                subData = (Left dat),
-                                                subDataBootstrapSet = []
-                                            }
-                                        ]
+                                        dataSet = [createSubDataParams__ (Left dat)]
                                     })
                                 } 
                 

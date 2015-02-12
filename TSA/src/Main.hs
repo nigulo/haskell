@@ -2,7 +2,6 @@
 module Main (Main.main) where
 
 import Graphics.UI.Gtk
-import System.Glib.UTFString
 import qualified Data.Map as Map
 import qualified Data.List as List
 import qualified Data.Char as Char

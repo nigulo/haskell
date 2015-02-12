@@ -1,5 +1,6 @@
 
 module TSA.GUI.Data (
+    module TSA.Data,
     infoDialog,
     dataSetComboNew,
     dataSetComboNew2,
@@ -58,8 +59,6 @@ import TSA.GUI.State
 import TSA.GUI.Dialog
 import GUI.Widget
 import GUI.Plot
-import GUI.Widget
-import Utils.Misc
 import Utils.List
 import Utils.Concurrent
 import Utils.Xml as Xml
@@ -72,36 +71,25 @@ import Data.List
 import Data.String
 import Control.Applicative
 
-import Control.Concurrent.SSem as SSem
-import Control.Concurrent
---import Control.Monad hiding (join)
-
 import qualified Data.Vector.Unboxed as V
 import Control.Monad.IO.Class
-
-type DataPage = (
-    VBox,   -- ^ container
-    String, -- ^ name
-    Label,  -- ^ type
-    CheckButton, -- ^ used
-    ColorSelection, -- ^ color
-    ComboBox -- ^ symbol
-    )
+import Control.Monad
 
 infoDialog :: StateRef -> IO ()
 infoDialog stateRef = do
     state <- readMVar stateRef
     dParams <- return (dataParams (params state))
     
-    --pageNames <- return (map dataName dParams) -- mapM (\dp -> labelNew (Just (dataName dp))) dParams
-    
     let 
-        createDataPage i (pages) = 
+        createDataPage pages i = 
             do
                 let dp = dParams !! i
                 
                 dataPage <- vBoxNew True 0
                 
+                descEntry <- entryNew
+                addWidgetToVBox (Just "Description: ") descEntry PackNatural dataPage
+                descEntry `entrySetText` (dataDesc dp)
                 typeLabel <- labelNew $ Just $ getDataType dp
                 addWidgetToVBox (Just "Type:") typeLabel PackNatural dataPage
                 componentCountLabel <- labelNew $ Just $ show (length (dataSet dp))
@@ -126,9 +114,9 @@ infoDialog stateRef = do
                 on exportButton buttonReleaseEvent $ liftIO (exportData state dp >> return True)
                 addWidgetToVBox Nothing exportButton PackNatural dataPage
                 
-                return (pages ++ [(dataPage, dataName dp, typeLabel)])
+                return $ pages ++ [(dataPage, dataName dp, descEntry, typeLabel)]
     
-    dataPages <- forM__ 0 (length dParams - 1) [] createDataPage
+    dataPages <- foldM (createDataPage) [] [0 .. length dParams - 1] 
     pagesRef <- newIORef dataPages
     
     dialog <- dialogWithTitle state "Data sets"
@@ -143,13 +131,13 @@ infoDialog stateRef = do
             do
                 Just pageIndex <- notebookPageNum notebook page
                 pages <- readIORef pagesRef
-                let dataPage@(page, name, _) = pages !! pageIndex
+                let dataPage@(page, name, _, _) = pages !! pageIndex
                 notebookRemovePage notebook pageIndex
                 modifyIORef pagesRef (\pages -> 
-                    deleteBy (\(_, name1, _) (_, name2, _) -> name1 == name2) dataPage pages)
+                    deleteBy (\(_, name1, _, _) (_, name2, _, _) -> name1 == name2) dataPage pages)
                 modifyMVar_ stateRef $ \state -> return $ removeDataByName name state
 
-        mapOp (page, name, _) =
+        mapOp (page, name, _, _) =
             do
                 pageIndex <- notebookGetNPages notebook
                 label <- labelWithButton (Just name) stockDelete (deleteData page)
@@ -166,18 +154,18 @@ infoDialog stateRef = do
                     then 
                         do
                             pages <- readIORef pagesRef
-                            modifyMVar_ stateRef $ \state ->
-                                forM__ 0 (length pages - 1) state 
-                                    (\i state -> 
-                                        do
-                                            let 
-                                                dataPage@(_, name, _) = pages !! i
-                                                dParams = getDataByName name state
-                                            return $ updateData (dParams) state
-                                        ) 
+                            mapM_ (\i -> modifyMVar_ stateRef $ \state ->
+                                    do
+                                        let 
+                                            (_, name, descEntry, _) = pages !! i
+                                            dParams = getDataByName name state
+                                        desc <- entryGetString descEntry
+                                        return $ updateData (dParams {dataDesc = desc}) state
+                                ) [0 .. length pages - 1] 
                     else
                         return ()
                 
+    dialogAddButton dialog "Cancel" ResponseCancel
     dialogAddButton dialog "Ok" ResponseOk
 
     widgetShowAll dialog
@@ -433,15 +421,7 @@ addDataParams dp tabIndex state = addOrUpdateDataParams dp tabIndex False state
 
 addOrUpdateSegmentedData :: [Either D.Data (Either S.Spline FS.Functions)] -> String -> Maybe (Int, Int) -> Bool -> State -> State
 addOrUpdateSegmentedData ds name tabIndex update state = 
-    addOrUpdateDataParams (
-        DataParams {
-            dataName = name,
-            dataSet = map (\d -> SubDataParams {
-                subDataRange = dataRange d,
-                subData = d,
-                subDataBootstrapSet = []
-            }) ds
-        }) tabIndex update state
+    addOrUpdateDataParams (createDataParams_ name (map (\d -> createSubDataParams__ d) ds)) tabIndex update state
 
 addSegmentedData :: [Either D.Data (Either S.Spline FS.Functions)] -> String -> Maybe (Int, Int) -> State -> State
 addSegmentedData ds name tabIndex = addOrUpdateSegmentedData ds name tabIndex False

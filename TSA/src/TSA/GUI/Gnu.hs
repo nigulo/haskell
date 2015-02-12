@@ -270,7 +270,7 @@ doPlot state grphTabParams plotFunc =
 
                     dataSets2d = filter (\(dataSet, _) -> 
                         case dataSet  of
-                            Left d -> is2d d
+                            Left d -> D.is2d d
                             Right (Left s) -> True
                             Right (Right f) -> AD.is2d f
                         ) $ concat $ map (\gdp -> map (\sdp -> (subData sdp, gdp)) (dataSet (getDataByName (graphDataParamsName gdp) state))) graphDataParms

@@ -1,5 +1,6 @@
 
 module GUI.Widget (
+    module System.Glib.UTFString,
     labelWithImage,
     labelWithButton,
     ItemChooser,

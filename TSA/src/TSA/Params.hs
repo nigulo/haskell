@@ -58,6 +58,7 @@ import Regression.Data as D
 import Regression.Spline as S
 import Regression.Functions as F
 import Regression.AnalyticData as A
+import Regression.Utils as U
 import Regression.Statistic
 import Utils.Misc
 import Utils.List
@@ -354,24 +355,28 @@ instance Xml.XmlElement SubDataParams where
 
 data DataParams = DataParams {
     dataName :: String,
+    dataDesc :: String,
     dataSet :: [SubDataParams]
 } deriving (Show, Read)
 
 instance Xml.XmlElement DataParams where
     toElement params = Xml.element "dataparams" 
-        [("version", "1"), ("name", dataName params)]
+        [("version", "1"), ("name", dataName params), ("description", dataDesc params)]
         [Left (Xml.element "dataset" [] (map (\d -> Left (Xml.toElement d)) (dataSet params)))]
 
 
     fromElement e = 
         DataParams {
             dataName = Xml.attrValue e "name",
+            dataDesc = case Xml.maybeAttrValue e "description" of
+                Just desc -> desc
+                Nothing -> Xml.attrValue e "name",
             dataSet = 
                     case Xml.maybeAttrValue e "version" of
                         Just "1" ->
                             map (\(Left elem) -> Xml.fromElement elem) (Xml.contents (Xml.contentElement e "dataset"))
                         Nothing -> 
-                            [SubDataParams {subData = sd, subDataBootstrapSet = []}] where
+                            [SubDataParams {subDataRange = U.dataRange sd, subData = sd, subDataBootstrapSet = []}] where
                                 sd =
                                     let 
                                         Left dataSetElem = head $ Xml.contents $ Xml.contentElement e "dataset" 

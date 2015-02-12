@@ -26,7 +26,6 @@ executable TSA
                gnuplot -any,
                random -any,
                gtk3 -any,
-               glib -any,
                transformers -any,
                ISDA -any,
                SafeSemaphore -any,

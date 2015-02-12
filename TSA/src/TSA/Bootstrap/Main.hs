@@ -8,6 +8,7 @@ import Regression.Bootstrap as B
 import TSA.LeastSquares
 import TSA.Extrema
 import TSA.Params
+import TSA.Data
 
 import System.Random
 import System.Environment
@@ -36,16 +37,8 @@ main = do --mpiWorld $ \size rank ->
     g <- getStdGen 
     if rank == 0 then
         do
-            let splineParams = DataParams {
-                dataName = "spline" ++ show rank,
-                dataSet = [
-                    SubDataParams {
-                        subData = Right (Left spline),
-                        subDataBootstrapSet = []
-                    }
-                ]
-            }
             let 
+                splineParams = createDataParams_ ("spline" ++ show rank) [createSubDataParams__ (Right (Left spline))]
                 Left diff = U.binaryOp F.subtr (Left dat) (Right (Left spline)) True g
             Xml.renderToFile (Xml.toDocument diff) "diff"
             splineExtrema <- findExtrema splineParams precision (dataName splineParams) (\_ -> return ())
@@ -64,15 +57,7 @@ main = do --mpiWorld $ \size rank ->
     --B.writeFile ("all_minima") byteStr
     
     bsSpline <- B.bootstrapSpline rank (fitData fitParams) spline dat diff
-    let bsSplineParams = DataParams {
-        dataName = "bsSpline" ++ show rank,
-        dataSet = [
-            SubDataParams {
-                subData = Right (Left bsSpline),
-                subDataBootstrapSet = []
-            }
-        ]
-    }
+    let bsSplineParams = createDataParams_ ("bsSpline" ++ show rank) [createSubDataParams__ (Right (Left bsSpline))]
     bsSplineExtrema <- findExtrema bsSplineParams precision (dataName bsSplineParams) (\_ -> return ())
     let
         Left bsMinima = subData $ head $ dataSet $ snd bsSplineExtrema
