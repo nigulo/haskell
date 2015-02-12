@@ -95,29 +95,29 @@ dataFormatDialog stateRef callback lines = do
     page1 <- vBoxNew False 0
     assistantSetPageType assistant page1 AssistantPageConfirm
     headerLabel <- labelNew $ Just "First rows of data:"
-    addWidgetToVBox Nothing headerLabel PackNatural page1
+    addWidgetToBox Nothing headerLabel PackNatural page1
     dataLabel <- labelNew $ Just $ concatMap (\line -> line ++ "\n") (take 5 lines)
-    addWidgetToVBox Nothing dataLabel PackNatural page1
+    addWidgetToBox Nothing dataLabel PackNatural page1
     separator1 <- hSeparatorNew
-    addWidgetToVBox Nothing separator1 PackNatural page1
+    addWidgetToBox Nothing separator1 PackNatural page1
     separatorIndicesEntry <- entryNew
-    addWidgetToVBox (Just "Separator indices:") separatorIndicesEntry PackNatural page1 
+    addWidgetToBox (Just "Separator indices:") separatorIndicesEntry PackNatural page1 
     omitSeparatorsCheck <- checkButtonNew
-    addWidgetToVBox (Just "Omit separators: ") omitSeparatorsCheck PackNatural page1 
+    addWidgetToBox (Just "Omit separators: ") omitSeparatorsCheck PackNatural page1 
     separator2 <- hSeparatorNew
-    addWidgetToVBox Nothing separator2 PackNatural page1
+    addWidgetToBox Nothing separator2 PackNatural page1
     delimitersLabel <- labelNew $ Just "Delimiters:"
-    addWidgetToVBox Nothing delimitersLabel PackNatural page1 
+    addWidgetToBox Nothing delimitersLabel PackNatural page1 
     spaceCheck <- checkButtonNew >>= \button -> toggleButtonSetActive button True >> return button
-    addWidgetToVBox (Just "Space: ") spaceCheck PackNatural page1 
+    addWidgetToBox (Just "Space: ") spaceCheck PackNatural page1 
     tabCheck <- checkButtonNew
-    addWidgetToVBox (Just "Tab: ") tabCheck PackNatural page1
+    addWidgetToBox (Just "Tab: ") tabCheck PackNatural page1
     commaCheck <- checkButtonNew
-    addWidgetToVBox (Just "Comma: ") commaCheck PackNatural page1
+    addWidgetToBox (Just "Comma: ") commaCheck PackNatural page1
     semicolonCheck <- checkButtonNew
-    addWidgetToVBox (Just "Semicolon: ") semicolonCheck PackNatural page1
+    addWidgetToBox (Just "Semicolon: ") semicolonCheck PackNatural page1
     skipRowsEntry <- entryNew
-    addWidgetToVBox (Just "Skip rows:") skipRowsEntry PackNatural page1 
+    addWidgetToBox (Just "Skip rows:") skipRowsEntry PackNatural page1 
     --assistant `set` [assistantChildComplete := True]
     assistantAppendPage assistant page1
     
@@ -125,14 +125,14 @@ dataFormatDialog stateRef callback lines = do
     -- Page 2
     page2 <- vBoxNew False 0
     headerLabel <- labelNew $ Just "Columns:"
-    addWidgetToVBox Nothing headerLabel PackNatural page2
+    addWidgetToBox Nothing headerLabel PackNatural page2
     table <- tableNew 0 0 True
-    addWidgetToVBox Nothing table PackNatural page2
+    addWidgetToBox Nothing table PackNatural page2
     nameEntry <- entryNew
-    addWidgetToVBox (Just "Name: ") nameEntry PackNatural page2
+    addWidgetToBox (Just "Name: ") nameEntry PackNatural page2
     dataTypeCombo <- createComboBox ["Data", "Spectrum"]
     comboBoxSetActive dataTypeCombo 0
-    addWidgetToVBox (Just "Type: ") dataTypeCombo PackNatural page2
+    addWidgetToBox (Just "Type: ") dataTypeCombo PackNatural page2
     assistantAppendPage assistant page2
     
     widgetShowAll assistant

@@ -76,19 +76,19 @@ functionDialog stateRef = do
 
     leftAdjustment <- adjustmentNew xLeft (-2**52) (2**52) 1 1 10
     leftSpin <- spinButtonNew leftAdjustment 1 10
-    addWidgetToVBox (Just "Left: ") leftSpin PackNatural vBox
+    addWidgetToBox (Just "Left: ") leftSpin PackNatural vBox
 
     rightAdjustment <- adjustmentNew xRight (-2**52) (2**52) 1 1 10
     rightSpin <- spinButtonNew rightAdjustment 1 10
-    addWidgetToVBox (Just "Right: ") rightSpin PackNatural vBox
+    addWidgetToBox (Just "Right: ") rightSpin PackNatural vBox
 
     bottomAdjustment <- adjustmentNew yBottom (-2**52) (2**52) 1 1 10
     bottomSpin <- spinButtonNew bottomAdjustment 1 10
-    addWidgetToVBox (Just "Bottom: ") bottomSpin PackNatural vBox
+    addWidgetToBox (Just "Bottom: ") bottomSpin PackNatural vBox
 
     topAdjustment <- adjustmentNew yTop (-2**52) (2**52) 1 1 10
     topSpin <- spinButtonNew topAdjustment 1 10
-    addWidgetToVBox (Just "Top: ") topSpin PackNatural vBox
+    addWidgetToBox (Just "Top: ") topSpin PackNatural vBox
 
     on okButton buttonActivated $
         do

@@ -67,7 +67,7 @@ markersDialog stateRef = do
             hBox <- hBoxNew False 0
             boxPackStart hBox markerSpin PackGrow 2
             boxPackEnd hBox removeButton PackNatural 2
-            addWidgetToVBox (Just ("Marker " ++ show no ++ ":")) hBox PackNatural vBox
+            addWidgetToBox (Just ("Marker " ++ show no ++ ":")) hBox PackNatural vBox
             return (markerSpin, removeButton)
         ) (zip [1, 2 ..] segments)
 

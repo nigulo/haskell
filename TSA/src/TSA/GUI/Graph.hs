@@ -92,57 +92,57 @@ settingsDialog stateRef = do
 
     nameEntry <- entryNew
     nameEntry `entrySetText` (graphTabName graphTabParms)
-    addWidgetToVBox (Just "Name: ") nameEntry PackNatural vBox
+    addWidgetToBox (Just "Name: ") nameEntry PackNatural vBox
 
     granularityAdjustment <- adjustmentNew (fromIntegral (graphGranularity graphParms)) 1 100 1 1 10
     granularityScale <- hScaleNew granularityAdjustment
     scaleSetDigits granularityScale 0
-    addWidgetToVBox (Just "Granularity: ") granularityScale PackNatural vBox
+    addWidgetToBox (Just "Granularity: ") granularityScale PackNatural vBox
 
     separator1 <- hSeparatorNew
-    addWidgetToVBox Nothing separator1 PackNatural vBox
+    addWidgetToBox Nothing separator1 PackNatural vBox
     
     addLabel "Area" dialog
     automaticCheck <- checkButtonNew >>= \button -> toggleButtonSetActive button (graphAreaAutomatic graphParms) >> return button
-    addWidgetToVBox (Just "Automatic") automaticCheck PackNatural vBox 
+    addWidgetToBox (Just "Automatic") automaticCheck PackNatural vBox 
 
     leftAdjustment <- adjustmentNew (plotAreaLeft ga) (-2**52) (2**52) 1 1 10
     leftSpin <- spinButtonNew leftAdjustment 1 10
-    addWidgetToVBox (Just "Left: ") leftSpin PackNatural vBox
+    addWidgetToBox (Just "Left: ") leftSpin PackNatural vBox
 
     rightAdjustment <- adjustmentNew (plotAreaRight ga) (-2**52) (2**52) 1 1 10
     rightSpin <- spinButtonNew rightAdjustment 1 10
-    addWidgetToVBox (Just "Right: ") rightSpin PackNatural vBox
+    addWidgetToBox (Just "Right: ") rightSpin PackNatural vBox
     
     bottomAdjustment <- adjustmentNew (plotAreaBottom ga) (-2**52) (2**52) 1 1 10
     bottomSpin <- spinButtonNew bottomAdjustment 1 10
-    addWidgetToVBox (Just "Bottom: ") bottomSpin PackNatural vBox
+    addWidgetToBox (Just "Bottom: ") bottomSpin PackNatural vBox
 
     topAdjustment <- adjustmentNew (plotAreaTop ga) (-2**52) (2**52) 1 1 10
     topSpin <- spinButtonNew topAdjustment 1 10
-    addWidgetToVBox (Just "Top: ") topSpin PackNatural vBox
+    addWidgetToBox (Just "Top: ") topSpin PackNatural vBox
 
     separator2 <- hSeparatorNew
-    addWidgetToVBox Nothing separator2 PackNatural vBox
+    addWidgetToBox Nothing separator2 PackNatural vBox
 
     widthAdjustment <- adjustmentNew (graphWidth graphParms) 0.01 1 0.01 0.1 0.1
     widthSpin <- spinButtonNew widthAdjustment 0.01 10
-    addWidgetToVBox (Just "Width: ") widthSpin PackNatural vBox
+    addWidgetToBox (Just "Width: ") widthSpin PackNatural vBox
 
     heightAdjustment <- adjustmentNew (graphHeight graphParms) 0.01 1 0.01 0.1 0.1
     heightSpin <- spinButtonNew heightAdjustment 0.01 10
-    addWidgetToVBox (Just "Height: ") heightSpin PackNatural vBox
+    addWidgetToBox (Just "Height: ") heightSpin PackNatural vBox
     
     separator3 <- hSeparatorNew
-    addWidgetToVBox Nothing separator3 PackNatural vBox
+    addWidgetToBox Nothing separator3 PackNatural vBox
 
     periodAdjustment <- adjustmentNew (graphPeriod graphParms) 0 (2**52) 1 1 1
     periodSpin <- spinButtonNew periodAdjustment 1 10
-    addWidgetToVBox (Just "Period: ") periodSpin PackNatural vBox
+    addWidgetToBox (Just "Period: ") periodSpin PackNatural vBox
 
     offsetAdjustment <- adjustmentNew (graphOffset graphParms) (-2**52) (2**52) 1 1 10
     offsetSpin <- spinButtonNew offsetAdjustment 1 10
-    addWidgetToVBox (Just "Offset: ") offsetSpin PackNatural vBox
+    addWidgetToBox (Just "Offset: ") offsetSpin PackNatural vBox
 
     let
         onClose response =
@@ -226,19 +226,19 @@ dataDialog stateRef = do
                 color <- colorButtonNew 
                 color `colorButtonSetColor` (Color 0 0 0)
         
-                addWidgetToVBox (Just "Color:") color PackNatural dataPage
+                addWidgetToBox (Just "Color:") color PackNatural dataPage
         
                 symbolVBox <- vBoxNew True 0
         
                 symbolCombo <- createComboBox dataSymbolList
                 comboBoxSetActive symbolCombo 0
-                addWidgetToVBox (Just "Symbol: ") symbolCombo PackNatural symbolVBox
+                addWidgetToBox (Just "Symbol: ") symbolCombo PackNatural symbolVBox
         
                 symbolSizeAdjustment <- adjustmentNew 1 0 100000 1 1 1
                 symbolSizeSpin <- spinButtonNew symbolSizeAdjustment 1 2
-                addWidgetToVBox (Just "Symbol size: ") symbolSizeSpin PackNatural symbolVBox
+                addWidgetToBox (Just "Symbol size: ") symbolSizeSpin PackNatural symbolVBox
 
-                addWidgetToVBox Nothing symbolVBox PackNatural dataPage
+                addWidgetToBox Nothing symbolVBox PackNatural dataPage
                 
                 let 
                     symbolSettings = SymbolSettings {
@@ -256,13 +256,13 @@ dataDialog stateRef = do
                 lineDashBox <- hBoxNew True 0
                 boxPackStart lineDashBox lineDashSpin1 PackNatural 2
                 boxPackStart lineDashBox lineDashSpin2 PackNatural 2
-                addWidgetToVBox (Just "Line type: ") lineDashBox PackNatural lineVBox
+                addWidgetToBox (Just "Line type: ") lineDashBox PackNatural lineVBox
     
                 lineWidthAdjustment <- adjustmentNew 1 0 100000 1 1 1
                 lineWidthSpin <- spinButtonNew lineWidthAdjustment 1 2
-                addWidgetToVBox (Just "Line width: ") lineWidthSpin PackNatural lineVBox
+                addWidgetToBox (Just "Line width: ") lineWidthSpin PackNatural lineVBox
 
-                addWidgetToVBox Nothing lineVBox PackNatural dataPage
+                addWidgetToBox Nothing lineVBox PackNatural dataPage
                 
                 let 
                     lineSettings = LineSettings {
@@ -273,7 +273,7 @@ dataDialog stateRef = do
                     } 
                 
                 errorBars <- checkButtonNew >>= \button -> toggleButtonSetActive button False >> return button
-                addWidgetToVBox (Just "Show error bars") errorBars PackNatural dataPage 
+                addWidgetToBox (Just "Show error bars") errorBars PackNatural dataPage 
                 
                 return (color, symbolSettings, lineSettings, errorBars)
         
@@ -346,7 +346,7 @@ dataDialog stateRef = do
                 typeLabel <- labelNew $ Just $ getDataType dataParams 
         
                 dataPage <- vBoxNew True 0
-                addWidgetToVBox (Just "Type:") typeLabel PackNatural dataPage
+                addWidgetToBox (Just "Type:") typeLabel PackNatural dataPage
                 
                 (color, symbolSettings, lineSettings, errorBars) <- createDataParamWidgets dataPage
                 let 
@@ -452,14 +452,14 @@ dataDialog stateRef = do
                 dataPage <- vBoxNew True 0
     
                 dataSetCombo <- dataSetComboNew (\_ -> True) state
-                addWidgetToVBox (Just "Data set: ") (getComboBox dataSetCombo) PackNatural dataPage
+                addWidgetToBox (Just "Data set: ") (getComboBox dataSetCombo) PackNatural dataPage
                 
                 (color, symbolSettings, lineSettings, errorBars) <- createDataParamWidgets dataPage
 
                 hBox <- hBoxNew False 0
                 addButton <- buttonNewWithLabel "Add"
                 boxPackEnd hBox addButton PackNatural 2
-                addWidgetToVBox Nothing hBox PackNatural dataPage
+                addWidgetToBox Nothing hBox PackNatural dataPage
 
                 let
                 

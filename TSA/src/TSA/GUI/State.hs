@@ -281,43 +281,105 @@ instance Xml.XmlElement GraphTabParams where
 
 data GnuParams = GnuParams {
     gnuTitle :: String,
+    gnuTitleOpts :: String,
     gnuXLabel :: String,
+    gnuXLabelOpts :: String,
     gnuYLabel :: String,
+    gnuYLabelOpts :: String,
+    gnuZLabel :: String,
+    gnuZLabelOpts :: String,
     gnuCBLabel :: String,
-    gnuFont :: String,
-    gnuFontSize :: Int,
-    gnuXTicks :: String, 
-    gnuYTicks :: String, 
+    gnuCBLabelOpts :: String,
+    gnuXTics :: String, 
+    gnuYTics :: String, 
+    gnuZTics :: String, 
+    gnuCBTics :: String, 
     gnuBorder :: String, 
-    gnuNegativePalette :: Bool
+    gnuMap :: Bool,
+    gnuNegativePalette :: Bool,
+    gnuLogScaleX :: Bool,
+    gnuLogScaleY :: Bool,
+    gnuLogScaleZ :: Bool
 } deriving (Show, Read)
+
+defaultGnuTitleOpts = "font \"Arial,12\""
+defaultGnuLabelOpts = "font \"Arial,10\""
+defaultGnuTics = "font \"Arial,8\" border"
 
 instance Xml.XmlElement GnuParams where
     toElement params = Xml.element "gnuparams"
         [("title", gnuTitle params),
          ("xlabel", gnuXLabel params),
          ("ylabel", gnuYLabel params),
+         ("zlabel", gnuZLabel params),
          ("cblabel", gnuCBLabel params),
-         ("font", gnuFont params),
-         ("fontsize", show (gnuFontSize params)),
-         ("xticks", gnuXTicks params),
-         ("yticks", gnuYTicks params),
          ("border", gnuBorder params),
-         ("negativepalette", show (gnuNegativePalette params))
+         ("map", show (gnuMap params)),
+         ("negativepalette", show (gnuNegativePalette params)),
+         ("logscalex", show (gnuLogScaleX params)),
+         ("logscaley", show (gnuLogScaleY params)),
+         ("logscalez", show (gnuLogScaleZ params))
         ]
-        []
+        [Left (Xml.element "titleopts" [] [Right (gnuTitleOpts params)]),
+        Left (Xml.element "xlabelopts" [] [Right (gnuXLabelOpts params)]),
+        Left (Xml.element "ylabelopts" [] [Right (gnuYLabelOpts params)]),
+        Left (Xml.element "zlabelopts" [] [Right (gnuZLabelOpts params)]),
+        Left (Xml.element "cblabelopts" [] [Right (gnuCBLabelOpts params)]),
+        Left (Xml.element "xtics" [] [Right (gnuXTics params)]),
+        Left (Xml.element "ytics" [] [Right (gnuYTics params)]),
+        Left (Xml.element "ztics" [] [Right (gnuZTics params)]),
+        Left (Xml.element "cbtics" [] [Right (gnuCBTics params)])
+        ]
         
     fromElement e =
         GnuParams {
             gnuTitle = Xml.attrValue e "title",
             gnuXLabel = Xml.attrValue e "xlabel",
             gnuYLabel = Xml.attrValue e "ylabel",
-            gnuCBLabel = Xml.attrValue e "cblabel",
-            gnuFont = Xml.attrValue e "font",
-            gnuFontSize = read $ Xml.attrValue e "fontsize",
-            gnuXTicks = maybe_ "" (Xml.maybeAttrValue e "xticks"),
-            gnuYTicks = maybe_ "" (Xml.maybeAttrValue e "yticks"),
+            gnuZLabel = case Xml.maybeAttrValue e "zlabel" of
+                Just zLabel -> zLabel
+                Nothing -> "zLabel", -- old version
+            gnuCBLabel = maybe_ "cbLabel" $ Xml.maybeAttrValue e "cblabel",
+            gnuLogScaleX = case Xml.maybeAttrValue e "logscalex" of
+                Just logScale -> read logScale
+                Nothing -> False, 
+            gnuLogScaleY = case Xml.maybeAttrValue e "logscaley" of
+                Just logScale -> read logScale
+                Nothing -> False,
+            gnuLogScaleZ = case Xml.maybeAttrValue e "logscalez" of
+                Just logScale -> read logScale
+                Nothing -> False,
+            gnuTitleOpts = case Xml.maybeContentElement e "titleopts" of
+                Just optsElem -> head $ Xml.contentTexts optsElem 
+                Nothing -> defaultGnuTitleOpts,
+            gnuXLabelOpts = case Xml.maybeContentElement e "xlabelopts" of
+                Just optsElem -> head $ Xml.contentTexts optsElem 
+                Nothing -> defaultGnuLabelOpts,
+            gnuYLabelOpts = case Xml.maybeContentElement e "ylabelopts" of
+                Just optsElem -> head $ Xml.contentTexts optsElem 
+                Nothing -> defaultGnuLabelOpts,
+            gnuZLabelOpts = case Xml.maybeContentElement e "zlabelopts" of
+                Just optsElem -> head $ Xml.contentTexts optsElem 
+                Nothing -> defaultGnuLabelOpts,
+            gnuCBLabelOpts = case Xml.maybeContentElement e "cblabelopts" of
+                Just optsElem -> head $ Xml.contentTexts optsElem 
+                Nothing -> defaultGnuLabelOpts,
+            gnuXTics = case Xml.maybeContentElement e "xtics" of
+                Just ticsElem -> head $ Xml.contentTexts ticsElem 
+                Nothing -> maybe_ defaultGnuTics (Xml.maybeAttrValue e "xtics"), -- old version
+            gnuYTics = case Xml.maybeContentElement e "ytics" of
+                Just ticsElem -> head $ Xml.contentTexts ticsElem 
+                Nothing -> maybe_ defaultGnuTics (Xml.maybeAttrValue e "ytics"), -- old version
+            gnuZTics = case Xml.maybeContentElement e "ztics" of
+                Just ticsElem -> head $ Xml.contentTexts ticsElem 
+                Nothing -> defaultGnuTics,
+            gnuCBTics = case Xml.maybeContentElement e "cbtics" of
+                Just ticsElem -> head $ Xml.contentTexts ticsElem 
+                Nothing -> defaultGnuTics,
             gnuBorder = maybe_ "" (Xml.maybeAttrValue e "border"),
+            gnuMap = case Xml.maybeAttrValue e "map" of
+                Just map -> read map
+                Nothing -> True,
             gnuNegativePalette = read $ Xml.attrValue e "negativepalette"
         } 
 
@@ -667,15 +729,25 @@ newGnuParams :: GnuParams
 newGnuParams =
     GnuParams {
        gnuTitle = "Title",
+       gnuTitleOpts = defaultGnuTitleOpts,
        gnuXLabel = "xLabel",
+       gnuXLabelOpts = defaultGnuLabelOpts,
        gnuYLabel = "yLabel",
+       gnuYLabelOpts = defaultGnuLabelOpts,
+       gnuZLabel = "zLabel",
+       gnuZLabelOpts = defaultGnuLabelOpts,
        gnuCBLabel = "cbLabel",
-       gnuFont = "Arial",
-       gnuFontSize = 12,
-       gnuXTicks = "border",
-       gnuYTicks = "border",
+       gnuCBLabelOpts = defaultGnuLabelOpts,
+       gnuXTics = defaultGnuTics,
+       gnuYTics = defaultGnuTics,
+       gnuZTics = defaultGnuTics,
+       gnuCBTics = defaultGnuTics,
        gnuBorder = "4095",
-       gnuNegativePalette = True
+       gnuMap = True,
+       gnuNegativePalette = True,
+       gnuLogScaleX = False,
+       gnuLogScaleY = False,
+       gnuLogScaleZ = False
    }
 
 newSettings :: SettingsParams

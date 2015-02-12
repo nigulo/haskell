@@ -88,31 +88,31 @@ infoDialog stateRef = do
                 dataPage <- vBoxNew True 0
                 
                 descEntry <- entryNew
-                addWidgetToVBox (Just "Description: ") descEntry PackNatural dataPage
+                addWidgetToBox (Just "Description: ") descEntry PackNatural dataPage
                 descEntry `entrySetText` (dataDesc dp)
                 typeLabel <- labelNew $ Just $ getDataType dp
-                addWidgetToVBox (Just "Type:") typeLabel PackNatural dataPage
+                addWidgetToBox (Just "Type:") typeLabel PackNatural dataPage
                 componentCountLabel <- labelNew $ Just $ show (length (dataSet dp))
-                addWidgetToVBox (Just "Components:") componentCountLabel PackNatural dataPage
+                addWidgetToBox (Just "Components:") componentCountLabel PackNatural dataPage
                 if (isDiscrete dp) 
                     then do
                         numPointsLabel <- labelNew $ Just $ show (sum (map (\sdp -> let Left d = subData sdp in D.dataLength d) (dataSet dp)))
-                        addWidgetToVBox (Just "Number of points:") numPointsLabel PackNatural dataPage
+                        addWidgetToBox (Just "Number of points:") numPointsLabel PackNatural dataPage
                     else
                         return ()
                 bootstrapCountLabel <- labelNew $ Just $ show $ length (subDataBootstrapSet (head (dataSet dp))) 
-                addWidgetToVBox (Just "Bootstrap samples:") bootstrapCountLabel PackNatural dataPage
+                addWidgetToBox (Just "Bootstrap samples:") bootstrapCountLabel PackNatural dataPage
 
                 detailsButton <- buttonNewWithLabel "Show info..."
                 on detailsButton buttonReleaseEvent $ liftIO (showInfo state dp >> return True)
-                addWidgetToVBox Nothing detailsButton PackNatural dataPage
+                addWidgetToBox Nothing detailsButton PackNatural dataPage
                 dataButton <- buttonNewWithLabel "Show data..."
                 on dataButton buttonReleaseEvent $ liftIO (showData dp >> return True)
-                addWidgetToVBox Nothing dataButton PackNatural dataPage
+                addWidgetToBox Nothing dataButton PackNatural dataPage
 
                 exportButton <- buttonNewFromStock stockSave
                 on exportButton buttonReleaseEvent $ liftIO (exportData state dp >> return True)
-                addWidgetToVBox Nothing exportButton PackNatural dataPage
+                addWidgetToBox Nothing exportButton PackNatural dataPage
                 
                 return $ pages ++ [(dataPage, dataName dp, descEntry, typeLabel)]
     

@@ -2,7 +2,7 @@
 module TSA.GUI.Dialog (
     FitWidgets(..),
     addWidget,
-    addWidgetToVBox,
+    addWidgetToBox,
     addLabel,
     addSeparator,
     addFitWidgets,
@@ -72,8 +72,8 @@ addSeparator dialog = do
     boxPackStart hBox sep PackGrow 2
     boxPackStart vBox hBox PackNatural 2
 
-addWidgetToVBox :: (WidgetClass w) => Maybe String -> w -> Packing -> VBox -> IO ()
-addWidgetToVBox maybeName w packing vBox = do
+addWidgetToBox :: (WidgetClass w, BoxClass b) => Maybe String -> w -> Packing -> b -> IO ()
+addWidgetToBox maybeName w packing box = do
     
     hBox <- hBoxNew True 0
     case maybeName of 
@@ -83,7 +83,7 @@ addWidgetToVBox maybeName w packing vBox = do
                 boxPackStart hBox label PackNatural 2
         Nothing -> return ()
     boxPackEnd hBox w PackGrow 2
-    boxPackStart vBox hBox packing 2
+    boxPackStart box hBox packing 2
 
 data FitWidgets = FitWidgets {
     fitNameEntry :: Entry, 

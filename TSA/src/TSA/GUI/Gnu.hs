@@ -2,7 +2,9 @@ module TSA.GUI.Gnu (plotDialog, previewDialog, paramsDialog, gnuPointTypes, gnuP
 
 import Graphics.UI.Gtk hiding (addWidget, Plus, Cross, Circle)
 import Data.IORef
-import Data.Word
+import Data.Word (Word8)
+import Data.List.HT (padLeft)
+import Numeric (showHex)
 import Data.Bits
 import qualified Data.Map as Map
 import Control.Concurrent
@@ -52,7 +54,7 @@ import qualified Graphics.Gnuplot.Plot.TwoDimensional as Plot2D
 import qualified Graphics.Gnuplot.Graph.TwoDimensional as Graph2D
 import qualified Graphics.Gnuplot.Graph.ThreeDimensional as Graph3D
 import Graphics.Gnuplot.Plot.TwoDimensional (linearScale)
-import Graphics.Gnuplot.ColorSpecification (rgb8)
+import Graphics.Gnuplot.ColorSpecification (rgb8, name)
 import qualified Graphics.Gnuplot.File as File
 
 import Data.Array (listArray)
@@ -148,59 +150,129 @@ paramsDialog stateRef = do
         graphParms = (graphTabGraphs graphTabParms) !! selectedGraph
         gnuParms = graphGnuParams graphParms 
 
+
+    hBox1 <- hBoxNew True 0
     titleEntry <- entryNew
-    addWidget (Just "Title: ") titleEntry dialog
+    addWidgetToBox (Just "Title: ") titleEntry PackNatural hBox1
     titleEntry `entrySetText` (gnuTitle gnuParms)
+    titleOptsEntry <- entryNew
+    addWidgetToBox Nothing titleOptsEntry PackNatural hBox1
+    titleOptsEntry `entrySetText` (gnuTitleOpts gnuParms)
+    addWidget Nothing hBox1 dialog
 
+    hBox2 <- hBoxNew True 0
     xLabelEntry <- entryNew
-    addWidget (Just "X Label: ") xLabelEntry dialog
+    addWidgetToBox (Just "X-label: ") xLabelEntry PackNatural hBox2
     xLabelEntry `entrySetText` (gnuXLabel gnuParms)
+    xLabelOptsEntry <- entryNew
+    addWidgetToBox Nothing xLabelOptsEntry PackNatural hBox2
+    xLabelOptsEntry `entrySetText` (gnuXLabelOpts gnuParms)
+    addWidget Nothing hBox2 dialog
 
+    hBox3 <- hBoxNew True 0
     yLabelEntry <- entryNew
-    addWidget (Just "Y Label: ") yLabelEntry dialog
+    addWidgetToBox (Just "Y-label: ") yLabelEntry PackNatural hBox3
     yLabelEntry `entrySetText` (gnuYLabel gnuParms)
+    yLabelOptsEntry <- entryNew
+    addWidgetToBox Nothing yLabelOptsEntry PackNatural hBox3
+    yLabelOptsEntry `entrySetText` (gnuYLabelOpts gnuParms)
+    addWidget Nothing hBox3 dialog
 
+    hBox4 <- hBoxNew True 0
+    zLabelEntry <- entryNew
+    addWidgetToBox (Just "Z-label: ") zLabelEntry PackNatural hBox4
+    zLabelEntry `entrySetText` (gnuZLabel gnuParms)
+    zLabelOptsEntry <- entryNew
+    addWidgetToBox Nothing zLabelOptsEntry PackNatural hBox4
+    zLabelOptsEntry `entrySetText` (gnuZLabelOpts gnuParms)
+    addWidget Nothing hBox4 dialog
+
+    hBox5 <- hBoxNew True 0
     cbLabelEntry <- entryNew
-    addWidget (Just "CB Label: ") cbLabelEntry dialog
+    addWidgetToBox (Just "CB-label: ") cbLabelEntry PackNatural hBox5
     cbLabelEntry `entrySetText` (gnuCBLabel gnuParms)
+    cbLabelOptsEntry <- entryNew
+    addWidgetToBox Nothing cbLabelOptsEntry PackNatural hBox5
+    cbLabelOptsEntry `entrySetText` (gnuCBLabelOpts gnuParms)
+    addWidget Nothing hBox5 dialog
 
-    fontEntry <- entryNew
-    addWidget (Just "Font: ") fontEntry dialog
-    fontEntry `entrySetText` (gnuFont gnuParms)
+    xTicsEntry <- entryNew
+    addWidget (Just "X-tics: ") xTicsEntry dialog
+    xTicsEntry `entrySetText` (gnuXTics gnuParms)
     
-    fontSizeAdjustment <- adjustmentNew (fromIntegral (gnuFontSize gnuParms)) 1 100 1 1 1
-    fontSizeSpin <- spinButtonNew fontSizeAdjustment 1 0
-    addWidget (Just "Font size: ") fontSizeSpin dialog
+    yTicsEntry <- entryNew
+    addWidget (Just "Y-tics: ") yTicsEntry dialog
+    yTicsEntry `entrySetText` (gnuYTics gnuParms)
 
-    xTicksEntry <- entryNew
-    addWidget (Just "xTicks: ") xTicksEntry dialog
-    xTicksEntry `entrySetText` (gnuXTicks gnuParms)
+    zTicsEntry <- entryNew
+    addWidget (Just "Z-tics: ") zTicsEntry dialog
+    zTicsEntry `entrySetText` (gnuZTics gnuParms)
+
+    cbTicsEntry <- entryNew
+    addWidget (Just "CB-tics: ") cbTicsEntry dialog
+    cbTicsEntry `entrySetText` (gnuCBTics gnuParms)
+
+    -------------------------
+    logScaleFrame <- frameNew
+    frameSetLabel logScaleFrame (stringToGlib "Log scale" )
+    addWidget Nothing logScaleFrame dialog
+
+    logScaleBox <- hBoxNew True 0
+    containerAdd logScaleFrame logScaleBox
+
+    logScaleXCheck <- checkButtonNew
+    toggleButtonSetActive logScaleXCheck (gnuLogScaleX gnuParms)
+    addWidgetToBox (Just  "X:") logScaleXCheck PackNatural logScaleBox
     
-    yTicksEntry <- entryNew
-    addWidget (Just "yTicks: ") yTicksEntry dialog
-    yTicksEntry `entrySetText` (gnuYTicks gnuParms)
+    logScaleYCheck <- checkButtonNew
+    toggleButtonSetActive logScaleYCheck (gnuLogScaleY gnuParms)
+    addWidgetToBox (Just  "Y:") logScaleYCheck PackNatural logScaleBox
+
+    logScaleZCheck <- checkButtonNew
+    toggleButtonSetActive logScaleZCheck (gnuLogScaleZ gnuParms)
+    addWidgetToBox (Just "Z:") logScaleZCheck PackNatural logScaleBox
+    -------------------------
+
+    colorAndMapBox <- hBoxNew True 0
+    addWidget Nothing colorAndMapBox dialog
+
+    paletteNegativeCheck <- checkButtonNew
+    addWidgetToBox (Just "Negative color: ") paletteNegativeCheck PackNatural colorAndMapBox
+    toggleButtonSetActive paletteNegativeCheck (gnuNegativePalette gnuParms)
+
+    mapCheck <- checkButtonNew
+    addWidgetToBox (Just "Map: ") mapCheck PackNatural colorAndMapBox
+    toggleButtonSetActive mapCheck (gnuMap gnuParms)
+    -------------------------
 
     borderEntry <- entryNew
     addWidget (Just "Border: ") borderEntry dialog
     borderEntry `entrySetText` (gnuBorder gnuParms)
 
-    paletteNegativeCheck <- checkButtonNew
-    addWidget (Just "Negative color: ") paletteNegativeCheck dialog
-    toggleButtonSetActive paletteNegativeCheck (gnuNegativePalette gnuParms)
 
     widgetShowAll dialog
     response <- dialogRun dialog
 
     title <- entryGetString titleEntry
+    titleOpts <- entryGetString titleOptsEntry
     xLabel <- entryGetString xLabelEntry
+    xLabelOpts <- entryGetString xLabelOptsEntry
     yLabel <- entryGetString yLabelEntry
+    yLabelOpts <- entryGetString yLabelOptsEntry
+    zLabel <- entryGetString zLabelEntry
+    zLabelOpts <- entryGetString zLabelOptsEntry
     cbLabel <- entryGetString cbLabelEntry
-    font <- entryGetString fontEntry
-    xTicks <- entryGetString xTicksEntry
-    yTicks <- entryGetString yTicksEntry
+    cbLabelOpts <- entryGetString cbLabelOptsEntry
+    xTics <- entryGetString xTicsEntry
+    yTics <- entryGetString yTicsEntry
+    zTics <- entryGetString zTicsEntry
+    cbTics <- entryGetString cbTicsEntry
     border <- entryGetString borderEntry
-    fontSize <- spinButtonGetValue fontSizeSpin
     negativePalette <- toggleButtonGetActive paletteNegativeCheck
+    viewAsMap <- toggleButtonGetActive mapCheck
+    logScaleX <- toggleButtonGetActive logScaleXCheck
+    logScaleY <- toggleButtonGetActive logScaleYCheck
+    logScaleZ <- toggleButtonGetActive logScaleZCheck
      
     if response == ResponseAccept || response == ResponseOk 
         then
@@ -213,15 +285,25 @@ paramsDialog stateRef = do
                                     graphTabGraphs = updateAt selectedGraph (graphParms {
                                         graphGnuParams = gnuParms {
                                             gnuTitle = title,
+                                            gnuTitleOpts = titleOpts,
                                             gnuXLabel = xLabel,
+                                            gnuXLabelOpts = xLabelOpts,
                                             gnuYLabel = yLabel,
+                                            gnuYLabelOpts = yLabelOpts,
+                                            gnuZLabel = zLabel,
+                                            gnuZLabelOpts = zLabelOpts,
                                             gnuCBLabel = cbLabel,
-                                            gnuFont = font,
-                                            gnuXTicks = xTicks,
-                                            gnuYTicks = yTicks,
+                                            gnuCBLabelOpts = cbLabelOpts,
+                                            gnuXTics = xTics,
+                                            gnuYTics = yTics,
+                                            gnuZTics = zTics,
+                                            gnuCBTics = cbTics,
                                             gnuBorder = border,
-                                            gnuFontSize = round fontSize,
-                                            gnuNegativePalette = negativePalette
+                                            gnuMap = viewAsMap,
+                                            gnuNegativePalette = negativePalette,
+                                            gnuLogScaleX = logScaleX,
+                                            gnuLogScaleY = logScaleY,
+                                            gnuLogScaleZ = logScaleZ
                                         }
                                     }) (graphTabGraphs graphTabParms)} ) (graphTabs state)}                    
                 widgetDestroy dialog
@@ -244,22 +326,36 @@ doPlot state grphTabParams plotFunc =
                     (left, top, right, bottom) = getNormalizedScreenArea grphTabParams graphIndex
 
                     title = gnuTitle gnuParms
+                    titleOpts = gnuTitleOpts gnuParms
                     xLabel = gnuXLabel gnuParms
+                    xLabelOpts = gnuXLabelOpts gnuParms
                     yLabel = gnuYLabel gnuParms
+                    yLabelOpts = gnuYLabelOpts gnuParms
+                    zLabel = gnuZLabel gnuParms
+                    zLabelOpts = gnuZLabelOpts gnuParms
                     cbLabel = gnuCBLabel gnuParms
-                    font = gnuFont gnuParms
-                    fontSize = gnuFontSize gnuParms
-                    xTicks = gnuXTicks gnuParms
-                    yTicks = gnuYTicks gnuParms
+                    cbLabelOpts = gnuCBLabelOpts gnuParms
+                    xTics = gnuXTics gnuParms
+                    yTics = gnuYTics gnuParms
+                    zTics = gnuZTics gnuParms
+                    cbTics = gnuCBTics gnuParms
                     border = gnuBorder gnuParms
                     negativePalette = gnuNegativePalette gnuParms
+                    viewAsMap = gnuMap gnuParms
+                    logScaleX = gnuLogScaleX gnuParms
+                    logScaleY = gnuLogScaleY gnuParms
+                    logScaleZ = gnuLogScaleZ gnuParms
                     offset = graphOffset grphParams
 
 
                     getSettings gdp =
                         let
                             (r, g, b) = graphDataParamsColor gdp
-                            color = rgb8 (fromIntegral (shiftR r 8)) (fromIntegral (shiftR g 8)) (fromIntegral (shiftR b 8))
+                            --color = rgb8 (fromIntegral (shiftR r 8)) (fromIntegral (shiftR g 8)) (fromIntegral (shiftR b 8))
+                            -- following fix is needed because gnuplot library omits quotes from around color value
+                            color = Graphics.Gnuplot.ColorSpecification.name $ "#" ++
+                                (concatMap (padLeft '0' 2 . flip showHex "") [(fromIntegral (shiftR r 8)), (fromIntegral (shiftR g 8)), (fromIntegral (shiftR b 8))])
+                            
                             pointType = graphDataParamsPointType gdp 
                             pointSize = graphDataParamsPointSize gdp
                             dash1:dash2:_ = graphDataParamsLineDash gdp
@@ -268,12 +364,17 @@ doPlot state grphTabParams plotFunc =
                         in
                             (color, pointType, pointSize, (round dash1, round dash2), lineWidth, errorBars)
 
-                    dataSets2d = filter (\(dataSet, _) -> 
-                        case dataSet  of
-                            Left d -> D.is2d d
-                            Right (Left s) -> True
-                            Right (Right f) -> AD.is2d f
-                        ) $ concat $ map (\gdp -> map (\sdp -> (subData sdp, gdp)) (dataSet (getDataByName (graphDataParamsName gdp) state))) graphDataParms
+                    dataSets2d = filter (\(dataSet, _, _) -> 
+                            case dataSet  of
+                                Left d -> D.is2d d
+                                Right (Left s) -> True
+                                Right (Right f) -> AD.is2d f
+                        ) $ concat $ map (\gdp -> 
+                                let 
+                                    dp = getDataByName (graphDataParamsName gdp) state
+                                in 
+                                    zipWith (\sdp title -> (subData sdp, title, gdp)) (dataSet dp) (dataDesc dp:(repeat ""))
+                            ) graphDataParms
         
                     adMap ad (color, _, _, (dash1, dash2), lineWidth, _) =
                         let 
@@ -284,7 +385,7 @@ doPlot state grphTabParams plotFunc =
                         in
                             (fmap (Graph2D.lineSpec (((LineSpec.lineWidth lineWidth) . (LineSpec.lineColor color) . (LineSpec.lineType dash1)) LineSpec.deflt)) 
                                 (Plot2D.list (Graph2D.lines) (zip xsWithOffset (AD.getValues (map (\x ->  [x]) xs) g ad))))
-                    dat2d = map (\(dataSet, gdp) ->
+                    dat2d = map (\(dataSet, title, gdp) ->
                         let
                             -- note that we are using dash1 as line type  
                             settings@(color, pointType, pointSize, (dash1, dash2), lineWidth, errorBars) = getSettings gdp 
@@ -305,31 +406,36 @@ doPlot state grphTabParams plotFunc =
                                                         if lineWidth == 0 
                                                             then
                                                                 if errorBars then
-                                                                    (fmap (Graph2D.lineSpec (((LineSpec.pointType pt) . (LineSpec.pointSize pointSize) . (LineSpec.lineColor color)) LineSpec.deflt)) 
+                                                                    (fmap (Graph2D.lineSpec (((LineSpec.pointType pt) . (LineSpec.pointSize pointSize) . (LineSpec.lineColor color) . (LineSpec.title title)) LineSpec.deflt)) 
                                                                         (Plot2D.list (Graph2D.yErrorBarsRelative) (V.toList (V.map (\(x, y, w) -> ((x + offset, y), if w > 0 then sqrt (1 / w) else 0)) (D.values1 d)))))
                                                                 else
-                                                                    (fmap (Graph2D.lineSpec (((LineSpec.pointType pt) . (LineSpec.pointSize pointSize) . (LineSpec.lineColor color)) LineSpec.deflt)) 
+                                                                    (fmap (Graph2D.lineSpec (((LineSpec.pointType pt) . (LineSpec.pointSize pointSize) . (LineSpec.lineColor color) . (LineSpec.title title)) LineSpec.deflt)) 
                                                                         (Plot2D.list (Graph2D.points) valuesWithOffset))
                                                             else
                                                                 case dash1 of 
                                                                     0 -> (fmap (Graph2D.lineSpec (((LineSpec.pointType pt) . (LineSpec.pointSize pointSize) . (LineSpec.lineWidth lineWidth) . 
-                                                                        (LineSpec.lineColor color) . (LineSpec.lineType 2)) LineSpec.deflt)) (Plot2D.list (Graph2D.linesPoints) valuesWithOffset))
+                                                                        (LineSpec.lineColor color) . (LineSpec.lineType 2) . (LineSpec.title title)) LineSpec.deflt)) (Plot2D.list (Graph2D.linesPoints) valuesWithOffset))
                                                                     otherwise -> (fmap (Graph2D.lineSpec (((LineSpec.pointType pt) . (LineSpec.pointSize pointSize) . (LineSpec.lineWidth lineWidth) . 
-                                                                        (LineSpec.lineColor color) . (LineSpec.lineType dash1)) LineSpec.deflt)) (Plot2D.list (Graph2D.linesPoints) valuesWithOffset))
+                                                                        (LineSpec.lineColor color) . (LineSpec.lineType dash1) . (LineSpec.title title)) LineSpec.deflt)) (Plot2D.list (Graph2D.linesPoints) valuesWithOffset))
                                         else
-                                            (fmap (Graph2D.lineSpec (((LineSpec.lineWidth lineWidth) . (LineSpec.lineColor color) . (LineSpec.lineType dash1)) LineSpec.deflt)) 
+                                            (fmap (Graph2D.lineSpec (((LineSpec.lineWidth lineWidth) . (LineSpec.lineColor color) . (LineSpec.lineType dash1) . (LineSpec.title title)) LineSpec.deflt)) 
                                                 (Plot2D.list (Graph2D.lines) (V.toList (D.xys1 d))))
                                 Right (Left s) -> adMap s settings
                                 Right (Right f) -> adMap f settings
                             ) dataSets2d
-                    dataSets3d = filter (\(_, dataSet) -> 
+                    dataSets3d = filter (\(_, _, dataSet) -> 
                         case dataSet of
                             Left d -> is3d d
                             Right (Left s) -> False
                             Right (Right f) -> AD.is3d f
-                        ) (concat $ map (\name -> map (\sdp -> (name, subData sdp)) (dataSet (getDataByName name state))) $ map graphDataParamsName graphDataParms)
+                        ) (concat $ map (\name ->
+                                let 
+                                    dp = getDataByName name state
+                                in
+                                    map (\sdp -> (name, dataDesc dp, subData sdp)) (dataSet dp)
+                            ) $ map graphDataParamsName graphDataParms)
         
-                    dat3d = map (\(name, dataSet) ->
+                    dat3d = map (\(name, title, dataSet) ->
                         let 
                             d = 
                                 case dataSet of
@@ -344,7 +450,8 @@ doPlot state grphTabParams plotFunc =
                                     [xys1] ++ (group xys2)
                             valuesWithOffset = V.toList (V.map (\(x1, x2, y) -> (x1 + offset, x2, y)) (D.xys2 d))
                         in
-                            (Plot3D.mesh (group (List.sort valuesWithOffset)))
+                            (fmap (Graph3D.lineSpec ((LineSpec.title title) LineSpec.deflt)) 
+                                (Plot3D.mesh (group (List.sort valuesWithOffset))))
                         ) dataSets3d
                         
                     numPlots = if length dataSets2d > 0 && length dataSets3d > 0 then 2 else 1
@@ -362,13 +469,15 @@ doPlot state grphTabParams plotFunc =
                     part2d = 
                         MultiPlot.partFromFrame $
                         Frame.cons (
-                            (if length title > 0 then Opts.add Opt.title ["font \"" ++ font ++ "," ++ (show fontSize) ++ "\"", "\"" ++ title ++ "\""] else Opts.remove Opt.title) $
-                            (if length xLabel > 0 then Opts.add (Opt.xLabel "") ["font \"" ++ font ++ "," ++ (show fontSize) ++ "\"", "\"" ++ xLabel ++ "\""] else Opts.remove (Opt.xLabel "")) $
-                            (if length yLabel > 0 then Opts.add (Opt.yLabel "") ["font \"" ++ font ++ "," ++ (show fontSize) ++ "\"", "\"" ++ yLabel ++ "\""] else Opts.remove (Opt.yLabel "")) $
-                            (if length xTicks > 0 then Opts.add (Opt.xTicks "") [xTicks] else Opts.remove (Opt.xTicks "")) $
-                            (if length yTicks > 0 then Opts.add (Opt.yTicks "") [yTicks] else Opts.remove (Opt.yTicks "")) $
+                            (if length title > 0 then Opts.add Opt.title ["\"" ++ title ++ "\" " ++ titleOpts] else Opts.remove Opt.title) $
+                            (if length xLabel > 0 then Opts.add (Opt.xLabel "") ["\"" ++ xLabel ++ "\" " ++ xLabelOpts] else Opts.remove (Opt.xLabel "")) $
+                            (if length yLabel > 0 then Opts.add (Opt.yLabel "") ["\"" ++ yLabel ++ "\" " ++ yLabelOpts] else Opts.remove (Opt.yLabel "")) $
+                            (if length xTics > 0 then Opts.add (Opt.xTicks "") [xTics] else Opts.remove (Opt.xTicks "")) $
+                            (if length yTics > 0 then Opts.add (Opt.yTicks "") [yTics] else Opts.remove (Opt.yTicks "")) $
                             (if length border > 0 then Opts.add (Opt.border "") [border] else Opts.remove (Opt.border "")) $
                             Opts.add (Opt.custom "origin" "") [show left ++ ", " ++ show (1 - bottom)] $ 
+                            (if logScaleX then Opts.xLogScale else Opts.remove Opt.xLogScale) $ 
+                            (if logScaleY then Opts.yLogScale else Opts.remove Opt.yLogScale) $ 
                             Opts.size width height $ 
                             Opts.remove (Opt.key "") $ 
                             opts Opts.deflt) (mconcat dat2d)
@@ -377,21 +486,24 @@ doPlot state grphTabParams plotFunc =
                     part3d = 
                         MultiPlot.partFromFrame $
                         Frame.cons (
-                            Opts.add (Opt.custom "view" "") ["map"] $
-                            Opts.remove (Opt.custom "surface" "") $ 
-                            Opts.remove (Opt.custom "contour" "") $ 
-                            --Opts.add (Opt.custom "cntrparam" "") ["levels", "30"] $
-                            Opts.remove (Opt.custom "dgrid3d" "") $ 
-                            Opts.add (Opt.pm3d "") [] $
-                            Opts.add (Opt.xTicks "") ["font \"" ++ font ++ "," ++ (show fontSize) ++ "\""] $
-                            Opts.add (Opt.yTicks "") ["font \"" ++ font ++ "," ++ (show fontSize) ++ "\""] $
-                            Opts.add (Opt.custom "cbtics" "") ["font \"" ++ font ++ "," ++ (show fontSize) ++ "\""] $
-                            Opts.add Opt.title ["font \"" ++ font ++ "," ++ (show fontSize) ++ "\"", "\"" ++ title ++ "\""] $
-                            Opts.add (Opt.xLabel "") ["font \"" ++ font ++ "," ++ (show fontSize) ++ "\"", "\"" ++ xLabel ++ "\""] $
-                            Opts.add (Opt.yLabel "") ["font \"" ++ font ++ "," ++ (show fontSize) ++ "\"", "\"" ++ yLabel ++ "\""] $
-                            Opts.add (Opt.custom "cblabel" "") ["font \"" ++ font ++ "," ++ (show fontSize) ++ "\"", "\"" ++ cbLabel ++ "\""] $
+                            (if viewAsMap then Opts.viewMap else Opts.remove Opt.view) $ 
+                            (if viewAsMap then Opts.remove (Opt.custom "surface" "") else Opts.add (Opt.custom "surface" "") []) $ 
+                            (if viewAsMap then Opts.remove (Opt.custom "contour" "") else Opts.add (Opt.custom "contour" "") []) $ 
+                            (if viewAsMap then Opts.remove (Opt.custom "dgrid3d" "") else Opts.add (Opt.custom "dgrid3d" "") []) $ 
+                            (if length title > 0 then Opts.add Opt.title ["\"" ++ title ++ "\" " ++ titleOpts] else Opts.remove (Opt.title)) $
+                            (if length xLabel > 0 then Opts.add (Opt.xLabel "") ["\"" ++ xLabel ++ "\" " ++ xLabelOpts] else Opts.remove (Opt.xLabel "")) $
+                            (if length yLabel > 0 then Opts.add (Opt.yLabel "") ["\"" ++ yLabel ++ "\" " ++ yLabelOpts] else Opts.remove (Opt.yLabel "")) $
+                            (if length zLabel > 0 then Opts.add (Opt.zLabel "") ["\"" ++ zLabel ++ "\" " ++ zLabelOpts] else Opts.remove (Opt.zLabel "")) $
+                            (if length cbLabel > 0 then Opts.add (Opt.custom "cblabel" "") ["\"" ++ cbLabel ++ "\" " ++ cbLabelOpts] else Opts.remove (Opt.custom "cblabel" "")) $
+                            (if length xTics > 0 then Opts.add (Opt.xTicks "") [xTics] else Opts.remove (Opt.xTicks "")) $
+                            (if length yTics > 0 then Opts.add (Opt.yTicks "") [yTics] else Opts.remove (Opt.yTicks "")) $
+                            (if length zTics > 0 then Opts.add (Opt.zTicks "") [zTics] else Opts.remove (Opt.zTicks "")) $
+                            (if length cbTics > 0 then Opts.add (Opt.custom "cbtics" "") [cbTics] else Opts.remove (Opt.custom "cbtics" "")) $
                             Opts.add (Opt.custom "palette" "") (if negativePalette then ["negative"] else ["positive"]) $
                             Opts.add (Opt.custom "origin" "") [show left ++ ", " ++ show (1 - bottom)] $ 
+                            (if logScaleX then Opts.xLogScale else Opts.remove Opt.xLogScale) $ 
+                            (if logScaleY then Opts.yLogScale else Opts.remove Opt.yLogScale) $ 
+                            (if logScaleZ then Opts.zLogScale else Opts.remove Opt.zLogScale) $
                             Opts.size width height $ 
                             Opts.remove (Opt.key "") $  
                             opts Opts.deflt) (mconcat dat3d)
@@ -408,88 +520,3 @@ doPlot state grphTabParams plotFunc =
         
         plotFunc multiPlot
 
-{-        
-preview :: (DialogClass d) => State -> d -> GraphParams -> String -> String -> String -> String -> String -> Int -> Bool -> IO ()
-preview state dialog graphParams title xLabel yLabel cbLabel font fontSize negativePalette =
-    do
-        widgetDestroy dialog
-        g <- getStdGen 
-        let
-            graphDataParms = graphData graphParams
-            dataSets2d = filter (\dataSet -> 
-                case dataSet of
-                    Left d -> is2d d
-                    Right s -> True
-                ) $ map (\name -> dataSet (getDataByName name state)) $ map graphDataParamsName graphDataParms
-            
-            adMap ad =
-                let 
-                    xMin = AD.xMin ad
-                    xMax = AD.xMax ad
-                    xs = [xMin, xMin + (xMax - xMin) / 1000 .. xMax]
-                in
-                   (PlotStyle {plotType = Lines, lineSpec = DefaultStyle 1}, zip xs (AD.getValues xs g ad))
-            
-            dat2d = map (\dataSet ->
-                case dataSet of
-                    Left (d@(Data _)) -> (PlotStyle {plotType = Points, lineSpec = DefaultStyle 1}, D.xys1 d)
-                    Left (s@(Spectrum _)) -> (PlotStyle {plotType = Lines, lineSpec = DefaultStyle 1}, D.xys1 s)
-                    Right (Left s) -> adMap s
-                    Right (Right f) -> adMap f
-                ) dataSets2d
-            dataSets3d = filter (\(_, dataSet) -> 
-                case dataSet of
-                    Left d -> is3d d
-                    Right s -> False
-                ) $ map (\name -> (name, dataSet (getDataByName name state))) $ map graphDataParamsName graphDataParms
-            
-            dat3d = map (\(name, dataSet) ->
-                case dataSet of
-                    Left d ->
-                        let 
-                            group [] = [[]]
-                            group xys =
-                                let
-                                    (xys1, xys2) = break (\([x1, _], _) -> x1 > head (fst (head xys))) xys
-                                in
-                                    [map (\([x1, x2], y) -> (x1, x2, y)) xys1] ++ (group xys2)
-                        in
-                            group (sort (D.xys d))
-                ) dataSets3d
-                
-                
-        mapM_
-            (\abc -> plotMesh3d ([
-                    Custom "terminal" ["wxt", "persist"],
-                    Custom "mouse" [],
-                    Custom "title" ["font \"" ++ font ++ "," ++ (show fontSize) ++ "\"", "\"" ++ title ++ "\""],
-                    Custom "xlabel" ["font \"" ++ font ++ "," ++ (show fontSize) ++ "\"", "\"" ++ xLabel ++ "\""],
-                    Custom "ylabel" ["font \"" ++ font ++ "," ++ (show fontSize) ++ "\"", "\"" ++ yLabel ++ "\""],
-                    Custom "cblabel" ["font \"" ++ font ++ "," ++ (show fontSize) ++ "\"", "\"" ++ cbLabel ++ "\""],
-                    Custom "cntrparam" ["levels", "30"],
-                    Custom "autoscale" ["xfixmin"],
-                    Custom "autoscale" ["xfixmax"],
-                    Custom "nokey" [],
-                    XTicks (Just ["font \"" ++ font ++ "," ++ (show fontSize) ++ "\""]),
-                    YTicks (Just ["font \"" ++ font ++ "," ++ (show fontSize) ++ "\""]),
-                    Custom "cbtics" ["font \"" ++ font ++ "," ++ (show fontSize) ++ "\""]
-                ] 
-                 ++ (
-                    if negativePalette
-                        then [Custom "palette" ["negative"]]
-                        else []
-                    ))
-            [Plot3dType ColorMap] abc) dat3d
-
-        plotPathsStyle [
-                Custom "terminal wxt persist" [],
-                Custom "mouse" [],
-                Custom "xlabel" ["font \"" ++ font ++ "," ++ (show fontSize) ++ "\"", "\"" ++ xLabel ++ "\""],
-                Custom "ylabel" ["font \"" ++ font ++ "," ++ (show fontSize) ++ "\"", "\"" ++ yLabel ++ "\""],
-                Custom "autoscale" ["xfixmin"],
-                Custom "autoscale" ["xfixmax"],
-                Custom "nokey" [],
-                XTicks (Just ["font \"" ++ font ++ "," ++ (show fontSize) ++ "\""]),
-                YTicks (Just ["font \"" ++ font ++ "," ++ (show fontSize) ++ "\""])
-            ] dat2d
--}            

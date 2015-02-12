@@ -89,7 +89,7 @@ statisticDialog stateRef = do
                                 commonParams = statisticCommonParams statParams
                             nameEntry <- entryNew
                             nameEntry `entrySetText` (commonName commonParams)
-                            addWidgetToVBox (Just "Name: ") nameEntry PackNatural page
+                            addWidgetToBox (Just "Name: ") nameEntry PackNatural page
                             
                             statisticTextBuffer <- textBufferNew Nothing
                             textBufferSetText statisticTextBuffer (statisticDefinition statParams)
@@ -98,7 +98,7 @@ statisticDialog stateRef = do
                             fontDescriptionSetFamily font "Courier New"
                             widgetModifyFont statisticTextView (Just font)
                             textViewSetAcceptsTab statisticTextView False
-                            addWidgetToVBox (Just "Definition:") statisticTextView PackNatural page
+                            addWidgetToBox (Just "Definition:") statisticTextView PackNatural page
                             
                             hBox <- hBoxNew False 0
                             addButton <- buttonNewWithLabel "Add"
@@ -124,7 +124,7 @@ statisticDialog stateRef = do
                                     pageIndex <- notebookGetNPages notebook
                                     notebookSetCurrentPage notebook (pageIndex - 2)
                                     
-                            addWidgetToVBox Nothing hBox PackNatural page
+                            addWidgetToBox Nothing hBox PackNatural page
                             addPageToNotebook (page, Nothing, statisticTextBuffer)
                             
                     Just statParams ->
@@ -158,25 +158,25 @@ statisticDialog stateRef = do
                             scrollwdTextView <- scrolledWindowNew (Just hAdjustment) (Just vAdjustment)
 
                             scrolledWindowAddWithViewport scrollwdTextView statisticTextView
-                            addWidgetToVBox (Just "Definition:") scrollwdTextView PackNatural page
+                            addWidgetToBox (Just "Definition:") scrollwdTextView PackNatural page
                             
                             
                             hBox <- hBoxNew False 0
                             saveButton <- buttonNewWithLabel "Save changes"
                             boxPackEnd hBox saveButton PackNatural 2
                                     
-                            addWidgetToVBox Nothing hBox PackNatural page
+                            addWidgetToBox Nothing hBox PackNatural page
                 
                             dataChooser <- dataSetChooserNew (\_ -> True) state
-                            addWidgetToVBox Nothing (dataSetChooserToWidget dataChooser) PackGrow page
+                            addWidgetToBox Nothing (dataSetChooserToWidget dataChooser) PackGrow page
             
                             nameEntry <- entryNew 
                             nameEntry `entrySetText` name
-                            addWidgetToVBox (Just "Name:") nameEntry PackNatural page
+                            addWidgetToBox (Just "Name:") nameEntry PackNatural page
             
                             varValDefsEntry <- entryNew
                             varValDefsEntry `entrySetText` (statisticVarValsDef statParams)
-                            addWidgetToVBox (Just "Variable values: ") varValDefsEntry PackNatural page
+                            addWidgetToBox (Just "Variable values: ") varValDefsEntry PackNatural page
                         
                             on saveButton buttonActivated $
                                 do
@@ -280,7 +280,7 @@ statisticDialog stateRef = do
                                         else forkIO applyStatistic >> return ()
     
 
-                            addWidgetToVBox Nothing hBox PackNatural page
+                            addWidgetToBox Nothing hBox PackNatural page
                             addPageToNotebook (page, Just name, statisticTextBuffer)
                             modifyIORef pagesRef (\pages -> pages ++ [(page, name, statisticTextBuffer)]) 
                             --return (page, name, statisticEntry)
@@ -290,7 +290,7 @@ statisticDialog stateRef = do
     mapM_ (createPage) $ (List.map (Just) (init (statisticParams (params state))))
     --modifyIORef pagesRef (\_ -> pages) 
     
-    addWidgetToVBox Nothing notebook PackGrow vBox
+    addWidgetToBox Nothing notebook PackGrow vBox
 
     let
         onClose response =
