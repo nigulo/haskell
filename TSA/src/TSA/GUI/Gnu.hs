@@ -376,14 +376,14 @@ doPlot state grphTabParams plotFunc =
                                     zipWith (\sdp title -> (subData sdp, title, gdp)) (dataSet dp) (dataDesc dp:(repeat ""))
                             ) graphDataParms
         
-                    adMap ad (color, _, _, (dash1, dash2), lineWidth, _) =
+                    adMap ad title (color, _, _, (dash1, dash2), lineWidth, _) =
                         let 
                             xMin = plotAreaLeft grphArea
                             xMax = plotAreaRight grphArea
                             xs = [xMin, xMin + (xMax - xMin) / 1000 .. xMax]
                             xsWithOffset = [xMin + offset, xMin + offset + (xMax - xMin) / 1000 .. xMax + offset]
                         in
-                            (fmap (Graph2D.lineSpec (((LineSpec.lineWidth lineWidth) . (LineSpec.lineColor color) . (LineSpec.lineType dash1)) LineSpec.deflt)) 
+                            (fmap (Graph2D.lineSpec (((LineSpec.lineWidth lineWidth) . (LineSpec.lineColor color) . (LineSpec.lineType dash1) . (LineSpec.title title)) LineSpec.deflt)) 
                                 (Plot2D.list (Graph2D.lines) (zip xsWithOffset (AD.getValues (map (\x ->  [x]) xs) g ad))))
                     dat2d = map (\(dataSet, title, gdp) ->
                         let
@@ -420,8 +420,8 @@ doPlot state grphTabParams plotFunc =
                                         else
                                             (fmap (Graph2D.lineSpec (((LineSpec.lineWidth lineWidth) . (LineSpec.lineColor color) . (LineSpec.lineType dash1) . (LineSpec.title title)) LineSpec.deflt)) 
                                                 (Plot2D.list (Graph2D.lines) (V.toList (D.xys1 d))))
-                                Right (Left s) -> adMap s settings
-                                Right (Right f) -> adMap f settings
+                                Right (Left s) -> adMap s title settings
+                                Right (Right f) -> adMap f title settings
                             ) dataSets2d
                     dataSets3d = filter (\(_, _, dataSet) -> 
                         case dataSet of
