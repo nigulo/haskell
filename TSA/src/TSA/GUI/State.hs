@@ -299,7 +299,8 @@ data GnuParams = GnuParams {
     gnuNegativePalette :: Bool,
     gnuLogScaleX :: Bool,
     gnuLogScaleY :: Bool,
-    gnuLogScaleZ :: Bool
+    gnuLogScaleZ :: Bool,
+    gnuGrid :: Bool
 } deriving (Show, Read)
 
 defaultGnuTitleOpts = "font \"Arial,12\""
@@ -318,7 +319,8 @@ instance Xml.XmlElement GnuParams where
          ("negativepalette", show (gnuNegativePalette params)),
          ("logscalex", show (gnuLogScaleX params)),
          ("logscaley", show (gnuLogScaleY params)),
-         ("logscalez", show (gnuLogScaleZ params))
+         ("logscalez", show (gnuLogScaleZ params)),
+         ("grid", show (gnuGrid params))
         ]
         [Left (Xml.element "titleopts" [] [Right (gnuTitleOpts params)]),
         Left (Xml.element "xlabelopts" [] [Right (gnuXLabelOpts params)]),
@@ -380,7 +382,10 @@ instance Xml.XmlElement GnuParams where
             gnuMap = case Xml.maybeAttrValue e "map" of
                 Just map -> read map
                 Nothing -> True,
-            gnuNegativePalette = read $ Xml.attrValue e "negativepalette"
+            gnuNegativePalette = read $ Xml.attrValue e "negativepalette",
+            gnuGrid = case Xml.maybeAttrValue e "grid" of
+                Just grid -> read grid
+                Nothing -> True
         } 
 
 data GraphSelection = GraphSelection {
@@ -747,7 +752,8 @@ newGnuParams =
        gnuNegativePalette = True,
        gnuLogScaleX = False,
        gnuLogScaleY = False,
-       gnuLogScaleZ = False
+       gnuLogScaleZ = False,
+       gnuGrid = True
    }
 
 newSettings :: SettingsParams

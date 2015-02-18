@@ -245,6 +245,10 @@ paramsDialog stateRef = do
     toggleButtonSetActive mapCheck (gnuMap gnuParms)
     -------------------------
 
+    gridCheck <- checkButtonNew
+    addWidget (Just "Grid: ") gridCheck dialog
+    toggleButtonSetActive gridCheck (gnuGrid gnuParms)
+
     borderEntry <- entryNew
     addWidget (Just "Border: ") borderEntry dialog
     borderEntry `entrySetText` (gnuBorder gnuParms)
@@ -273,6 +277,7 @@ paramsDialog stateRef = do
     logScaleX <- toggleButtonGetActive logScaleXCheck
     logScaleY <- toggleButtonGetActive logScaleYCheck
     logScaleZ <- toggleButtonGetActive logScaleZCheck
+    grid <- toggleButtonGetActive gridCheck
      
     if response == ResponseAccept || response == ResponseOk 
         then
@@ -303,7 +308,8 @@ paramsDialog stateRef = do
                                             gnuNegativePalette = negativePalette,
                                             gnuLogScaleX = logScaleX,
                                             gnuLogScaleY = logScaleY,
-                                            gnuLogScaleZ = logScaleZ
+                                            gnuLogScaleZ = logScaleZ,
+                                            gnuGrid = grid
                                         }
                                     }) (graphTabGraphs graphTabParms)} ) (graphTabs state)}                    
                 widgetDestroy dialog
@@ -345,6 +351,7 @@ doPlot state grphTabParams plotFunc =
                     logScaleX = gnuLogScaleX gnuParms
                     logScaleY = gnuLogScaleY gnuParms
                     logScaleZ = gnuLogScaleZ gnuParms
+                    grid = gnuGrid gnuParms
                     offset = graphOffset grphParams
 
 
@@ -479,6 +486,7 @@ doPlot state grphTabParams plotFunc =
                             (if logScaleX then Opts.xLogScale else Opts.remove Opt.xLogScale) $ 
                             (if logScaleY then Opts.yLogScale else Opts.remove Opt.yLogScale) $ 
                             Opts.size width height $ 
+                            Opts.grid grid $ 
                             Opts.remove (Opt.key "") $ 
                             opts Opts.deflt) (mconcat dat2d)
 
