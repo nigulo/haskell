@@ -42,43 +42,6 @@ executable TSA
   ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
   main-is:         Main.hs
   other-modules:   
-                 TSA.Extrema,
-                 TSA.LeastSquares,
-                 TSA.GUI.Extrema,
-                 TSA.GUI.LeastSquares,
-                 TSA.GUI.State,
-                 TSA.GUI.Dialog,
-                 TSA.Params,
-                 TSA.GUI.AnalyticSignal,
-                 TSA.GUI.Attractor,
-                 TSA.GUI.Build,
-                 TSA.GUI.Common,
-                 TSA.GUI.Correlation,
-                 TSA.GUI.Data,
-                 TSA.GUI.Envelopes,
-                 TSA.GUI.FFT,
-                 TSA.GUI.Function,
-                 TSA.GUI.Gnu,
-                 TSA.GUI.Graph,
-                 TSA.GUI.IMF,
-                 TSA.GUI.Interpolate,
-                 TSA.GUI.IO,
-                 TSA.GUI.LocalPhase,
-                 TSA.GUI.Log,
-                 TSA.GUI.Markers,
-                 TSA.GUI.Modify,
-                 TSA.GUI.Period,
-                 TSA.GUI.Preferences,
-                 TSA.GUI.Sample,
-                 TSA.GUI.Selection,
-                 TSA.GUI.Statistic,
-                 TSA.Data,
-                 TSA.Period,
-                 TSA.D2,
-                 TSA.GUI.D2,
-                 TSA.Envelopes,
-                 TSA.AnalyticSignal,
-                 TSA.HilbertHuang
   extensions:      
                DoAndIfThenElse,
                ScopedTypeVariables
@@ -91,7 +54,7 @@ executable Bootstrap
                 system-filepath -any
   hs-source-dirs:  src
   ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
-  main-is:         TSA/Bootstrap/Main.hs
+  main-is:         TSA/Apps/Bootstrap.hs
   extensions:      
                 DoAndIfThenElse,
                 ScopedTypeVariables
@@ -100,19 +63,19 @@ executable Significance
   build-depends:   base >= 4
   hs-source-dirs:  src
   ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
-  main-is:         TSA/Bootstrap/Significance.hs
+  main-is:         TSA/Apps/Significance.hs
   extensions:      ScopedTypeVariables
 
 executable D2
   build-depends:   base >= 4
   hs-source-dirs:  src
   ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
-  main-is:         TSA/Bootstrap/D2.hs
+  main-is:         TSA/Apps/D2.hs
   extensions:      ScopedTypeVariables
 
 executable HilbertHuang
   build-depends:   base >= 4
   hs-source-dirs:  src
   ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
-  main-is:         TSA/HilbertHuang.hs
+  main-is:         TSA/Apps/HilbertHuang.hs
   extensions:      ScopedTypeVariables
