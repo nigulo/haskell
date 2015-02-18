@@ -34,8 +34,8 @@ import Graphics.UI.Gtk.Gdk.Events hiding (Rectangle)
 
 import Debug.Trace
 
-import Utils.Misc
 import Utils.Math
+import Utils.Misc
 
 import Data.List
 import Data.Char
@@ -930,13 +930,13 @@ drawColorBox (left, top) (right, bottom) minUnits maxUnits lineWidth (width, hei
 
 filterGraph :: ScreenArea -> [(Double, Double)] -> [(Double, Double)]
 filterGraph screenArea coords =
-    forl_ [0 .. length coords - 1] [] fori where
+    foldl' (fori) [] [0 .. length coords - 1] where
         formattedArea = formatScreenArea screenArea
         left = screenAreaLeft formattedArea
         top = screenAreaTop formattedArea
         right = screenAreaRight formattedArea
         bottom = screenAreaBottom formattedArea
-        fori i retVal = 
+        fori retVal i = 
             let
                 (x0, y0) = if i == 0 then coords !! i else coords !! (i - 1)
                 (x1, y1) = coords !! i

@@ -6,6 +6,8 @@ import Math.Matrix as Matrix
 import Utils.Misc
 import Utils.List
 import Debug.Trace
+import Data.List
+import Control.Monad
 
 -- | Solves the system of linear equations using Cramer's rule.
 -- | This is very slow and imprecise method, use 'solveGauss' instead.
@@ -66,12 +68,12 @@ backSubstitution m =
     let
         p = getNumRows m - 1;
         a i j = (Matrix.get (i, j) m);
-        calc i _ bs = 
+        calc bs i = 
             let 
                 aii = {-trace ("aii_back=" ++ (show (a i i)))-} a i i
                 bi = (a i (p + 1) - (sum [(a i j) * (bs !! (j - i - 1)) | j <- [i + 1 .. p]])) / (aii) 
             in (bi:bs)
-    in vector $ for p (>=0) (\p -> p - 1) () [] calc
+    in vector $ foldl' (calc) [] [p, p - 1 .. 0] --for p (>=0) (\p -> p - 1) () [] calc
 --------------------------------------------------------------------------------            
 
 -- | Returns a solution vector for given system of linear equations
@@ -83,11 +85,12 @@ backSubstitutionIO m =
             p = getNumRows m - 1;
             a i j = (Matrix.get (i, j) m);
 
-            calc i _ bs = 
+            calc bs i = 
                 do
                     let bi = (a i (p + 1) - (sum [(a i j) * (bs !! (j - i - 1)) | j <- [i + 1 .. p]])) / (a i i) 
                     return (bi:bs) --(Vector.set i bi bs)
-        retVal <- forM p (>=0) (\p -> p - 1) () [] calc
+        --retVal <- forM p (>=0) (\p -> p - 1) () [] calc
+        retVal <- foldM (calc) [] [p, p - 1 .. 0]
         
         return $ vector retVal
 

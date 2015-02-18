@@ -42,6 +42,7 @@ import GUI.Plot as Plot
 import GUI.Widget
 
 import Control.Concurrent.MVar
+import Control.Monad
 import Data.IORef
 import Data.List
 import Data.Word
@@ -330,7 +331,7 @@ dataDialog stateRef = do
                                         setLineSettingsEnabled True
                                         setColorSettingsEnabled True
         
-        createDataPage i (pages) = 
+        createDataPage (pages) i = 
             do
                 state <- readMVar stateRef
                 let 
@@ -382,7 +383,7 @@ dataDialog stateRef = do
     vBox <- vBoxNew False 2
     boxPackStart contentBox vBox PackGrow 2
 
-    dataPages <- forM__ 0 (length dParams - 1) [] createDataPage
+    dataPages <- foldM (createDataPage) [] [0 .. length dParams - 1] 
     pagesRef <- newIORef dataPages
     
 
@@ -437,7 +438,7 @@ dataDialog stateRef = do
                             pages <- readIORef pagesRef                 
                             let
                                 newPageIndex = length pages
-                            [newPage@(page, name, _, _, _, _, _)] <- forM__ (newPageIndex) (newPageIndex) [] createDataPage
+                            [newPage@(page, name, _, _, _, _, _)] <- createDataPage [] newPageIndex
             
                             modifyIORef pagesRef (\pages -> pages ++ [newPage])
                             label <- labelWithButton (Just name) stockRemove (removeData page)
@@ -516,18 +517,7 @@ dataDialog stateRef = do
                             pages <- readIORef pagesRef
 
                             modifyMVar_ stateRef $ \state ->
-                                forM__ 0 (length pages - 1)                                 
-                                    state {
-                                            graphTabs = updateAt currentTabIndex (
-                                                graphTabParms {
-                                                    graphTabGraphs = updateAt selectedGraph (
-                                                    graphParms {
-                                                        graphData = []}
-                                                    ) (graphTabGraphs graphTabParms)
-                                                } 
-                                            ) $ graphTabs state
-                                    }
-                                    (\i state -> 
+                                foldM (\state i -> 
                                         do
                                             let 
                                                 dataPage@(_, name, _, color, symbolSettings, lineSettings, errorBars) = pages !! i
@@ -545,7 +535,17 @@ dataDialog stateRef = do
                                                                 graphData = (graphData graphParms) ++ [newGraphDataParams name newDataParamsValues]}
                                                             ) (graphTabGraphs graphTabParms)} ) (graphTabs state)}
                                         ) 
-
+                                    state {
+                                            graphTabs = updateAt currentTabIndex (
+                                                graphTabParms {
+                                                    graphTabGraphs = updateAt selectedGraph (
+                                                    graphParms {
+                                                        graphData = []}
+                                                    ) (graphTabGraphs graphTabParms)
+                                                } 
+                                            ) $ graphTabs state
+                                    }
+                                    [0 .. length pages - 1]
 
 
                     else

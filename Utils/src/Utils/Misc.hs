@@ -1,6 +1,5 @@
 
-module Utils.Misc (for, for_, for__, forM, forM_, forM__, 
-        forl, forl_, forMl, forMl_,
+module Utils.Misc (
         left, right,
         isLeft, isRight, maybe_, randomGens,
         nubVector, sortVectorBy, sortVector, 
@@ -10,112 +9,6 @@ import Debug.Trace
 import System.Random
 import qualified Data.Vector.Unboxed as V
 import qualified Data.List as List
-
---------------------------------------------------------------------------------
--- | This function represents a Java/C like for loop in the form:
--- | val = val0;
--- | for (i = i0; cond i; inc i) {
--- |    val = func i val;
--- | }
-for :: Num a => a              -- ^ initial counter value
-             -> (a -> Bool)    -- condition to check 
-             -> (a -> a)       -- ^ incremental function
-             -> b              -- ^ input value
-             -> c              -- ^ initual return value
-             -> (a -> b -> c -> c) -- ^ function to run on every step
-             -> c              -- ^ final value returned
-for i cond inc inVal retVal f  = 
-    if cond i then 
-        for (inc i) cond inc inVal (f i inVal retVal) f
-    else 
-        retVal
---------------------------------------------------------------------------------
--- | This function represents a Java/C like for loop in the form:
--- | val = val0;
--- | for (i = i0; i <= n; i++) {
--- |    val = func i val;
--- | }
-for_ :: Real a => a            -- ^ initial counter value
-             -> a              -- final counter value (including)
-             -> b              -- ^ input value
-             -> c              -- ^ initual return value
-             -> (a -> b -> c -> c) -- ^ function to run on every step
-             -> c              -- ^ final value returned
-for_ i n inVal retVal f = for i (<= n) (+1) inVal retVal f
-
-for__ :: Real a => a            -- ^ initial counter value
-             -> a              -- final counter value (including)
-             -> c              -- ^ initual return value
-             -> (a -> c -> c) -- ^ function to run on every step
-             -> c              -- ^ final value returned
-for__ i n retVal f = for_ i n () retVal (\j _ retVal -> f j retVal)
-
-
-forl :: [a]              -- ^ initial counter value
-             -> b              -- ^ input value
-             -> c              -- ^ initual return value
-             -> (a -> b -> c -> c) -- ^ function to run on every step
-             -> c              -- ^ final value returned
-forl is inVal retVal f  = 
-    --forList is inVal (f i inVal retVal) f 
-    List.foldl' (\r i -> f i inVal r) retVal is
-
-forl_ :: [a]              -- ^ initial counter value
-             -> b              -- ^ input value
-             -> (a -> b -> b) -- ^ function to run on every step
-             -> b              -- ^ final value returned
-forl_ is retVal f  = forl is () retVal (\j _ retVal -> f j retVal)
-
---------------------------------------------------------------------------------
-forM :: (Num a, Monad m) => 
-                 a              -- ^ initial counter value
-             -> (a -> Bool)    -- condition to check 
-             -> (a -> a)       -- ^ incremental function
-             -> b              -- ^ input value
-             -> c              -- ^ initual return value
-             -> (a -> b -> c -> m c) -- ^ function to run on every step
-             -> m c              -- ^ final value returned
-forM i cond inc inVal retVal f  = 
-        if not (cond i)
-            then 
-                do
-                    return retVal
-            else
-                do
-                    val2 <- (f i inVal retVal)
-                    forM (inc i) cond inc inVal val2 f
-
-
-forM_ :: (Real a, Monad m) => a            -- ^ initial counter value
-             -> a              -- final counter value (including)
-             -> b              -- ^ input value
-             -> c              -- ^ initual return value
-             -> (a -> b -> c -> m c) -- ^ function to run on every step
-             -> m c              -- ^ final value returned
-forM_ i n inVal retVal f = forM i (<= n) (+1) inVal retVal f
-
-forM__ :: (Real a, Monad m) => a            -- ^ initial counter value
-             -> a              -- final counter value (including)
-             -> b              -- ^ initual return value
-             -> (a -> b -> m b) -- ^ function to run on every step
-             -> m b              -- ^ final value returned
-forM__ i n retVal f = forM_ i n () retVal (\j _ retVal -> f j retVal)
-
-
-forMl :: (Num a, Monad m) => [a]              -- ^ initial counter value
-             -> b              -- ^ input value
-             -> c              -- ^ initual return value
-             -> (a -> b -> c -> m c) -- ^ function to run on every step
-             -> m c              -- ^ final value returned
-forMl is inVal retVal f  = 
-    List.foldl' (\r i -> r >>= f i inVal) (return retVal) is
-
-forMl_ :: (Num a, Monad m) => [a]              -- ^ initial counter value
-             -> b              -- ^ input value
-             -> (a -> b -> m b) -- ^ function to run on every step
-             -> m b              -- ^ final value returned
-forMl_ is retVal f  = forMl is () retVal (\j _ retVal -> f j retVal)
-
 
 isLeft :: Either a b -> Bool
 isLeft (Left _) = True
