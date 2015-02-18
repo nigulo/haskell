@@ -22,7 +22,6 @@ import Control.Concurrent
 import System.CPUTime
 import System.Environment
 import Math.Expression
-import Math.Statistics
 import System.Random
 
 import qualified Data.Vector.Unboxed as V

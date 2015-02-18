@@ -5,7 +5,6 @@ import Graphics.UI.Gtk hiding (addWidget)
 import Regression.Data as D
 import Regression.Utils as U
 import Regression.AnalyticData as AD
-import Math.Statistics as S
 
 import TSA.Params
 import TSA.GUI.State

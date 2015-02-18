@@ -21,7 +21,6 @@ import qualified Regression.Functions as FS
 import qualified Regression.AnalyticData as AD
 import qualified Math.Function as F
 import qualified Math.Expression as E
-import qualified Math.Statistics
 
 import Data.List
 import qualified Data.Vector.Unboxed as V
@@ -29,6 +28,7 @@ import System.Random
 import System.Random.MWC
 import Utils.Misc
 import Debug.Trace
+import qualified Statistics.Sample as Sample
 
 import System.Random
 import System.Random.MWC
@@ -205,12 +205,12 @@ bootstrap ad d diff = do
 var :: Data -> Either Data (Either S.Spline FS.Functions) -> Double
 var dat1 (Left dat2) = 
     -- Both data sets must have the same x coordinates and weights
-    Math.Statistics.varw_ (zipWith (\y1 y2 -> (y1 - y2)) ys1 ys2) ws1 where
-        ys1 = V.toList $ D.ys dat1
-        ws1 = V.toList $ D.ws dat1
-        ys2 = V.toList $ D.ys dat2
+    Sample.varianceWeighted (V.zip (V.zipWith (\y1 y2 -> (y1 - y2)) ys1 ys2) ws1) where
+        ys1 = D.ys dat1
+        ws1 = D.ws dat1
+        ys2 = D.ys dat2
 var dat (Right ad) = 
-    Math.Statistics.varw_ (zipWith (\y y1 -> (y - y1)) ys adValues) ws where
+    Sample.varianceWeighted (V.fromList (zip (zipWith (\y y1 -> (y - y1)) ys adValues) ws)) where
         (xs, ys, ws) = unzip3 $ D.values dat
         adValues = 
             case ad of
