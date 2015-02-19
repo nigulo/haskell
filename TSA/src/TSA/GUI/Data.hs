@@ -282,6 +282,7 @@ only2d dp =
 dataFilter :: Bool -> DataFilter
 dataFilter trueFalse dp =
     case subData (head (dataSet dp)) of 
+        Left (Data2 _) -> trueFalse
         Left (Data3 _) -> trueFalse
         Left (Spectrum2 _) -> not trueFalse
         _ -> False
