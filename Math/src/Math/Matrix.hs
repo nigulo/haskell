@@ -28,7 +28,7 @@ newtype Num a => Matrix a = Matrix (Array (Int, Int) a) deriving Show
 matrix :: Num a => [[a]] -> Matrix a
 matrix [[]] = Matrix (array ((0, 0), (0, 0)) [])
 matrix rows@(r0:rs) = 
-    Matrix (array ((0, 0), (length rows - 1, length r0 - 1)) [((i, j), (rows !! i) !! j) | i <- [0 .. length rows - 1], j <- [0 .. length r0 - 1]])
+    Matrix (listArray ((0, 0), (length rows - 1, length r0 - 1)) (concat rows))
 
 matrixFromIndicesAndValues :: Num a => Int -> Int -> [((Int, Int), a)] -> Matrix a
 matrixFromIndicesAndValues numRows numCols indicesAndValues = 

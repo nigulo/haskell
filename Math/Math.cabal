@@ -21,7 +21,7 @@ executable Math
                pretty -any,
                random -any
   hs-source-dirs:  src
-  ghc-options:     -O2 -fexcess-precision
+  ghc-options:     -O2 -fexcess-precision -rtsopts
   main-is:         Main.hs
   other-modules:   
                    Math.Expression,
