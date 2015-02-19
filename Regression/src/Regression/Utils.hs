@@ -48,8 +48,8 @@ binaryOp op (Left d1) (Left d2) yOrx _ =
                 V.zipWith (\(x1, y1, w1) (x2, _, w2) -> (F.getValue_ [x1, x2] op, y1, w1)) (values1 d1') (values1 d2')
     in
         case d1 of 
-            Data _ -> Left $ data1 vs
-            Spectrum _ -> Left $ spectrum1 vs
+--            Data _ -> Left $ data1 vs
+--            Spectrum _ -> Left $ spectrum1 vs
             Data2 _ -> Left $ data1 vs
             Spectrum2 _ -> Left $ spectrum1 vs
 binaryOp op (Left d) (Right s) yOrx g = 
@@ -66,8 +66,8 @@ binaryOp op (Left d) (Right s) yOrx g =
             else zipWith (\(x1, y1, w1) (x, g) -> (F.getValue [x1, x] [] g op, y1, w1)) (V.toList (values1 d)) (zip (V.toList (xs1 d)) (randomGens g2))
     in
         case d of 
-            Data _ -> Left $ data1 $ V.fromList vs
-            Spectrum _ -> Left $ spectrum1 $ V.fromList vs
+--            Data _ -> Left $ data1 $ V.fromList vs
+--            Spectrum _ -> Left $ spectrum1 $ V.fromList vs
             Data2 _ -> Left $ data1 $ V.fromList vs
             Spectrum2 _ -> Left $ spectrum1 $ V.fromList vs
 binaryOp op (Right (Left s1)) (Right (Left s2)) _ g = 
@@ -86,8 +86,8 @@ constantOp op (Left d) k yOrx =
             else V.map (\(x, y, w) -> (F.getValue_ [x, k] op, y, w)) (values1 d)
     in
         case d of 
-            Data _ -> Left $ data1 vs
-            Spectrum _ -> Left $ spectrum1 vs
+--            Data _ -> Left $ data1 vs
+--            Spectrum _ -> Left $ spectrum1 vs
             Data2 _ -> Left $ data1 vs
             Spectrum2 _ -> Left $ spectrum1 vs
 constantOp op (Right s) k _ = 
@@ -109,7 +109,7 @@ sampleAnalyticData s@(AD.AnalyticData (((_:[]), _, _):_)) [minx] [maxx] [num] g 
         Spectrum2 ((minx, step),
             V.zip (V.fromList (AD.getValues (map (\x ->  [x]) [minx, minx + step .. maxx]) g s)) (V.replicate num 1))
 
--- multidimensional analytic data sampling
+-- 3d analytic data sampling
 sampleAnalyticData s minxs maxxs nums g =
     let 
         xs =
@@ -121,7 +121,7 @@ sampleAnalyticData s minxs maxxs nums g =
         xss = sequence xs
         
     in 
-        Data (zip3 xss (AD.getValues xss g s) (replicate (length xss) 1))
+        data2 (zip3 xss (AD.getValues xss g s) (replicate (length xss) 1))
 
 sampleAnalyticData_ :: (F.Fn d, RandomGen g) => AD.AnalyticData d -> [Int] -> g -> Data
 sampleAnalyticData_ s nums g = sampleAnalyticData s (AD.xMins s) (AD.xMaxs s) nums g  
