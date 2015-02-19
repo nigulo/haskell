@@ -928,60 +928,6 @@ drawColorBox (left, top) (right, bottom) minUnits maxUnits lineWidth (width, hei
     else
         return ()
 
-filterGraph :: ScreenArea -> [(Double, Double)] -> [(Double, Double)]
-filterGraph screenArea coords =
-    foldl' (fori) [] [0 .. length coords - 1] where
-        formattedArea = formatScreenArea screenArea
-        left = screenAreaLeft formattedArea
-        top = screenAreaTop formattedArea
-        right = screenAreaRight formattedArea
-        bottom = screenAreaBottom formattedArea
-        fori retVal i = 
-            let
-                (x0, y0) = if i == 0 then coords !! i else coords !! (i - 1)
-                (x1, y1) = coords !! i
-                inside0 = x0 >= left && x0 < right && y0 >= top && y0 < bottom
-                inside1 = x1 >= left && x1 < right && y1 >= top && y1 < bottom
-            in
-                if (inside0 && inside1) 
-                then retVal ++ [(x1, y1)]
-                else
-                    let
-                        xIntersect y = 
-                            if (y1 - y0) == 0
-                            then Nothing
-                            else 
-                                let x = x0 + (y - y0) * (x1 - x0) / (y1 - y0)
-                                in 
-                                    if x >= left && x < right && x >= min x0 x1 && x < max x0 x1
-                                    then Just (x, y) 
-                                    else Nothing
-                        yIntersect x = 
-                            if (x1 - x0) == 0 
-                            then Nothing
-                            else 
-                                let y = y0 + (y1 - y0) * (x - x0) / (x1 - x0)
-                                in 
-                                    if y >= top && y < bottom && y >= min y0 y1 && y < max y0 y1
-                                    then Just (x, y) 
-                                    else Nothing
-                        intersections = 
-                            sortBy (\(x0, _) (x1, _)-> compare x0 x1) $
-                            catMaybes
-                                [xIntersect top, 
-                                xIntersect bottom, 
-                                yIntersect left, 
-                                yIntersect right]
-                    in
-                        if (not inside0) then
-                            if (not inside1) then
-                                retVal ++ intersections
-                            else
-                                retVal ++ intersections ++ [(x1, y1)]
-                        else
-                            retVal ++ [(x0, y0)] ++ intersections
-            
-            
 getUnits :: PlotSettings ->
             (
                 (Bool, Bool), -- ^ draw x and y minor units  
