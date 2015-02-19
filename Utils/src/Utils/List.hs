@@ -5,7 +5,6 @@ module Utils.List (
     intersection, 
     maxIndex, 
     minIndex, 
-    sum0,
     removeAt,
     insertAt,
     updateAt,
@@ -51,11 +50,6 @@ minIndex :: Ord a => [a] -> Maybe Int
 minIndex xs = List.findIndex (\x -> x == xMin) xs where
     xMin = minimum xs
 
-sum0 :: Num a => [a] -> a
-sum0 xs =
-    if length xs > 0 then sum xs
-    else 0
-    
 removeAt :: Int -> [a] -> [a]
 removeAt i xs = (take i xs) ++ (drop (i + 1) xs) 
 

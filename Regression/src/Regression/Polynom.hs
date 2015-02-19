@@ -345,7 +345,7 @@ getValueAtIndex x p@(Polynom [pol@(coef:coefs, f, d)]) coefIndex =
 
 -- | Returns all polynom coeficient values at the given coordinate
 getValues :: Double -> Polynom -> [[Double]]
-getValues x p@(Polynom ((coefs, f, d):[]))= [[getValueAtIndex x p i | i <- fst (unzip coefs)]]
+getValues x p@(Polynom ((coefs, f, d):[])) = [[getValueAtIndex x p i | i <- fst (unzip coefs)]]
 getValues x (Polynom (p:ps)) = 
     values:getValues x (Polynom ps) where
         [values] = getValues x (Polynom [p])
