@@ -275,19 +275,16 @@ type DataFilter = DataParams -> Bool
 only2d :: DataFilter
 only2d dp = 
     case subData (head (dataSet dp)) of 
-             Left d -> D.is2d d
-             Right (Left s) -> AD.is2d s
-             Right (Right ad) -> AD.is2d ad
+        Left d -> D.is2d d
+        Right (Left s) -> AD.is2d s
+        Right (Right ad) -> AD.is2d ad
 
 dataFilter :: Bool -> DataFilter
 dataFilter trueFalse dp =
     case subData (head (dataSet dp)) of 
-             Left (Data _) -> trueFalse
-             Left (Data2 _) -> trueFalse
-             Left (Data3 _) -> trueFalse
-             Left (Spectrum _) -> not trueFalse
-             Left (Spectrum2 _) -> not trueFalse
-             _ -> False
+        Left (Data3 _) -> trueFalse
+        Left (Spectrum2 _) -> not trueFalse
+        _ -> False
 
 onlyData :: DataFilter
 onlyData = dataFilter True
@@ -298,14 +295,14 @@ onlySpectrum = dataFilter False
 dataAndSpectrum :: DataFilter
 dataAndSpectrum dp = 
     case subData (head (dataSet dp)) of 
-             Left _ -> True
-             _ -> False
+        Left _ -> True
+        _ -> False
 
 splineAndSpectrum :: DataFilter
 splineAndSpectrum dp = 
     case subData (head (dataSet dp)) of 
-             Left _ -> onlySpectrum dp
-             Right _ -> True
+        Left _ -> onlySpectrum dp
+        Right _ -> True
 
 onlyAnalytic :: DataFilter
 onlyAnalytic = isAnalytic

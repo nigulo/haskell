@@ -377,19 +377,21 @@ decode (params, datOrSpec) =
                             replicate (length (ts dataBlocks)) 1
                           else map realToFrac (ws dataBlocks)))
         Right (specHeader, specBlocks) -> 
-            D.Spectrum ([(swMin specHeader, 
+            D.Spectrum2 ((swMin specHeader, 
                         (if nLim specHeader <= 1 then 0
-                         else (swMax specHeader - swMin specHeader) / (fromIntegral (nLim specHeader) - 1)))], 
-                         zip (map realToFrac (pty specBlocks)) (replicate (length (pty specBlocks)) 1))
+                         else (swMax specHeader - swMin specHeader) / (fromIntegral (nLim specHeader) - 1))), 
+                         V.zip (V.map realToFrac (V.fromList (pty specBlocks))) (V.replicate (length (pty specBlocks)) 1))
 
 
 encode :: D.Data -> ISDAState
-encode dataOrSpec = 
-    case dataOrSpec of
-        D.Data dat ->
-            let (xs, ys, wgs) = unzip3 dat
-            in (ISDA.InOut.Params (Map.fromList [("CONFIGURATION", "_D")]), 
-                 Left (DataHeader {bands = 3,
+encode dat = 
+    if D.isData dat
+        then
+            let 
+                (xs, ys, wgs) = unzip3 $ D.values dat
+            in 
+                (ISDA.InOut.Params (Map.fromList [("CONFIGURATION", "_D")]),
+                    Left (DataHeader {bands = 3,
                                   curSegs = 0,
                                   nData = fromIntegral (length xs),
                                   tOff = 0,
@@ -400,10 +402,13 @@ encode dataOrSpec =
                                   dataSegs = [],
                                   fs = map realToFrac ys,
                                   ws = map realToFrac wgs,
-                                  is = []}))        
-        D.Spectrum ([(offset, step)], valuesAndWeights) ->
-                let values = fst $ unzip valuesAndWeights
-                in (ISDA.InOut.Params (Map.fromList [("CONFIGURATION", "_S")]), 
+                                  is = []}))
+        else        
+                let 
+                    D.Spectrum2 ((offset, step), valuesAndWeights) = dat
+                    values = V.toList $ fst $ V.unzip valuesAndWeights
+                in 
+                    (ISDA.InOut.Params (Map.fromList [("CONFIGURATION", "_S")]), 
                          Right (SpecHeader {nLim = fromIntegral (length values), 
                                            swMin = offset, 
                                            swMax = offset + (if length values <= 1 then 0 else fromIntegral (length values - 1) * step)}, 

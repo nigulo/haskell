@@ -67,7 +67,7 @@ calcDispersions dataParams periodStart' periodEnd' precision method name bootstr
                     if False -- norm > 0 
                         then map (\d -> d / norm) dispersions 
                         else dispersions
-                freqSpec = D.Spectrum ([(freqStart, step)], zip normalizedDispersions (replicate (length normalizedDispersions) 1))
+                freqSpec = D.Spectrum2 ((freqStart, step), V.zip (V.fromList normalizedDispersions) (V.replicate (length normalizedDispersions) 1))
             return (Left freqSpec, info)
     let
         namesCorrLenghts = [(name, 0)]

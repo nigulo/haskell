@@ -130,11 +130,9 @@ fft stateRef name =
                     Nothing -> 0
             (reals, realStep) = case fftRealData parms of 
                 Nothing -> (V.replicate n 0, 0)
-                Just s@(Spectrum (((_, step):_), _)) -> (D.ys s, step)
                 Just s@(Spectrum2 ((_, step), _)) -> (D.ys s, step)
             (imags, imagStep) = case fftImagData parms of 
                 Nothing -> (V.replicate n 0, 0)
-                Just s@(Spectrum (((_, step):_), _)) -> (D.ys s, step)
                 Just s@(Spectrum2 ((_, step), _)) -> (D.ys s, step)
             step = max realStep imagStep
             fftFunc = if fftDirection parms then fromTimeToFrequency else fromFrequencyToTime
