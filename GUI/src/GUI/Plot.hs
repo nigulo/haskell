@@ -40,6 +40,7 @@ import Utils.Misc
 import Data.List
 import Data.Char
 import Data.Maybe
+import Data.Tuple
 import qualified Data.Vector.Unboxed as V
 import Control.Monad
 
@@ -304,8 +305,42 @@ drawData plotSettings plotData =
             ySpace = (top - bottom) / 20 -- Note that ySpace is negative
             zSpace = (front - back) / 20
             
+            calcIntersections i points = 
+                if (i == 0) then points V.! i `V.cons` calcIntersections (i + 1) points
+                else if (i >= V.length points) 
+                    then V.empty
+                    else
+                        let
+                            p1@((x, _), (y, _)) = points V.! i 
+                            ((x1, wx1), (y1, wy1)) = points V.! (i - 1)
+                            calcIntersection (coords1@(_, _), coords2@(_, _), boundaryCoord) =
+                                let
+                                    (coord11, coord12) = maximumBy (\(coord1, _) (coord2, _) -> compare coord1 coord2) [coords1, coords2]
+                                    (coord21, coord22) = minimumBy (\(coord1, _) (coord2, _) -> compare coord1 coord2) [coords1, coords2]
+                                in
+                                    if coord11 > boundaryCoord && coord21 < boundaryCoord
+                                        then Just (boundaryCoord, coord22 + (coord12 - coord22) * (boundaryCoord - coord21) / (coord11 - coord21))
+                                        else Nothing
+                            xIntersections = catMaybes $ map (calcIntersection) [
+                                ((x, y), (x1, y1), left + xSpace), 
+                                ((x, y), (x1, y1), right - xSpace)]
+                            yIntersections = map swap $ catMaybes $ map (calcIntersection) [
+                                ((y, x), (y1, x1), top - ySpace), 
+                                ((y, x), (y1, x1), bottom + ySpace)]
+                            -- TODO: correct interpolation of errors
+                            intersections = map (\(x, y) -> ((x, wx1), (y, wy1))) $ sortBy (\(x1, _) (x2, _) -> compare x1 x2) $ xIntersections ++ yIntersections
+                        in
+                            if intersections /= [] then 
+                                trace ("intersections: " ++ show intersections ++ ", " ++ show (top - ySpace) ++ ", " ++ show (bottom + ySpace)) $ (V.fromList intersections) `V.snoc` p1 V.++ calcIntersections (i + 1) points 
+                                else
+                                    (V.fromList intersections) `V.snoc` p1 V.++ calcIntersections (i + 1) points
+            
             dataToScreen d@(PlotData _ _ _) =
+                V.filter (\((x, _), (y, _)) -> x >= left + xSpace && x < right - xSpace && y >= top - ySpace && y < bottom + ySpace) $
+                    toScreenCoordss_ formattedArea (plotArea plotSettings) (plotDataValues d)
+            dataLinesToScreen d@(PlotData _ _ _) =
                 fst $ Utils.Misc.segmentVector (\((x, _), (y, _)) -> x >= left + xSpace && x < right - xSpace && y >= top - ySpace && y < bottom + ySpace) $
+                    calcIntersections 0 $
                     toScreenCoordss_ formattedArea (plotArea plotSettings) (plotDataValues d)
             dataToScreen3d d@(PlotData3d _) =
                 V.filter (\(x1, x2, z) -> x1 >= left + xSpace && x1 < right - xSpace && x2 >= top - ySpace && x2 < bottom + ySpace  && z >= back + zSpace && z < front - zSpace) $
@@ -321,7 +356,8 @@ drawData plotSettings plotData =
                     let
                         maybePointAttributes = plotDataPointAttributes plotData
                         maybeLineAttributes = plotDataLineAttributes plotData
-                        d :: [V.Vector ((Double, Double), (Double, Double))] = dataToScreen plotData
+                        dataPoints :: V.Vector ((Double, Double), (Double, Double)) = dataToScreen plotData
+                        dataLines :: [V.Vector ((Double, Double), (Double, Double))] = dataLinesToScreen plotData
                     case maybePointAttributes of
                         Just pointAttributes ->
                             do
@@ -337,7 +373,7 @@ drawData plotSettings plotData =
                                     otherwise -> setLineWidth 1 
                                 setLineJoin LineJoinMiter
                                 
-                                V.mapM_ (\(x, y) -> drawDataSymbol (left, top, right, bottom) (x, y) ptSize (plotPointType pointAttributes)) (V.concat d)
+                                V.mapM_ (\(x, y) -> drawDataSymbol (left, top, right, bottom) (x, y) ptSize (plotPointType pointAttributes)) dataPoints
                                 stroke
                         otherwise ->
                             return ()
@@ -352,7 +388,7 @@ drawData plotSettings plotData =
                                     setLineWidth $ plotLineWidth lineAttributes
                                     setLineJoin LineJoinRound
                                     setDash (plotLineDash lineAttributes) 0
-                                    drawDataLines' d (r, g, b, a)
+                                    drawDataLines' dataLines (r, g, b, a)
                         otherwise ->
                             return ()
             PlotData3d _ ->
