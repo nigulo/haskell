@@ -3,7 +3,9 @@ module Utils.Misc (
         left, right,
         isLeft, isRight, maybe_, randomGens,
         nubVector, sortVectorBy, sortVector, 
-        groupVectorBy, groupVector) where
+        groupVectorBy, 
+        groupVector,
+        segmentVector) where
 
 import Debug.Trace
 import System.Random
@@ -70,3 +72,25 @@ groupVectorBy f v =
 
 groupVector :: (V.Unbox a, Eq a) => V.Vector a -> [V.Vector a]
 groupVector = groupVectorBy (==)
+
+-- | Generalization of span/break/partition
+segmentVector :: (V.Unbox a, Eq a) => (a -> Bool) -> V.Vector a -> ([V.Vector a], [V.Vector a])
+segmentVector f v = 
+    if V.null v
+        then ([], [])
+        else
+            let
+                (v1, v2) = V.span f v
+            in
+                if V.null v1 
+                    then 
+                        let
+                            (v2, v1) = V.break f v
+                            (v21s, v22s) = segmentVector f v1 
+                        in
+                            (v21s, v2:v22s)
+                    else
+                        let
+                            (v21s, v22s) = segmentVector f v2 
+                        in
+                            (v1:v21s, v22s)
