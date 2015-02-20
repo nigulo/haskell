@@ -35,6 +35,7 @@ library
   exposed-modules:  
                     GUI.Plot,
                     GUI.Widget
+  extensions:       ScopedTypeVariables
 
 executable GUI
   build-depends:   
@@ -48,4 +49,5 @@ executable GUI
   hs-source-dirs:  src
   ghc-options:     -O2 -fexcess-precision
   main-is:         Main.hs
+  extensions:      ScopedTypeVariables
 

@@ -41,6 +41,7 @@ import Data.List
 import Data.Char
 import Data.Maybe
 import qualified Data.Vector.Unboxed as V
+import Control.Monad
 
 data PlotPointType = Point | Plus | Cross | PlusCross | Square | FilledSquare | Circle | FilledCircle | 
     Triangle | FilledTriangle | DownTriangle  | FilledDownTriangle | Diamond | FilledDiamond |
@@ -304,7 +305,7 @@ drawData plotSettings plotData =
             zSpace = (front - back) / 20
             
             dataToScreen d@(PlotData _ _ _) =
-                V.filter (\((x, _), (y, _)) -> x >= left + xSpace && x < right - xSpace && y >= top - ySpace && y < bottom + ySpace) $
+                fst $ Utils.Misc.segmentVector (\((x, _), (y, _)) -> x >= left + xSpace && x < right - xSpace && y >= top - ySpace && y < bottom + ySpace) $
                     toScreenCoordss_ formattedArea (plotArea plotSettings) (plotDataValues d)
             dataToScreen3d d@(PlotData3d _) =
                 V.filter (\(x1, x2, z) -> x1 >= left + xSpace && x1 < right - xSpace && x2 >= top - ySpace && x2 < bottom + ySpace  && z >= back + zSpace && z < front - zSpace) $
@@ -320,7 +321,7 @@ drawData plotSettings plotData =
                     let
                         maybePointAttributes = plotDataPointAttributes plotData
                         maybeLineAttributes = plotDataLineAttributes plotData
-                        d = dataToScreen plotData
+                        d :: [V.Vector ((Double, Double), (Double, Double))] = dataToScreen plotData
                     case maybePointAttributes of
                         Just pointAttributes ->
                             do
@@ -336,13 +337,13 @@ drawData plotSettings plotData =
                                     otherwise -> setLineWidth 1 
                                 setLineJoin LineJoinMiter
                                 
-                                V.mapM_ (\(x, y) -> drawDataSymbol (left, top, right, bottom) (x, y) ptSize (plotPointType pointAttributes)) d
+                                V.mapM_ (\(x, y) -> drawDataSymbol (left, top, right, bottom) (x, y) ptSize (plotPointType pointAttributes)) (V.concat d)
                                 stroke
                         otherwise ->
                             return ()
                     case maybeLineAttributes of
                         Just lineAttributes ->
-                            if all (== 0) (plotLineDash lineAttributes)
+                            if all (== 0) (plotLineDash lineAttributes) || plotLineWidth lineAttributes == 0
                             then return ()
                             else
                                 do
@@ -725,55 +726,58 @@ drawDataSymbol (left, top, right, bottom) ((x, xErr), (y, yErr)) size symbol =
                 return ()
         --stroke
 
-drawDataLines' :: V.Vector ((Double, Double), (Double, Double)) -> (Double, Double, Double, Double) -> Render ()
+-- | Data points are grouped by gaps to avoid horizontal connection lines
+drawDataLines' :: [V.Vector ((Double, Double), (Double, Double))] -> (Double, Double, Double, Double) -> Render ()
 drawDataLines' points (r, g, b, a) =
-    drawDataLines points (V.replicate (V.length points) (r, g, b, a))
+    drawDataLines points $ map (\points -> V.replicate (V.length points) (r, g, b, a)) points
 
-drawDataLines :: V.Vector ((Double, Double), (Double, Double)) -> V.Vector (Double, Double, Double, Double) -> Render ()
+drawDataLines :: [V.Vector ((Double, Double), (Double, Double))] -> [V.Vector (Double, Double, Double, Double)] -> Render ()
 drawDataLines points colors = 
     do
-        let
-            drawDataLine (((x, _), (y, _)), (r, g, b, a)) =
-                do 
-                    (prevX, prevY) <- getCurrentPoint
-                    if (abs (prevX - x) >= 0.5 || abs (prevY - y) >= 0.5)
-                        then
-                            do
-                                let 
-                                    setColors = if (V.length colors > 1)
-                                        then
-                                            setSourceRGBA r g b a
-                                        else
-                                            return ()
-                                setColors
-                                lineTo x y
-                        else
-                            return ()
-        if (V.length points > 0) 
-            then 
-                do
-                    let ((x, _), (y, _)) = V.head points
-                    moveTo x y
-            else return ()
-        if V.length colors == 1
-            then
-                do
-                    let
-                        (r, g, b, a) = colors V.! 0
-                    setSourceRGBA r g b a
-            else
-                return ()
-        V.mapM_ drawDataLine $ V.zip points colors
-        if not (V.null ((V.filter (\((_, _), (_, yErr)) -> yErr > 0) points)))
-            then
-                do
-                    let ((x, _), (y, yErr)) = V.head points
-                    moveTo x (y - yErr)
-                    V.mapM_ drawDataLine $ V.zip (V.map (\((x, _), (y, yErr)) -> ((x, 0 :: Double), (y - yErr, 0 :: Double))) points) colors
-                    moveTo x (y + yErr)
-                    V.mapM_ drawDataLine $ V.zip (V.map (\((x, _), (y, yErr)) -> ((x, 0 :: Double), (y + yErr, 0 :: Double))) points) colors
-            else
-                return ()
+        zipWithM_ (\points colors -> do
+                let
+                    drawDataLine (((x, _), (y, _)), (r, g, b, a)) =
+                        do 
+                            (prevX, prevY) <- getCurrentPoint
+                            if (abs (prevX - x) >= 0.5 || abs (prevY - y) >= 0.5)
+                                then
+                                    do
+                                        let 
+                                            setColors = if (V.length colors > 1)
+                                                then
+                                                    setSourceRGBA r g b a
+                                                else
+                                                    return ()
+                                        setColors
+                                        lineTo x y
+                                else
+                                    return ()
+                if (V.length points > 0) 
+                    then 
+                        do
+                            let ((x, _), (y, _)) = V.head points
+                            moveTo x y
+                    else return ()
+                if V.length colors == 1
+                    then
+                        do
+                            let
+                                (r, g, b, a) = colors V.! 0
+                            setSourceRGBA r g b a
+                    else
+                        return ()
+                V.mapM_ drawDataLine $ V.zip points colors
+                if not (V.null ((V.filter (\((_, _), (_, yErr)) -> yErr > 0) points)))
+                    then
+                        do
+                            let ((x, _), (y, yErr)) = V.head points
+                            moveTo x (y - yErr)
+                            V.mapM_ drawDataLine $ V.zip (V.map (\((x, _), (y, yErr)) -> ((x, 0 :: Double), (y - yErr, 0 :: Double))) points) colors
+                            moveTo x (y + yErr)
+                            V.mapM_ drawDataLine $ V.zip (V.map (\((x, _), (y, yErr)) -> ((x, 0 :: Double), (y + yErr, 0 :: Double))) points) colors
+                    else
+                        return ()
+            ) points colors
         stroke
 
 setLineSettings :: (Double, Double, Double) -> Double -> Render ()
