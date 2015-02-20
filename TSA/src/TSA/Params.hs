@@ -748,6 +748,7 @@ instance Xml.XmlElement AttractorParams where
 data SampleParams = SampleParams {
     sampleCount :: Int,
     sampleRandomness :: Int,
+    sampleType :: Bool,
     sampleCommonParams :: CommonParams
 } deriving (Show, Read)
 
@@ -755,13 +756,17 @@ instance Xml.XmlElement SampleParams where
 
     toElement params = Xml.element "sampleparams" 
         [("count", show (sampleCount params)),
-         ("randomness", show (sampleRandomness params))
+         ("randomness", show (sampleRandomness params)),
+         ("type", show (sampleType params))
         ] [Left (Xml.toElement (sampleCommonParams params))]
         
     fromElement e = 
         SampleParams {
             sampleCount = read $ Xml.attrValue e "count",
             sampleRandomness = read $ Xml.attrValue e "randomness",
+            sampleType = case Xml.maybeAttrValue e "type" of
+                Just t -> read t
+                Nothing -> True,
             sampleCommonParams = Xml.fromElement (Xml.contentElement e commonParamsXmlElementName)
         }
 
@@ -1222,8 +1227,9 @@ newAttractor =
 newSample :: SampleParams
 newSample = 
     SampleParams {
-        sampleCount = 1000,
+        sampleCount = 1024,
         sampleRandomness = 0,
+        sampleType = True,
         sampleCommonParams = CommonParams {
             commonName = "Sample",
             commonNo = 1

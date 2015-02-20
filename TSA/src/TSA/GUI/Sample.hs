@@ -68,7 +68,7 @@ sampleDialog stateRef = do
     addWidget (Just "Randomness: ") randomnessSpin dialog
 
     dataTypeCombo <- createComboBox ["Data", "Spectrum"]
-    comboBoxSetActive dataTypeCombo 0
+    if (sampleType parms) then comboBoxSetActive dataTypeCombo 0 else comboBoxSetActive dataTypeCombo 1 
     addWidget (Just "Type: ") dataTypeCombo dialog
 
     widgetShowAll dialog
@@ -126,7 +126,8 @@ sampleDialog stateRef = do
                 modifyStateParams stateRef $ \params -> params {sampleParams = SampleParams {
                         sampleCommonParams = updateCommonParams name commonParams,
                         sampleCount = round count,
-                        sampleRandomness = round randomness
+                        sampleRandomness = round randomness,
+                        sampleType = if dataType == 0 then True else False
                     }}
                 return ()
         else
