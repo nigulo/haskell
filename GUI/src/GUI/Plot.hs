@@ -305,6 +305,13 @@ drawData plotSettings plotData =
             ySpace = (top - bottom) / 20 -- Note that ySpace is negative
             zSpace = (front - back) / 20
             
+            leftPlusSpace = left + xSpace
+            rightMinusSpace = right - xSpace
+            topMinusSpace = top - ySpace
+            bottomPlusSpace = bottom + ySpace
+            backPlusSpace = back + zSpace
+            frontMinusSpace = front - zSpace
+            
             calcIntersections i points = 
                 if (i == 0) then points V.! i `V.cons` calcIntersections (i + 1) points
                 else if (i >= V.length points) 
@@ -322,29 +329,32 @@ drawData plotSettings plotData =
                                         then Just (boundaryCoord, coord22 + (coord12 - coord22) * (boundaryCoord - coord21) / (coord11 - coord21))
                                         else Nothing
                             xIntersections = catMaybes $ map (calcIntersection) [
-                                ((x, y), (x1, y1), left + xSpace), 
-                                ((x, y), (x1, y1), right - xSpace)]
+                                ((x, y), (x1, y1), leftPlusSpace), 
+                                ((x, y), (x1, y1), rightMinusSpace)]
                             yIntersections = map swap $ catMaybes $ map (calcIntersection) [
-                                ((y, x), (y1, x1), top - ySpace), 
-                                ((y, x), (y1, x1), bottom + ySpace)]
+                                ((y, x), (y1, x1), topMinusSpace), 
+                                ((y, x), (y1, x1), bottomPlusSpace)]
                             -- TODO: correct interpolation of errors
                             intersections = map (\(x, y) -> ((x, wx1), (y, wy1))) $ sortBy (\(x1, _) (x2, _) -> compare x1 x2) $ xIntersections ++ yIntersections
                         in
-                            if intersections /= [] then 
+                            if x < leftPlusSpace && x1 < leftPlusSpace || x > rightMinusSpace && x1 > rightMinusSpace 
+                                then 
+                                    calcIntersections (i + 1) points
+                                else if intersections /= [] then 
                                     ((V.fromList intersections) `V.snoc` p1) V.++ calcIntersections (i + 1) points 
                                 else
                                     p1 `V.cons` calcIntersections (i + 1) points
             
             dataToScreen d@(PlotData _ _ _) =
-                V.filter (\((x, _), (y, _)) -> x >= left + xSpace && x < right - xSpace && y >= top - ySpace && y < bottom + ySpace) $
+                V.filter (\((x, _), (y, _)) -> x >= leftPlusSpace && x < rightMinusSpace && y >= topMinusSpace && y < bottomPlusSpace) $
                     toScreenCoordss_ formattedArea (plotArea plotSettings) (plotDataValues d)
             dataLinesToScreen d@(PlotData _ _ _) =
                 -- Additional terms xSpace / 1000 and ySpace / 1000 are workaround for rounding errors
-                fst $ Utils.Misc.segmentVector (\((x, _), (y, _)) -> x >= left + xSpace - xSpace / 1000 && x < right - xSpace + xSpace / 1000 && y >= top - ySpace + ySpace / 1000 && y < bottom + ySpace - ySpace / 1000) $
+                fst $ Utils.Misc.segmentVector (\((x, _), (y, _)) -> x >= leftPlusSpace - xSpace / 1000 && x < rightMinusSpace + xSpace / 1000 && y >= topMinusSpace + ySpace / 1000 && y < bottomPlusSpace - ySpace / 1000) $
                     calcIntersections 0 $
                     toScreenCoordss_ formattedArea (plotArea plotSettings) (plotDataValues d)
             dataToScreen3d d@(PlotData3d _) =
-                V.filter (\(x1, x2, z) -> x1 >= left + xSpace && x1 < right - xSpace && x2 >= top - ySpace && x2 < bottom + ySpace  && z >= back + zSpace && z < front - zSpace) $
+                V.filter (\(x1, x2, z) -> x1 >= leftPlusSpace && x1 < rightMinusSpace && x2 >= topMinusSpace && x2 < bottomPlusSpace  && z >= backPlusSpace && z < frontMinusSpace) $
                     V.map (\(x1, x2, z) -> 
                         let
                             ((screenX1, _) , (screenX2, _), screenZ) = toScreenCoords1 formattedArea (plotArea plotSettings) ((x1, 0), (x2, 0), z)
