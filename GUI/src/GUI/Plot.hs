@@ -331,15 +331,16 @@ drawData plotSettings plotData =
                             intersections = map (\(x, y) -> ((x, wx1), (y, wy1))) $ sortBy (\(x1, _) (x2, _) -> compare x1 x2) $ xIntersections ++ yIntersections
                         in
                             if intersections /= [] then 
-                                trace ("intersections: " ++ show intersections ++ ", " ++ show (top - ySpace) ++ ", " ++ show (bottom + ySpace)) $ (V.fromList intersections) `V.snoc` p1 V.++ calcIntersections (i + 1) points 
+                                    ((V.fromList intersections) `V.snoc` p1) V.++ calcIntersections (i + 1) points 
                                 else
-                                    (V.fromList intersections) `V.snoc` p1 V.++ calcIntersections (i + 1) points
+                                    p1 `V.cons` calcIntersections (i + 1) points
             
             dataToScreen d@(PlotData _ _ _) =
                 V.filter (\((x, _), (y, _)) -> x >= left + xSpace && x < right - xSpace && y >= top - ySpace && y < bottom + ySpace) $
                     toScreenCoordss_ formattedArea (plotArea plotSettings) (plotDataValues d)
             dataLinesToScreen d@(PlotData _ _ _) =
-                fst $ Utils.Misc.segmentVector (\((x, _), (y, _)) -> x >= left + xSpace && x < right - xSpace && y >= top - ySpace && y < bottom + ySpace) $
+                -- Additional terms xSpace / 1000 and ySpace / 1000 are workaround for rounding errors
+                fst $ Utils.Misc.segmentVector (\((x, _), (y, _)) -> x >= left + xSpace - xSpace / 1000 && x < right - xSpace + xSpace / 1000 && y >= top - ySpace + ySpace / 1000 && y < bottom + ySpace - ySpace / 1000) $
                     calcIntersections 0 $
                     toScreenCoordss_ formattedArea (plotArea plotSettings) (plotDataValues d)
             dataToScreen3d d@(PlotData3d _) =
@@ -388,6 +389,7 @@ drawData plotSettings plotData =
                                     setLineWidth $ plotLineWidth lineAttributes
                                     setLineJoin LineJoinRound
                                     setDash (plotLineDash lineAttributes) 0
+                                    --drawDataLines' (trace ("dataLines: " ++ show dataLines) dataLines) (r, g, b, a)
                                     drawDataLines' dataLines (r, g, b, a)
                         otherwise ->
                             return ()
