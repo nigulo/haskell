@@ -119,7 +119,7 @@ addFitWidgets fitParams state dialog = do
         ]
     addWidget (Just "Type: ") typeCombo dialog
 
-    numNodesAdjustment <- adjustmentNew (fromIntegral (splineNumNodes (fitSplineParams fitParams))) 1 1000 1 1 1
+    numNodesAdjustment <- adjustmentNew (fromIntegral (splineNumNodes (fitSplineParams fitParams))) 1 10000 1 1 1
     numNodesSpin <- spinButtonNew numNodesAdjustment 1 0
     numNodesBox <- addWidget (Just "Num nodes: ") numNodesSpin dialog
     
@@ -127,7 +127,7 @@ addFitWidgets fitParams state dialog = do
     slowHarmonicCoverageFactorSpin <- spinButtonNew slowHarmonicCoverageFactorAdjustment 1 10
     slowHarmonicCoverageFactorBox <- addWidget (Just "Coverage factor: ") slowHarmonicCoverageFactorSpin dialog
 
-    slowHarmonicsAdjustment <- adjustmentNew (fromIntegral (harmonicCount (fitHarmonicParams fitParams))) 0 1000 1 1 1
+    slowHarmonicsAdjustment <- adjustmentNew (fromIntegral (harmonicCount (fitHarmonicParams fitParams))) 0 10000 1 1 1
     slowHarmonicsSpin <- spinButtonNew slowHarmonicsAdjustment 1 0
     slowHarmonicsBox <- addWidget (Just "Num modulators: ") slowHarmonicsSpin dialog
 

@@ -15,6 +15,7 @@ import TSA.Data
 import Data.List as List
 import System.Random
 import System.Environment
+import System.IO
 import System.CPUTime
 import Filesystem
 import Control.Concurrent.MVar
@@ -207,10 +208,11 @@ imf modeNo dat = do
                                     imfStep dat2 sdev
         
             putStr $ "Calculating (number of nodes = " ++ show numNodes ++ ") ... "
+            hFlush stdout
             time1 <- getCPUTime
             imfDat <- imfStep dat sdev
             time2 <- getCPUTime
-            putStrLn $ "done in " ++ show (fromIntegral (time2 - time1) / 1e12) ++ "secs"
+            putStrLn $ "done in " ++ show (fromIntegral (time2 - time1) / 1e12) ++ " CPU secs"
             
             --storeData imfDat ("imf" ++ show modeNo)
             --calcAnalyticSignal imfDat modeNo

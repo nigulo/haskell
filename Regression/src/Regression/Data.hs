@@ -612,7 +612,6 @@ subtr (Data3 dat1) (Data3 dat2) =
 -- | Use only for data with even sampling
 getTangent :: Data -> Data
 getTangent d = 
-
     let d1 = V.fromList $ tangent $ V.toList $ values1 d where
         tangent ((x0, y0, w0):(x1, y1, w1):(x2, y2, w2):vals) = 
             (x1, (y2 - y0) / (x2 - x0), 1):tangent ((x1, y1, w1):(x2, y2, w2):vals)
