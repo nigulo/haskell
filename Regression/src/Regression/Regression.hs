@@ -1,7 +1,8 @@
 
 module Regression.Regression (
     fitWithSpline_, 
-    fitWithSpline, 
+    fitWithSpline,
+    interpolateWithSpline, 
     envelope
     ) where
 
@@ -20,9 +21,9 @@ import Math.Function as F
 import Math.IODoubleMatrix as IOM
 import Math.IODoubleVector as IOV
 import Math.IODoubleLinearEquations
-import qualified Math.Vector as Vector
-import qualified Math.Matrix as Matrix
-import qualified Math.LinearEquations as LinearEquations 
+--import qualified Math.Vector as Vector
+--import qualified Math.Matrix as Matrix
+--import qualified Math.LinearEquations as LinearEquations 
 
 import Control.Concurrent
 import Control.Monad
@@ -40,7 +41,7 @@ fitWithSpline :: Polynom   -- ^ Set of unit polynoms
                -> IO Spline    -- ^ Result
 fitWithSpline unitPolynoms numNodes dat strict smoothUpTo puFunc =
   if strict 
-   then return $ interpolateWithSpline numNodes dat
+   then interpolateWithSpline dat
    else
     do
     let 
@@ -187,9 +188,9 @@ fitWithSpline_ :: Int       -- ^ Polynom rank
                -> IO Spline    -- ^ Result
 fitWithSpline_ rank numPolynoms dat strict smoothUpTo puFunc = fitWithSpline (unitPolynom rank) numPolynoms dat strict smoothUpTo puFunc
 
--- | Interpolates with cubic splines (argument 'numPols' is ignored)
-interpolateWithSpline :: Int -> Data -> Spline
-interpolateWithSpline numPols dat = 
+-- | Interpolates with cubic splines
+interpolateWithSpline :: Data -> IO Spline
+interpolateWithSpline dat = do
     let 
         vals = D.values1 dat
         xs = D.xs1 dat
@@ -219,23 +220,19 @@ interpolateWithSpline numPols dat =
             ++ [(concat (P.getDerivatives 2 (V.head xs) pol)) ++ numTerms ++ [0]]
             ++ [(numTerms ++ (concat (P.getDerivatives 2 (V.last xs) pol)) ++ [0])] where
                 numTerms = replicate ((numData - 2) * 4) 0
-        m = Matrix.matrix equations
-        solution = Vector.values $ LinearEquations.solveGauss (
-            trace ("numData " ++ (show numData) ++ 
-                   " numR " ++ (show (Matrix.getNumRows m)) ++ 
-                   " numC " ++ (show (Matrix.getNumColumns m)) ++
-                   " m " ++ (show m)) 
-                m)
+    m <- IOM.matrix equations
+    solution <- solveGauss m
+    solutionVals <- IOV.values solution
+    let
+        solutionVect = V.fromList solutionVals 
         forSolution i =
             let
                 xLeft = xs V.! i
                 xRight = xs V.! (i + 1)
-                subSolution = [solution !! (i * 4 + j) | j <- [0 .. 3]]
+                subSolution = [solutionVect V.! (i * 4 + j) | j <- [0 .. 3]]
             in
-                trace ("subxs1=" ++ (show xLeft) ++ "subxs2=" ++ (show xRight) ++ "++" ++ (show subSolution)) $
-                    ([xLeft], [xRight], polynom $ zip [0 .. 3] subSolution)
-    in
-        trace (show solution) AnalyticData [forSolution i | i <- [0 .. numData - 2]]
+                ([xLeft], [xRight], polynom $ zip [0 .. 3] subSolution)
+    return $ AnalyticData [forSolution i | i <- [0 .. numData - 2]]
 
 
 --------------------------------------------------------------------------------
