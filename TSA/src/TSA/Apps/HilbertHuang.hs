@@ -15,6 +15,7 @@ import TSA.Data
 import Data.List as List
 import System.Random
 import System.Environment
+import System.CPUTime
 import Filesystem
 import Control.Concurrent.MVar
 import Control.Monad
@@ -96,7 +97,7 @@ main = do --mpiWorld $ \size rank ->
                 imfSums
                 
     zipWithM_ (\modeNo (freq, dat) -> do
-            putStr $ show modeNo ++ ": " ++ show freq ++ " "
+            --putStrLn $ show modeNo ++ ": " ++ show freq ++ " "
             storeData dat ("imf" ++ show modeNo)
             calcAnalyticSignal dat modeNo
         ) [1 ..] imfMeans
@@ -124,15 +125,19 @@ calcAnalyticSignal imfDat modeNo = do
         dataUpdateFunc = DataUpdateFunc $ \(Left dat) name _ -> do 
             case name of
                 "amplitude" -> do
-                    putStrLn $ show (Sample.mean (D.ys dat))
+                    putStrLn $ show modeNo ++ " amplitude: " ++ show (Sample.mean (D.ys dat))
                     storeData dat ("amplitude" ++ show modeNo)
                 "phase" -> return ()
-                "frequency" -> return () 
+                "frequency" -> do
+                    let
+                        vals = D.ys dat
+                    putStrLn $ show modeNo ++ " frequency: " ++ show (Sample.mean vals) ++ ", " ++ show (Sample.stdDev vals)
+                    storeData dat ("frequency" ++ show modeNo)
                 "conjugated" -> return ()
         asParams = AnalyticSignalParams {
                 asRealData = Just (createDataParams_ "imf" [createSubDataParams__ (Left imfDat)]),
                 asImagData = Nothing
-            }    
+            }
     analyticSignal asParams 0 ("amplitude", "phase", "frequency", "conjugated") (\_ -> return ()) (putStrLn) dataUpdateFunc 
 
 imf :: Int -> Data 
@@ -160,7 +165,6 @@ imf modeNo dat = do
                             Left maxima = subData $ head $ dataSet maximaDp
                         return $ (min (D.dataLength minima) (D.dataLength maxima)) - 1
                     else return (numExtrema - 1)
-            putStrLn $ "numNodes:" ++ show numNodes
         
             let
                 sdev = (Sample.stdDev (D.ys dat)) * precision
@@ -193,7 +197,7 @@ imf modeNo dat = do
                         let 
                             sdev2 = U.stdev dat (Left dat2)
                                     
-                        putStrLn $ "sdev=" ++ show sdev2 ++ ", needed=" ++ show sdev
+                        --putStrLn $ "sdev=" ++ show sdev2 ++ ", needed=" ++ show sdev
                                     
                         if sdev2 < sdev
                             then 
@@ -202,7 +206,11 @@ imf modeNo dat = do
                                 do
                                     imfStep dat2 sdev
         
+            putStr $ "Calculating (number of nodes = " ++ show numNodes ++ ") ... "
+            time1 <- getCPUTime
             imfDat <- imfStep dat sdev
+            time2 <- getCPUTime
+            putStrLn $ "done in " ++ show (fromIntegral (time2 - time1) / 1e12) ++ "secs"
             
             --storeData imfDat ("imf" ++ show modeNo)
             --calcAnalyticSignal imfDat modeNo
