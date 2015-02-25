@@ -8,5 +8,6 @@ import {-@ HTF_TESTS @-} Regression.RegressionTest
 import {-@ HTF_TESTS @-} Regression.PolynomTest
 import {-@ HTF_TESTS @-} Regression.AnalyticDataTest
 import {-@ HTF_TESTS @-} Regression.LeastSquaresTest
+import {-@ HTF_TESTS @-} Regression.DataTest
 
 main = htfMain htf_importedTests
