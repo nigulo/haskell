@@ -25,7 +25,7 @@ module Math.Function (
     ) where
 
 import qualified Math.Expression as E
-import Data.Map as M hiding (mapMaybe)
+import Data.Map.Strict as M hiding (mapMaybe)
 import Data.List as L
 import Data.Complex
 import qualified Utils.Xml as Xml
@@ -97,7 +97,7 @@ instance Fn (Function Double) where
                             (opName, getFuncDef varNames expr1 localVarNames1 localOpNames1)
                         ) localOpNames
                 in
-                    E.calcDouble expr (fromList (varNamesAndValues ++ localVarNamesAndValues)) (fromList (opNamesAndDefs ++ localOpNamesAndDefs)) g
+                    E.calcDouble expr (M.fromList (varNamesAndValues ++ localVarNamesAndValues)) (M.fromList (opNamesAndDefs ++ localOpNamesAndDefs)) g
         
             --getOpDef :: [String] -> E.Expression Double -> [String] -> [String] -> ([a] -> a)
             getFuncDef varNames expr localVarNames localOpNames =  
@@ -118,13 +118,13 @@ instance Fn (Function Double) where
                         ) localOpNames
                 in
                     (\xs ->
-                        E.calcDouble expr (fromList (varNamesAndValues ++ localVarNamesAndValues ++ zip varNames xs)) (fromList (opNamesAndDefs ++ localOpNamesAndDefs)) g)
+                        E.calcDouble expr (M.fromList (varNamesAndValues ++ localVarNamesAndValues ++ zip varNames xs)) (M.fromList (opNamesAndDefs ++ localOpNamesAndDefs)) g)
 
             defVarNamesAndValues = L.map (\(varName, (expr, localVarNames, localOpNames)) -> (varName, getVarValue expr localVarNames localOpNames)) (varDefs func)
             defOpNamesAndDefs = L.map (\(funcName, (varNames, expr, localVarNames, localOpNames)) -> (funcName, getFuncDef varNames expr localVarNames localOpNames)) (funcDefs func)
 
         in            
-            E.calcDouble (expr func) (fromList (varNamesAndValues ++ defVarNamesAndValues)) (fromList (opNamesAndDefs ++ defOpNamesAndDefs)) g
+            E.calcDouble (expr func) (M.fromList (varNamesAndValues ++ defVarNamesAndValues)) (M.fromList (opNamesAndDefs ++ defOpNamesAndDefs)) g
         
     getValue_ xs = getValue xs [] (mkStdGen 1)
     binaryOp func func1 func2 = 
@@ -151,7 +151,7 @@ instance Fn (Function Double) where
             }
 
 instance ComplexFn (Function (Complex Double)) where
-    getComplexValue zs func = E.calc (expr func) (fromList (zip (E.varNames (expr func)) zs)) empty
+    getComplexValue zs func = E.calc (expr func) (M.fromList (zip (E.varNames (expr func)) zs)) empty
 
 instance (Floating a, Read a, Show a) => Xml.XmlElement (Function a) where
     toElement func = Xml.element xmlElementName [("initialExpression", initialExpr func)] [Right (initialExpr func)]
