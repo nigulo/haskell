@@ -20,6 +20,7 @@ import System.CPUTime
 import Filesystem
 import Control.Concurrent.MVar
 import Control.Monad
+import Control.Monad.Reader
 
 import qualified Utils.Xml as Xml
 --import Control.Parallel.MPI.Simple (mpiWorld, commWorld, unitTag, send, recv)
@@ -40,13 +41,19 @@ import System.Random.MWC.Distributions
 precision = 0.05
 numLinesToSkip = 1
 
+newtype Env = Env {
+    modesToSkip :: Double
+    }
+    
+
 main :: IO ()
-main = do --mpiWorld $ \size rank ->
+main = do
     args <- getArgs
     let
         fileName = head args
-        noisePercent :: Double = if (length args > 1) then read (args !! 1) else 0
-        count :: Double = if (length args > 2) then read (args !! 2) else 1
+        modesToSkip :: Double = if (length args > 1) then read (args !! 1) else 0
+        noisePercent :: Double = if (length args > 2) then read (args !! 2) else 0
+        count :: Double = if (length args > 3) then read (args !! 3) else 1
 
     byteStr <- B.readFile fileName
     let
@@ -72,7 +79,7 @@ main = do --mpiWorld $ \size rank ->
             else 
                 return dat
 
-        imfs <- imf 1 datWithNoise
+        imfs <- runReaderT (imf 1 datWithNoise) (Env modesToSkip) 
         if length res == 0 
             then
                 return imfs
@@ -142,31 +149,33 @@ calcAnalyticSignal imfDat modeNo = do
     analyticSignal asParams 0 ("amplitude", "phase", "frequency", "conjugated") (\_ -> return ()) (putStrLn) dataUpdateFunc 
 
 imf :: Int -> Data 
-    -> IO [(Double, Data)] -- ^ Mean frequency and data
+    -> ReaderT Env (IO) [(Double, Data)] -- ^ Mean frequency and data
 imf modeNo dat = do
 
-    g <- getStdGen 
+    g <- liftIO $ getStdGen
+    env <- ask
     let
         dataParams = createDataParams_ "data" [createSubDataParams__ (Left dat)]
 
-    (minimaDp, maximaDp) <- findExtrema dataParams 0 "extrema" (\_ -> return ())
+    (minimaDp, maximaDp) <- liftIO $ findExtrema dataParams 0 "extrema" (\_ -> return ())
     let
         Left minima = subData $ head $ dataSet minimaDp 
         Left maxima = subData $ head $ dataSet maximaDp
         numExtrema = min (D.dataLength minima) (D.dataLength maxima)
+        
+        findNumNodes minimaDp maximaDp numExtrema modesSkipped = do
+            if modeNo == 1 && modesSkipped < (modesToSkip env)
+                then do
+                    (minimaDp, _) <- findExtrema minimaDp 0 "extrema" (\_ -> return ())
+                    (_, maximaDp) <- findExtrema maximaDp 0 "extrema" (\_ -> return ())
+                    let
+                        Left minima = subData $ head $ dataSet minimaDp 
+                        Left maxima = subData $ head $ dataSet maximaDp
+                    findNumNodes minimaDp maximaDp (min (D.dataLength minima) (D.dataLength maxima)) (modesSkipped + 1)
+                else return (numExtrema - 1)
     if numExtrema > 1
         then do
-            numNodes <- 
-                if numExtrema > (D.dataLength dat) `div` 5
-                    then do
-                        (minimaDp, _) <- findExtrema minimaDp 0 "extrema" (\_ -> return ())
-                        (_, maximaDp) <- findExtrema maximaDp 0 "extrema" (\_ -> return ())
-                        let
-                            Left minima = subData $ head $ dataSet minimaDp 
-                            Left maxima = subData $ head $ dataSet maximaDp
-                        return $ (min (D.dataLength minima) (D.dataLength maxima)) - 1
-                    else return (numExtrema - 1)
-        
+            numNodes <- liftIO $ findNumNodes minimaDp maximaDp numExtrema 0
             let
                 sdev = (Sample.stdDev (D.ys dat)) * precision
                 imfStep :: Data -> Double -> IO Data
@@ -207,12 +216,14 @@ imf modeNo dat = do
                                 do
                                     imfStep dat2 sdev
         
-            putStr $ "Calculating (number of nodes = " ++ show numNodes ++ ") ... "
-            hFlush stdout
-            time1 <- getCPUTime
-            imfDat <- imfStep dat sdev
-            time2 <- getCPUTime
-            putStrLn $ "done in " ++ show (fromIntegral (time2 - time1) / 1e12) ++ " CPU secs"
+            imfDat <- liftIO $ do
+                putStr $ "Calculating (number of nodes = " ++ show numNodes ++ ") ... "
+                hFlush stdout
+                time1 <- getCPUTime
+                imfDat <- imfStep dat sdev
+                time2 <- getCPUTime
+                putStrLn $ "done in " ++ show (fromIntegral (time2 - time1) / 1e12) ++ " CPU secs"
+                return imfDat
             
             --storeData imfDat ("imf" ++ show modeNo)
             --calcAnalyticSignal imfDat modeNo
