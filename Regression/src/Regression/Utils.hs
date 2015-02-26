@@ -11,7 +11,8 @@ module Regression.Utils (
     stdev,
     format,
     dataRange,
-    reshuffleData    
+    reshuffleData,
+    bootstrapSample    
     ) where
 
 import Regression.Data as D
@@ -232,6 +233,7 @@ dataRange (Left d) = (D.xMins d, D.xMaxs d)
 dataRange (Right (Left s)) = (AD.xMins s, AD.xMaxs s)
 dataRange (Right (Right f)) = (AD.xMins f, AD.xMaxs f)
 
+-- | reshuffle the data set (without replacements)
 reshuffleData :: Data -> IO Data
 reshuffleData dat = 
     do 
@@ -253,3 +255,21 @@ reshuffleData dat =
         shuffledVals <-shuffleFunc 0 vals 
         --putStrLn (show shuffledVals)
         return $ D.data1 shuffledVals
+
+-- | bootstrap sample of the data
+bootstrapSample :: Int -> Data -> IO Data
+bootstrapSample count dat =
+    do 
+        gen <- createSystemRandom
+        let
+            vals = D.values1 dat
+        vals1 <- V.generateM count (\_ -> do
+            r :: Int <- asGenIO (uniform) gen
+            let 
+                r1 = r `mod` V.length vals
+            return $ vals V.! r1
+            )
+        return $ data1 vals1    
+            
+            
+            
