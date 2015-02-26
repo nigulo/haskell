@@ -118,4 +118,4 @@ analyticSignal stateRef precision (amplitudeName, phaseName, frequencyName) =
             dataParams = fromJust (asRealData asParms)
             
         AS.analyticSignal asParms precision (amplitudeName, phaseName, frequencyName, ((dataName dataParams) ++ "_conj")) (progressUpdate stateRef) (appendLog stateRef) (DataUpdateFunc (\dat name update -> modifyState stateRef $ addOrUpdateData dat name (Just (currentGraphTab, selectedGraph)) update)) 
-            
+        return ()            

@@ -9,6 +9,7 @@ import Regression.Data as D
 import Regression.Utils
 import Regression.FFT
 import qualified Math.Function as F
+import qualified Regression.Functions as FS
 
 import TSA.Params
 
@@ -27,7 +28,14 @@ import Math.Expression
 import System.Random
 import qualified Data.Vector.Unboxed as V
 
-analyticSignal :: (Eq id) => AnalyticSignalParams -> Int -> (id, id, id, id) -> ProgressUpdateFunc -> LogFunc -> DataUpdateFunc id -> IO ()
+-- The results are sent to both DataUpdateFunc and returned from the method (with the exception of conjugated signal)
+analyticSignal :: (Eq id) => AnalyticSignalParams 
+    -> Int 
+    -> (id, id, id, id) 
+    -> ProgressUpdateFunc 
+    -> LogFunc 
+    -> DataUpdateFunc id 
+    -> IO [(id, Either D.Data (Either S.Spline FS.Functions))]
 analyticSignal asParms precision (amplitudeId, phaseId, frequencyId, conjId) puFunc logFunc duf@(DataUpdateFunc dataUpdateFunc) = 
     do
         g <- getStdGen 
@@ -93,6 +101,11 @@ analyticSignal asParms precision (amplitudeId, phaseId, frequencyId, conjId) puF
         dataUpdateFunc (Left amplitude) amplitudeId False
         dataUpdateFunc (Left phase) phaseId False
         dataUpdateFunc (Left frequency) frequencyId False
+        return [
+            (amplitudeId, Left amplitude), 
+            (phaseId, Left phase), 
+            (frequencyId, Left frequency) 
+            ]
 
 fft :: (Eq id) => ProgressUpdateFunc -> DataUpdateFunc id -> DataParams -> id -> IO Data
 fft puFunc (DataUpdateFunc dataUpdateFunc) dataParams id = 

@@ -52,7 +52,7 @@ import Data.List
 import Data.Word
 import Data.Array
 import Data.Maybe
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
 import Debug.Trace
 import Regression.Data as D
 import Regression.Spline as S

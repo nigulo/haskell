@@ -107,7 +107,7 @@ main = do
     zipWithM_ (\modeNo (freq, dat) -> do
             --putStrLn $ show modeNo ++ ": " ++ show freq ++ " "
             storeData dat ("imf" ++ show modeNo)
-            calcAnalyticSignal dat modeNo
+            calcAnalyticSignal dat modeNo freq
         ) [1 ..] imfMeans
         
     let 
@@ -127,9 +127,10 @@ storeData dat name = do
         byteStr = B.pack (UTF8.encode (concatMap (\(x, y) -> show x ++ " " ++ show y ++ "\n") (V.toList (D.xys1 dat))))
     B.writeFile (name ++ ".csv") byteStr
 
-calcAnalyticSignal :: Data -> Int -> IO ()
-calcAnalyticSignal imfDat modeNo = do
+calcAnalyticSignal :: Data -> Int -> Double -> IO ()
+calcAnalyticSignal imfDat modeNo freq = do
     let
+        {--
         dataUpdateFunc = DataUpdateFunc $ \(Left dat) name _ -> do 
             case name of
                 "amplitude" -> do
@@ -139,14 +140,27 @@ calcAnalyticSignal imfDat modeNo = do
                 "frequency" -> do
                     let
                         vals = D.ys dat
-                    putStrLn $ show modeNo ++ " frequency: " ++ show (Sample.mean vals) ++ ", " ++ show (Sample.stdDev vals)
+                        --step = V.length vals `div` numCycles
+                        --freqs = V.generate numCycles (\i -> vals V.! (i * step))
+                    putStrLn $ show modeNo ++ " frequency: " ++ show (Sample.mean vals / 2 / pi) ++ " (" ++ show freq  ++ "), " ++ show (Sample.stdDev vals / 2 / pi)
                     storeData dat ("frequency" ++ show modeNo)
                 "conjugated" -> return ()
+        --}
         asParams = AnalyticSignalParams {
                 asRealData = Just (createDataParams_ "imf" [createSubDataParams__ (Left imfDat)]),
                 asImagData = Nothing
             }
-    analyticSignal asParams 0 ("amplitude", "phase", "frequency", "conjugated") (\_ -> return ()) (putStrLn) dataUpdateFunc 
+    asData <- analyticSignal asParams 0 ("amplitude", "phase", "frequency", "conjugated") (\_ -> return ()) (putStrLn) (DataUpdateFunc (\_ _ _ -> return ()))
+    let
+        Just (Left amplitude) = lookup "amplitude" asData
+        Just (Left frequency) = lookup "frequency" asData
+    putStr $ show modeNo ++ ": " ++ show (Sample.mean (D.ys amplitude))
+    storeData amplitude ("amplitude" ++ show modeNo)
+    let
+        freqVals = D.ys frequency
+    putStrLn $ " " ++ show (Sample.mean freqVals / 2 / pi) ++ " (" ++ show freq  ++ ") " ++ show (Sample.stdDev freqVals / 2 / pi)
+    storeData frequency ("frequency" ++ show modeNo)
+      
 
 imf :: Int -> Data 
     -> ReaderT Env (IO) [(Double, Data)] -- ^ Mean frequency and data
@@ -194,7 +208,7 @@ imf modeNo dat = do
                                         fitType = FitTypeSpline,
                                         fitSplineParams = SplineParams {splineNumNodes = numNodes}
                                     },
-                                    envPrecision = 10,
+                                    envPrecision = 1 / precision,
                                     envExtrema = EnvExtremaStatistical,
                                     envData = Just (DataParams {
                                         dataName = "data",

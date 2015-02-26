@@ -22,7 +22,6 @@ module TSA.Data (
     ) where
 
 import Debug.Trace
-import qualified Data.Map as M
 
 import qualified Regression.Data as D
 import qualified Regression.AnalyticData as AD
