@@ -11,6 +11,7 @@ import TSA.Envelopes
 import TSA.AnalyticSignal
 import TSA.Params
 import TSA.Data
+import Utils.IO
 
 import Data.List as List
 import System.Random
@@ -41,8 +42,9 @@ import System.Random.MWC.Distributions
 precision = 0.05
 numLinesToSkip = 1
 
-newtype Env = Env {
-    modesToSkip :: Double
+data Env = Env {
+    modesToSkip :: Double,
+    logFilePrefix :: String
     }
     
 
@@ -55,6 +57,12 @@ main = do
         noisePercent :: Double = if (length args > 2) then read (args !! 2) else 0
         count :: Double = if (length args > 3) then read (args !! 3) else 1
 
+    putStrLn $ "Processing " ++ show fileName
+    let
+        logFilePrefix = case elemIndex '.' fileName of
+            Just i -> (take i fileName)
+            Nothing -> fileName
+        env = Env modesToSkip logFilePrefix
     byteStr <- B.readFile fileName
     let
         xys :: [(Double, Double)] = map (\line -> let [xStr, yStr] = words line in (read xStr, read yStr)) $ drop numLinesToSkip $ lines $ UTF8.decode $ B.unpack byteStr
@@ -79,7 +87,7 @@ main = do
             else 
                 return dat
 
-        imfs <- runReaderT (imf 1 datWithNoise) (Env modesToSkip) 
+        imfs <- runReaderT (imf 1 datWithNoise) env
         if length res == 0 
             then
                 return imfs
@@ -105,9 +113,8 @@ main = do
                 imfSums
                 
     zipWithM_ (\modeNo (freq, dat) -> do
-            --putStrLn $ show modeNo ++ ": " ++ show freq ++ " "
-            storeData dat ("imf" ++ show modeNo)
-            calcAnalyticSignal dat modeNo freq
+            --storeData dat ("imf" ++ show modeNo)
+            runReaderT (calcAnalyticSignal dat modeNo freq) env
         ) [1 ..] imfMeans
         
     let 
@@ -122,45 +129,32 @@ main = do
     putStrLn $ "Reconstruction error: " ++ show (sdev2 / sdev)
 
 storeData :: Data -> String -> IO ()
-storeData dat name = do
+storeData dat fileName = do
     let
         byteStr = B.pack (UTF8.encode (concatMap (\(x, y) -> show x ++ " " ++ show y ++ "\n") (V.toList (D.xys1 dat))))
-    B.writeFile (name ++ ".csv") byteStr
+    B.writeFile (fileName ++ ".csv") byteStr
 
-calcAnalyticSignal :: Data -> Int -> Double -> IO ()
+calcAnalyticSignal :: Data -> Int -> Double -> ReaderT Env (IO) ()
 calcAnalyticSignal imfDat modeNo freq = do
     let
-        {--
-        dataUpdateFunc = DataUpdateFunc $ \(Left dat) name _ -> do 
-            case name of
-                "amplitude" -> do
-                    putStrLn $ show modeNo ++ " amplitude: " ++ show (Sample.mean (D.ys dat))
-                    storeData dat ("amplitude" ++ show modeNo)
-                "phase" -> return ()
-                "frequency" -> do
-                    let
-                        vals = D.ys dat
-                        --step = V.length vals `div` numCycles
-                        --freqs = V.generate numCycles (\i -> vals V.! (i * step))
-                    putStrLn $ show modeNo ++ " frequency: " ++ show (Sample.mean vals / 2 / pi) ++ " (" ++ show freq  ++ "), " ++ show (Sample.stdDev vals / 2 / pi)
-                    storeData dat ("frequency" ++ show modeNo)
-                "conjugated" -> return ()
-        --}
         asParams = AnalyticSignalParams {
                 asRealData = Just (createDataParams_ "imf" [createSubDataParams__ (Left imfDat)]),
                 asImagData = Nothing
             }
-    asData <- analyticSignal asParams 0 ("amplitude", "phase", "frequency", "conjugated") (\_ -> return ()) (putStrLn) (DataUpdateFunc (\_ _ _ -> return ()))
+    env <- ask
+    asData <- liftIO $ analyticSignal asParams 0 ("amplitude", "phase", "frequency", "conjugated") (\_ -> return ()) (putStrLn) (DataUpdateFunc (\_ _ _ -> return ()))
     let
-        Just (Left amplitude) = lookup "amplitude" asData
         Just (Left frequency) = lookup "frequency" asData
-    putStr $ show modeNo ++ ": " ++ show (Sample.mean (D.ys amplitude))
-    storeData amplitude ("amplitude" ++ show modeNo)
+        Just (Left amplitude) = lookup "amplitude" asData
     let
         freqVals = D.ys frequency
-    putStrLn $ " " ++ show (Sample.mean freqVals / 2 / pi) ++ " (" ++ show freq  ++ ") " ++ show (Sample.stdDev freqVals / 2 / pi)
-    storeData frequency ("frequency" ++ show modeNo)
-      
+        amplitudeVals = D.ys amplitude
+        logText = show modeNo ++ ": " ++ show (Sample.mean freqVals / 2 / pi) ++ " " {- ++ "(" ++ show freq  ++ ") "-} ++  show (Sample.stdDev freqVals / 2 / pi) ++
+             " " ++ show (Sample.mean amplitudeVals) ++ " " ++  show (Sample.stdDev amplitudeVals)
+    liftIO $ putStrLn logText 
+    --liftIO $ storeData frequency ("frequency" ++ show modeNo)
+    --liftIO $ storeData amplitude ("amplitude" ++ show modeNo)
+    liftIO $ appendToFile (logFilePrefix env ++ ".log") (logText ++ "\n")
 
 imf :: Int -> Data 
     -> ReaderT Env (IO) [(Double, Data)] -- ^ Mean frequency and data
@@ -221,8 +215,6 @@ imf modeNo dat = do
                         let 
                             sdev2 = U.stdev dat (Left dat2)
                                     
-                        --putStrLn $ "sdev=" ++ show sdev2 ++ ", needed=" ++ show sdev
-                                    
                         if sdev2 < sdev
                             then 
                                     return dat2
@@ -239,17 +231,9 @@ imf modeNo dat = do
                 putStrLn $ "done in " ++ show (fromIntegral (time2 - time1) / 1e12) ++ " CPU secs"
                 return imfDat
             
-            --storeData imfDat ("imf" ++ show modeNo)
-            --calcAnalyticSignal imfDat modeNo
             
             let 
                 diff = D.subtr dat imfDat
-            --    sdev2 = Sample.stdDev (D.ys diff)
-            --if sdev2 < sdev
-            --    then 
-            --            return ()
-            --    else
-            --        do
             imf (modeNo + 1) diff >>= \otherImfs -> return ((fromIntegral numNodes / (D.xMax1 imfDat - D.xMin1 imfDat) , imfDat):otherImfs)
         else
             return [(0, dat)]
