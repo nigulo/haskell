@@ -4,8 +4,9 @@ module Utils.IO (
     readValue, 
     writeArray, 
     writeValue,
-    stringToFile,
-    stringFromFile) where
+    writeToFile,
+    appendToFile,
+    readFromFile) where
 
 import System.IO
 import Foreign.Marshal.Alloc
@@ -63,13 +64,19 @@ writeValue handle value = do
                         hPutBuf handle ptrData (sizeOf value)
                         free ptrData
 
-stringToFile :: String -> String -> IO ()
-stringToFile fileName str = do
+writeToFile :: String -> String -> IO ()
+writeToFile fileName str = do
     let
         byteStr = B.pack (UTF8.encode str)
     B.writeFile fileName byteStr
 
-stringFromFile :: String -> IO String
-stringFromFile fileName = do
+appendToFile :: String -> String -> IO ()
+appendToFile fileName str = do
+    let
+        byteStr = B.pack (UTF8.encode str)
+    B.appendFile fileName byteStr
+
+readFromFile :: String -> IO String
+readFromFile fileName = do
     byteStr <- B.readFile fileName
     return $ UTF8.decode $ B.unpack byteStr
