@@ -127,9 +127,9 @@ previewDialog stateRef = do
     forkIO $ doPlot state grphTabParams (\d -> do Plot.plot wxt d; return ())
     forkIO $ doPlot state grphTabParams (\d -> do
             let (script, dataSets) = Plot.fileContents "." wxt d
-            stringToFile "preview.gp" script
+            writeToFile "preview.gp" script
             mapM_ (\dat -> do
-                    stringToFile (File.name dat) (File.content dat)
+                    writeToFile (File.name dat) (File.content dat)
                 ) dataSets
             return ()
         )
