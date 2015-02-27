@@ -27,7 +27,7 @@ module GUI.Plot (
     plot
     ) where
 
-import Graphics.UI.Gtk as Gtk hiding (addWidget, Plus, Cross, Circle, Font)
+import Graphics.UI.Gtk as Gtk hiding (addWidget, Plus, Cross, Circle, Font, rectangle)
 import Graphics.Rendering.Cairo hiding (Pattern, FontSlant, FontWeight)
 import Graphics.Rendering.Cairo.Matrix as M hiding (rotate)
 import Graphics.UI.Gtk.Gdk.Events hiding (Rectangle)
