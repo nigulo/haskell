@@ -34,7 +34,7 @@ calcConcurrently f puFunc vals = do
     results <- readMVar resultsRef
     return $ map snd $ sortBy (\(i1, _) (i2, _) -> compare i1 i2) results
 
-calcConcurrently_ :: (a  -> IO b) -> [a] -> IO [b]
+calcConcurrently_ :: (a -> IO b) -> [a] -> IO [b]
 calcConcurrently_ f vals = do
     numCapabilities <- getNumCapabilities
     let
@@ -51,7 +51,7 @@ calcConcurrently_ f vals = do
     results <- readMVar resultsRef
     return $ map snd $ sortBy (\(i1, _) (i2, _) -> compare i1 i2) results
 
-calcConcurrently__ :: (a  -> b) -> [a] -> IO [b]
+calcConcurrently__ :: (a -> b) -> [a] -> IO [b]
 calcConcurrently__ f vals = do
     numCapabilities <- getNumCapabilities
     let
