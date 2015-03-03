@@ -14,6 +14,7 @@ import TSA.Data
 import Utils.IO
 
 import Data.List as List
+import Data.Char
 import System.Random
 import System.Environment
 import System.IO
@@ -26,8 +27,6 @@ import Control.Monad.Reader
 import qualified Utils.Xml as Xml
 --import Control.Parallel.MPI.Simple (mpiWorld, commWorld, unitTag, send, recv)
 import Filesystem.Path.CurrentOS as F
-import qualified Data.ByteString as B
-import Codec.Binary.UTF8.String as UTF8
 import qualified Data.Vector.Unboxed as V
 
 import Statistics.Distribution
@@ -39,7 +38,7 @@ import System.Random
 import System.Random.MWC
 import System.Random.MWC.Distributions
 
-precision = 0.05
+precision = 0.1
 numLinesToSkip = 1
 
 data Env = Env {
@@ -51,11 +50,20 @@ data Env = Env {
 main :: IO ()
 main = do
     args <- getArgs
+    if args == []
+        then
+            collect
+        else
+            calc args
+
+calc :: [String] -> IO ()
+calc args = do
     let
         fileName = head args
         modesToSkip :: Double = if (length args > 1) then read (args !! 1) else 0
-        noisePercent :: Double = if (length args > 2) then read (args !! 2) else 0
-        count :: Double = if (length args > 3) then read (args !! 3) else 1
+        downSample :: Int = if (length args > 2) then read (args !! 2) else 1
+        noisePercent :: Double = if (length args > 3) then read (args !! 3) else 0
+        count :: Double = if (length args > 4) then read (args !! 4) else 1
 
     putStrLn $ "Processing " ++ show fileName
     let
@@ -63,11 +71,12 @@ main = do
             Just i -> (take i fileName)
             Nothing -> fileName
         env = Env modesToSkip logFilePrefix
-    byteStr <- B.readFile fileName
+    str <- Utils.IO.readFromFile fileName
     let
-        xys :: [(Double, Double)] = map (\line -> let [xStr, yStr] = words line in (read xStr, read yStr)) $ drop numLinesToSkip $ lines $ UTF8.decode $ B.unpack byteStr
+        xys :: [(Double, Double)] = map (\line -> let [xStr, yStr] = words line in (read xStr, read yStr)) $ drop numLinesToSkip $ lines $ str
+        xysList = V.fromList xys
 
-        dat = D.data1' $ V.fromList xys
+        dat = D.data1' $ V.generate (V.length xysList `div` downSample) (\i -> xysList V.! (i * downSample))
         sdev = Sample.stdDev (D.ys dat)
         noiseSdev = sdev * noisePercent
     
@@ -131,8 +140,8 @@ main = do
 storeData :: Data -> String -> IO ()
 storeData dat fileName = do
     let
-        byteStr = B.pack (UTF8.encode (concatMap (\(x, y) -> show x ++ " " ++ show y ++ "\n") (V.toList (D.xys1 dat))))
-    B.writeFile (fileName ++ ".csv") byteStr
+        str = (concatMap (\(x, y) -> show x ++ " " ++ show y ++ "\n") (V.toList (D.xys1 dat)))
+    Utils.IO.writeToFile (fileName ++ ".csv") str
 
 calcAnalyticSignal :: Data -> Int -> Double -> ReaderT Env (IO) ()
 calcAnalyticSignal imfDat modeNo freq = do
@@ -237,3 +246,41 @@ imf modeNo dat = do
             imf (modeNo + 1) diff >>= \otherImfs -> return ((fromIntegral numNodes / (D.xMax1 imfDat - D.xMin1 imfDat) , imfDat):otherImfs)
         else
             return [(0, dat)]
+
+collect :: IO ()
+collect = do
+    workDir <- getWorkingDirectory
+    fileNames <- listDirectory workDir >>= \names -> filterM (isFile) names
+    allModes' <- mapM (\fileName -> do
+            str <- Utils.IO.readFromFile fileName
+            putStrLn str
+            let
+                r_lat = if isPrefixOf "btor" fileName 
+                    then 
+                        drop 4 $ take (length fileName - 4) fileName
+                    else 
+                        drop 2 $ take (length fileName - 4) fileName
+                Just i = elemIndex '_' r_lat
+                r :: Double = read $ take i r_lat
+                lat :: Double = read $ drop (i + 1) r_lat
+                modes :: [(Double, Double, Double, Double, Double, Double)] = map (\line -> 
+                        let 
+                            [_, freq, freqStd, amp, ampStd] = words line 
+                        in 
+                            (r, lat, read freq, read freqStd, read amp, read ampStd)
+                    ) $ lines $ str
+            return modes
+        ) $ filter (isSuffixOf ".log") $ map (\name -> map (toLower) (F.encodeString (filename name))) fileNames
+    let
+        allModes = List.transpose allModes'
+    zipWithM_ (\mode modeNo -> do
+            let
+                sortedMode = sortBy (\(r1, lat1, _, _, _, _) (r2, lat2, _, _, _, _) -> compare (r1, lat1) (r2, lat2)) mode
+                amps = concatMap (\(r, lat, freq, freqStd, amp, ampStd) -> show r ++ " " ++ show lat ++ " " ++ show amp ++ "\n") sortedMode
+                freqs = concatMap (\(r, lat, freq, freqStd, amp, ampStd) -> show r ++ " " ++ show lat ++ " " ++ show freq ++ "\n") sortedMode
+            Utils.IO.writeToFile ("amps" ++ show modeNo ++ ".csv") amps
+            Utils.IO.writeToFile ("freqs" ++ show modeNo ++ ".csv") freqs
+        ) allModes [1 ..]
+        
+        
+        

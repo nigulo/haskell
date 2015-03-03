@@ -27,6 +27,7 @@ import Debug.Trace
 import Math.Expression
 import System.Random
 import qualified Data.Vector.Unboxed as V
+import Utils.Concurrent
 
 -- The results are sent to both DataUpdateFunc and returned from the method (with the exception of conjugated signal)
 analyticSignal :: (Eq id) => AnalyticSignalParams 
@@ -67,19 +68,18 @@ analyticSignal asParms precision (amplitudeId, phaseId, frequencyId, conjId) puF
             amplitudeOp = F.function "sqrt(u*u+v*v)"
             phaseOp = F.function "atan(v/u)"
 
-            Left amplitude = binaryOp amplitudeOp (Left realData) (Left imagData) True g
-            Left phase = binaryOp phaseOp (Left realData) (Left imagData) True g
-            
-            
-            Left frequency = binaryOp (F.divide) (binaryOp (F.subtr) v'u u'v True g) u2v2 True g where
+            op 0 = binaryOp amplitudeOp (Left realData) (Left imagData) True g
+            op 1 = binaryOp phaseOp (Left realData) (Left imagData) True g
+            op 2 = binaryOp (F.divide) (binaryOp (F.subtr) v'u u'v True g) u2v2 True g where
                 u' = D.getTangent realData
                 v' = D.getTangent imagData
                 v'u = binaryOp (F.mult) (Left v') (Left realData) True g
                 u'v = binaryOp (F.mult) (Left u') (Left imagData) True g
                 u2v2 = binaryOp (F.function "u*u + v*v") (Left realData) (Left imagData) True g
             
-            --frequency = D.getTangent phase
-            
+        [Left amplitude, Left phase, Left frequency] <- calcConcurrently__ op [0, 1, 2]  
+        
+        let    
             phaseVals@(val0:_) = V.toList $ D.values1 phase
             
             -- phase difference curve

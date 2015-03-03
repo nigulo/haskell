@@ -13,6 +13,7 @@ import TSA.Params
 import TSA.Data
 
 import Utils.Misc
+import Utils.Concurrent
 
 import Data.IORef
 import Control.Concurrent.MVar
@@ -52,28 +53,30 @@ envelopes parms (upperName, lowerName, meanName) puFunc logFunc (DataUpdateFunc 
             strictExtremaDetection = case envExtrema parms of
                 EnvExtremaStrict -> True
                 _ -> False
-                
-        upperEnv <- envelope 
-            True 
-            (fitPolynomRank upperParams) 
-            (splineNumNodes (fitSplineParams upperParams))
-            (upperSdev / envPrecision parms) 
-            strictExtremaDetection
-            dat
-            (\_ -> return ())
-            (\spline -> dataUpdateFunc (Right (Left spline)) upperName True)
-            (\dat -> dataUpdateFunc (Left dat) (upperName ++ "_") True)
-            
-        lowerEnv <- envelope 
-            False 
-            (fitPolynomRank lowerParams) 
-            (splineNumNodes (fitSplineParams lowerParams)) 
-            (upperSdev / envPrecision parms) 
-            strictExtremaDetection
-            dat
-            (\_ -> return ())
-            (\spline -> dataUpdateFunc (Right (Left spline)) lowerName True)
-            (\dat -> dataUpdateFunc (Left dat) (lowerName ++ "_") True)
+        
+        let
+            env 0 = envelope 
+                True 
+                (fitPolynomRank upperParams) 
+                (splineNumNodes (fitSplineParams upperParams))
+                (upperSdev / envPrecision parms) 
+                strictExtremaDetection
+                dat
+                (\_ -> return ())
+                (\spline -> dataUpdateFunc (Right (Left spline)) upperName True)
+                (\dat -> dataUpdateFunc (Left dat) (upperName ++ "_") True)
+            env 1 = envelope 
+                False 
+                (fitPolynomRank lowerParams) 
+                (splineNumNodes (fitSplineParams lowerParams)) 
+                (upperSdev / envPrecision parms) 
+                strictExtremaDetection
+                dat
+                (\_ -> return ())
+                (\spline -> dataUpdateFunc (Right (Left spline)) lowerName True)
+                (\dat -> dataUpdateFunc (Left dat) (lowerName ++ "_") True)
+        
+        [upperEnv, lowerEnv] <- calcConcurrently_ env [0, 1]
             
         let 
             envMean = (upperEnv `S.add` lowerEnv) `S.divide` 2
