@@ -16,7 +16,6 @@ calcConcurrently' :: Int -> (a -> (Double -> IO ()) -> IO b) -> (Double -> IO ()
 calcConcurrently' numCapabilities f puFunc vals = do
     let
         numValsPerThread = length vals `div` numCapabilities
-    putStrLn $ "-------" ++ show numValsPerThread ++ ", " ++ show numCapabilities
     sem <- SSem.new (-numCapabilities + 1)
     resultsRef <- newMVar []
     pctRef <- newMVar 0
