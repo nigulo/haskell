@@ -36,12 +36,10 @@ matrixFromIndicesAndValues numRows numCols indicesAndValues =
 
 -- creates a square null matrix of given size
 nullSquareMatrix :: Num a => Int -> Matrix a
---nullSquareMatrix size = Matrix (take size (repeat (take size (repeat 0))))
 nullSquareMatrix size = Matrix (array ((0, 0), (size - 1, size - 1)) [((i, j), 0) | i <- [0 .. size - 1], j <- [0 .. size - 1]])
 
 -- creates a nullMatrix with m rows and n columns
 nullMatrix :: Num a => Int -> Int -> Matrix a
---nullMatrix numRows numColumns = Matrix (take numRows (repeat (take numColumns (repeat 0))))
 nullMatrix numRows numCols = Matrix (array ((0, 0), (numRows - 1, numCols - 1)) [((i, j), 0) | i <- [0 .. numRows - 1], j <- [0 .. numCols - 1]])
 
 emptyMatrix :: Num a => Int -> Int -> Matrix a
@@ -49,16 +47,6 @@ emptyMatrix numRows numCols = Matrix (array ((0, 0), (numRows - 1, numCols - 1))
 
 -- Sets the matrix element at the given row and column
 set :: Num a => (Int, Int) -> a -> Matrix a -> Matrix a
-{-
-set (i, j) value (Matrix rows) = 
-    let row = rows !! i
-        newRow = h ++ (value:t) where
-            (h, (_:t)) = splitAt j row
-        --(take j row) ++ (value:drop (j + 1) row)
-    in
-        Matrix $ h ++ (newRow:t) where
-            (h, (_:t)) = splitAt i rows
--}
 set (i, j) value (Matrix m) = Matrix (m // [((i, j), value)])
 
 setAll :: Num a => [((Int, Int), a)] -> Matrix a -> Matrix a
@@ -69,54 +57,33 @@ modifyAll f values (Matrix m) = Matrix (accum f m values)
 
 -- gets the matrix element at the given row and column
 get :: Num a => (Int, Int) -> Matrix a -> a
---get (row, col) (Matrix rows) = (rows !! row) !! col
 get i (Matrix m) = m ! i
 
--- returns the size (number of rows or columns) of the given square matrix
---getSize :: Matrix -> Int
---getSize (Matrix rows) = length rows
-
 getNumRows :: Num a => Matrix a -> Int
---getNumRows (Matrix rows) = length rows
 getNumRows (Matrix m) = 
     let ((l, _), (u, _)) = bounds m
     in u - l + 1
 
 getNumColumns :: Num a => Matrix a -> Int
---getNumColumns = length.(getRow 0)
 getNumColumns (Matrix m) =
     let ((_, l), (_, u)) = bounds m
     in u - l + 1
 
 setRow :: Num a => Int -> [a] -> Matrix a -> Matrix a
-{-
-setRow row values (Matrix (row0:rows)) = 
-    if row == 0 then Matrix (values:rows)
-    else 
-        let Matrix rs = setRow (row - 1) values (Matrix rows)
-        in Matrix (row0:rs)
--}
 setRow i vals (Matrix m) =
     Matrix $ m // [((i, j), vals !! j)| j <- [0 .. length vals - 1]]
 
 -- returns the given row
 getRow :: Num a => Int -> Matrix a -> [a]
---getRow row (Matrix rows) = rows !! row
 getRow i (Matrix m) =
     map (\(_, val) -> val) $ filter (\((row, _), _) -> row == i) (assocs m)
 
 setColumn :: Num a => Int -> [a] -> Matrix a -> Matrix a
---setColumn col values m = transpose (setRow col values (transpose m))
 setColumn i vals (Matrix m) =
     Matrix $ m // [((j, i), vals !! j)| j <- [0 .. length vals - 1]]
 
 -- returns the given column
 getColumn :: Num a => Int -> Matrix a -> [a]
-{-
-getColumn column (Matrix (row0:rows)) = 
-    (row0 !! column):(getColumn column (Matrix rows))
-getColumn _ (Matrix []) = []
--}
 getColumn i (Matrix m) =
     map (\(_, val) -> val) $ filter (\((_, col), _) -> col == i) (assocs m)
 
@@ -144,7 +111,6 @@ addColumn values m =
 
 -- transposes the matrix
 transpose :: Num a => Matrix a -> Matrix a
---transpose m = matrix [getColumn col m | col <- [0 .. (getNumColumns m) - 1]]
 transpose (Matrix m) = 
     let 
         ((l1, l2), (u1, u2)) = bounds m
@@ -162,10 +128,8 @@ mul m1 m2 =
         dotProduct _ [] = 0;
         dotProduct (r:rs) (c:cs) = (r * c) + dotProduct rs cs;
         
-        --update :: Int -> Int -> Matrix a -> Matrix a;
         update i j = set (i, j) (dotProduct (getRow i m1) (getColumn j m2));
         
-        --calc :: Num a => Int -> Int -> Matrix a -> Matrix a;
         calc i j m = 
             if (i == numRows - 1 && j == numCols - 1) then update i j m
             else if (j == numCols - 1) then calc (i + 1) 0 (update i j m)
@@ -185,7 +149,6 @@ getDeterminant m =
 
 -- returns sub matrix for the given column
 getSubMatrix :: Num a => Int -> Matrix a -> Matrix a
---getSubMatrix column m = transpose (matrix ([tail (getColumn col m) | col <- [0 .. column - 1]] ++ [tail (getColumn col m) | col <- [column + 1 .. (getNumColumns m) - 1]]))
 getSubMatrix col (Matrix m) = 
     let ((l1, l2), (u1, u2)) = bounds m
     in Matrix (array ((l1, l2), (u1 - 1, u2 - 1)) (filter (\((i, j), _) -> j /= col && i > 0) (assocs m)))
