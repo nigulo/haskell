@@ -39,11 +39,8 @@ fitWithSpline :: Polynom   -- ^ Set of unit polynoms
                -> Int -- ^ Smoothness up to i'th derivative (0, 1 or 2)
                -> (Double -> IO ()) -- ^ progressUpdate func
                -> IO Spline    -- ^ Result
-fitWithSpline unitPolynoms numNodes dat strict smoothUpTo puFunc =
-  if strict 
-   then interpolateWithSpline dat
-   else
-    do
+fitWithSpline _ _ dat True _ _ = interpolateWithSpline dat
+fitWithSpline unitPolynoms numNodes dat strict smoothUpTo puFunc = do
     let 
         x1 = D.xMin1 dat
         x2 = D.xMax1 dat
@@ -253,8 +250,9 @@ envelope upper rank knots sdev strictExtremaDetection dat puFunc splineFunc weig
         envelope1 upper rank knots sdev dat prevSdev =
             do
                 let
+                    (xs, ys, ws) = V.unzip3 $ D.values1 dat
+                    {-
                     sigma = (D.xMax1 dat - D.xMin1 dat) / fromIntegral knots / 2
-                    (xs, ys, ws) = V.unzip3 $ D.values1 dat;
                     fori i =
                         let
                             y = ys V.! i
@@ -270,10 +268,12 @@ envelope upper rank knots sdev strictExtremaDetection dat puFunc splineFunc weig
                                         if all extremaFunc ysi && length ysi == 3
                                             then 1
                                             else 0
-                                else let w1 =
-                                          sum [((y - ys V.! j) * norm (x - (xs V.! j))) | j <- [0 .. i - 1]] +
-                                          sum [((y - ys V.! j) * norm (x - (xs V.! j))) | j <- [i + 1 .. V.length xs  -1]] where
-                                              norm x = exp (-(x * x / 2 / sigma / sigma)) / sigma / 2.5
+                                else
+                                    let w1 =
+                                          sum [((y - ys V.! j) * norm (x - (xs V.! j))) | j <- [0 .. V.length xs  -1]] where
+                                              norm x = 
+                                                | abs x < 3 * sigma -> exp (-(x * x / 2 / (sigma ^ 2))) / sigma / 2.5
+                                                | otherwise -> 0
                                       in 
                                         if upper then w1 else -w1
                         in 
@@ -291,7 +291,9 @@ envelope upper rank knots sdev strictExtremaDetection dat puFunc splineFunc weig
                     ws3 = ws2 --zipWith (*) ws ws2
                     vals = V.zip3 xs ys ws3
                     vals2 = V.filter (\(_, _, w) -> w >= 0.25) vals
-                    dat2 = data1 $ vals2;
+                    -}
+                    ws3 = ws
+                    dat2 = dat --data1 $ vals2
                 
                 weightFunc dat2
                 spline <- fitWithSpline_ rank knots dat2 strictExtremaDetection 2 puFunc
@@ -309,7 +311,7 @@ envelope upper rank knots sdev strictExtremaDetection dat puFunc splineFunc weig
                         do
                             let
                                 splineValues = AD.getValues_ (map (\x -> [x]) (V.toList xs)) spline
-                                n = V.length xs;
+                                n = V.length xs
                                 
                                 
                                 (diffs, ys2) = unzip (zipWith zipFunc (V.toList ys) splineValues)

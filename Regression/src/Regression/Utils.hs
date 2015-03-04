@@ -6,6 +6,7 @@ module Regression.Utils (
     sampleAnalyticData_,
     sample2dAnalyticData,
     getValues,
+    getValues1,
     bootstrap,
     var,
     stdev,
