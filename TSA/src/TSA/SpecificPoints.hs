@@ -1,4 +1,4 @@
-module TSA.Extrema (findExtrema) where
+module TSA.SpecificPoints (findExtrema, findZeroCrossings) where
 
 
 import Debug.Trace
@@ -44,3 +44,21 @@ findExtrema dataParams precision name puFunc = do
 
     [minima, maxima] <- applyToData findExtremaFunc dataParams [name ++ "_min", name ++ "_max"] puFunc
     return (minima, maxima)
+
+findZeroCrossings :: DataParams -> Int  -> String -> (Double -> IO ()) -> IO DataParams
+findZeroCrossings dataParams precision name puFunc = do
+    g <- getStdGen 
+    let 
+        findZCFunc i j (Left d) puFunc = do
+            let
+                zc = D.getZeroCrossings d
+            return [Left $ D.data1 (V.map (\x -> (x, 0, 1)) zc)] 
+        findZCFunc i j (Right ad) puFunc = do 
+            let
+                zc = case ad of
+                    Left s -> AD.getZeroCrossings precision g s
+                    Right f -> AD.getZeroCrossings precision g f
+            return [Left $ D.data1 (V.map (\x -> (x, 0, 1)) zc)] 
+
+    [zc] <- applyToData findZCFunc dataParams [name] puFunc
+    return zc

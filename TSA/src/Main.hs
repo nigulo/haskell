@@ -38,7 +38,7 @@ import TSA.GUI.AnalyticSignal
 import TSA.GUI.LocalPhase
 import TSA.GUI.D2
 import TSA.GUI.Period
-import TSA.GUI.Extrema
+import TSA.GUI.SpecificPoints
 import TSA.GUI.Attractor
 import TSA.GUI.Function
 import TSA.GUI.Statistic
@@ -198,8 +198,8 @@ main = do
     d2Act <- actionNew "D2Action" "D2... " Nothing Nothing
     on d2Act actionActivated (d2Dialog stateRef)
 
-    findExtremaAct <- actionNew "FindExtremaAction" "Find extrema... " Nothing Nothing
-    on findExtremaAct actionActivated (findExtremaDialog stateRef)
+    findSpecificPointsAct <- actionNew "FindSpecificPointsAction" "Find specific points... " Nothing Nothing
+    on findSpecificPointsAct actionActivated (findSpecificPointsDialog stateRef)
 
     attractorAct <- actionNew "AttractorAction" "Find attractor... " Nothing Nothing
     on attractorAct actionActivated (attractorDialog stateRef)
@@ -300,7 +300,7 @@ main = do
        ----------- 
        findPeriodAct,
        d2Act,
-       findExtremaAct,
+       findSpecificPointsAct,
        attractorAct,
        correlationAct,
        ----------- 

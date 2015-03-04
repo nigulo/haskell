@@ -15,7 +15,7 @@ module TSA.Params (
     LocalPhaseParams (..),
     FindPeriodParams (..),
     D2Params(..),
-    FindExtremaParams (..),
+    SpecificPointsParams (..),
     FunctionParams (..),
     AnalyticSignalParams (..),
     ModifyParams(..),
@@ -570,32 +570,36 @@ instance Xml.XmlElement D2Params where
             d2CommonParams = Xml.fromElement (Xml.contentElement e commonParamsXmlElementName)
         }
 
-data FindExtremaParams = FindExtremaParams {
-    findExtremaData :: Maybe DataParams,
-    findExtremaPrecision :: Int,
-    findExtremaCommonParams :: CommonParams
+data SpecificPointsParams = SpecificPointsParams {
+    specificPointsData :: Maybe DataParams,
+    specificPointsType :: Int,
+    specificPointsPrecision :: Int,
+    specificPointsCommonParams :: CommonParams
 } deriving (Show, Read)
 
-instance Xml.XmlElement FindExtremaParams where
+instance Xml.XmlElement SpecificPointsParams where
 
-    toElement params = Xml.element "findextremaparams" 
-        [("precision", show (findExtremaPrecision params))]
+    toElement params = Xml.element "specificpointsparams" 
+        [("precision", show (specificPointsPrecision params)),
+         ("type", show (specificPointsType params))]
         (
-            case findExtremaData params of
+            case specificPointsData params of
                 Just dataParams -> [Left (Xml.toElement dataParams)]
                 Nothing -> []
-            ++ [Left (Xml.toElement (findExtremaCommonParams params))]
+            ++ [Left (Xml.toElement (specificPointsCommonParams params))]
         )
         
     fromElement e = 
-        FindExtremaParams {
-            findExtremaData =
+        SpecificPointsParams {
+            specificPointsData =
                 case Xml.contentElements e "dataparams" of
                     [dataParams] -> Just $ Xml.fromElement dataParams
-                    otherwise -> Nothing
-                ,
-            findExtremaPrecision = read $ Xml.attrValue e "precision",
-            findExtremaCommonParams = Xml.fromElement (Xml.contentElement e commonParamsXmlElementName)
+                    otherwise -> Nothing,
+            specificPointsType = case Xml.maybeAttrValue e "type" of
+                Just t -> read t
+                Nothing -> 0,
+            specificPointsPrecision = read $ Xml.attrValue e "precision",
+            specificPointsCommonParams = Xml.fromElement (Xml.contentElement e commonParamsXmlElementName)
         }
 
 data FunctionParams = FunctionParams {
@@ -844,7 +848,7 @@ data Params = Params {
     localPhaseParams :: LocalPhaseParams,
     findPeriodParams :: FindPeriodParams,
     d2Params :: D2Params,
-    findExtremaParams :: FindExtremaParams,
+    specificPointsParams :: SpecificPointsParams,
     functionParams :: FunctionParams,
     modifyParams :: ModifyParams,
     selectionParams :: SelectionParams,
@@ -903,10 +907,13 @@ instance Xml.XmlElement Params where
                     (case Xml.maybeContentElement e "d2params" of
                         Just e1 -> Xml.fromElement e1
                         Nothing -> newD2),
-                findExtremaParams = 
-                    (case Xml.maybeContentElement e "findextremaparams" of
+                specificPointsParams = 
+                    case Xml.maybeContentElement e "specificpointsparams" of
                         Just e1 -> Xml.fromElement e1
-                        Nothing -> newFindExtrema),
+                        Nothing -> 
+                            case Xml.maybeContentElement e "findextremaparams" of
+                                Just e1 -> Xml.fromElement e1
+                                Nothing -> newSpecificPoints,
                 functionParams =
                     (case Xml.maybeContentElement e "functionparams" of
                         Just e1 -> Xml.fromElement e1
@@ -983,7 +990,7 @@ instance Show Params where
         (show (localPhaseParams s)) ++ "\n" ++
         (show (findPeriodParams s)) ++ "\n" ++
         (show (d2Params s)) ++ "\n" ++
-        (show (findExtremaParams s)) ++ "\n" ++
+        (show (specificPointsParams s)) ++ "\n" ++
         (show (functionParams s)) ++ "\n" ++
         (show (modifyParams s)) ++ "\n" ++
         (show (selectionParams s)) ++ "\n" ++
@@ -1099,7 +1106,7 @@ newParams =
             localPhaseParams = newLocalPhase,
             findPeriodParams = newFindPeriod,
             d2Params = newD2,
-            findExtremaParams = newFindExtrema,
+            specificPointsParams = newSpecificPoints,
             functionParams = newFunction,
             modifyParams = newModify,
             selectionParams = newSelection,
@@ -1156,12 +1163,13 @@ newLocalPhase =
         }
     }
 
-newFindExtrema :: FindExtremaParams
-newFindExtrema = FindExtremaParams {
-    findExtremaData = Nothing, 
-    findExtremaPrecision = 10000,
-    findExtremaCommonParams = CommonParams {
-        commonName = "Extrema",
+newSpecificPoints :: SpecificPointsParams
+newSpecificPoints = SpecificPointsParams {
+    specificPointsData = Nothing,
+    specificPointsType = 0, 
+    specificPointsPrecision = 10000,
+    specificPointsCommonParams = CommonParams {
+        commonName = "SpecificPoints",
         commonNo = 1
         }
     }

@@ -6,7 +6,7 @@ import Regression.Data as D
 import Regression.Utils as U
 import Regression.Bootstrap as B
 import TSA.LeastSquares
-import TSA.Extrema
+import TSA.SpecificPoints
 import TSA.Envelopes
 import TSA.AnalyticSignal
 import TSA.Params
@@ -195,8 +195,8 @@ imf modeNo dat = do
             numNodes <- liftIO $ findNumNodes minimaDp maximaDp numExtrema 0
             let
                 sdev = (Sample.stdDev (D.ys dat)) * precision
-                imfStep :: Data -> Double -> IO Data
-                imfStep dat sdev =
+                imfStep :: Data -> Double -> Int -> IO Data
+                imfStep dat sdev i =
                     do
                 
                         let
@@ -223,19 +223,21 @@ imf modeNo dat = do
                         Left dat2 <- envelopes envParams ("upper", "lower", "mean") (\_ -> return ()) (putStrLn) (DataUpdateFunc (\_ _ _ -> return ()))
                         let 
                             sdev2 = U.stdev dat (Left dat2)
-                                    
+                        
+                        putStrLn $ "sdev: " ++ show sdev2
+                        if numNodes == 1 then storeData dat ("last_imf" ++ show i) else return ()
                         if sdev2 < sdev
                             then 
                                     return dat2
                             else
                                 do
-                                    imfStep dat2 sdev
+                                    imfStep dat2 sdev (i + 1)
         
             imfDat <- liftIO $ do
                 putStr $ "Calculating (number of nodes = " ++ show numNodes ++ ") ... "
                 hFlush stdout
                 time1 <- getCPUTime
-                imfDat <- imfStep dat sdev
+                imfDat <- imfStep dat sdev 0
                 time2 <- getCPUTime
                 putStrLn $ "done in " ++ show (fromIntegral (time2 - time1) / 1e12) ++ " CPU secs"
                 return imfDat

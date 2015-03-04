@@ -6,7 +6,7 @@ import Regression.Data as D
 import Regression.Utils as U
 import Regression.Bootstrap as B
 import TSA.LeastSquares
-import TSA.Extrema
+import TSA.SpecificPoints
 import TSA.Params
 import TSA.Data
 

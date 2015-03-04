@@ -33,7 +33,7 @@
     <menu name="Search" action="SearchAction">
       <menuitem action="FindPeriodAction"/>
       <menuitem action="D2Action"/>
-      <menuitem action="FindExtremaAction"/>
+      <menuitem action="FindSpecificPointsAction"/>
       <menuitem action="AttractorAction"/>
       <menuitem action="CorrelationAction"/>
     </menu>
