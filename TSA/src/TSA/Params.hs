@@ -1324,6 +1324,8 @@ updateEnvParams envParms state =
     state {envParams = envParms}
 
 type ProgressUpdateFunc = Double -> IO ()
+
 type LogFunc = String -> IO ()
+
 newtype (Eq id) => DataUpdateFunc id = DataUpdateFunc (Either D.Data (Either S.Spline F.Functions) -> id -> Bool -> IO ())
 

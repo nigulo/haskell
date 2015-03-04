@@ -25,7 +25,6 @@ import Control.Monad
 import Control.Monad.Reader
 
 import qualified Utils.Xml as Xml
---import Control.Parallel.MPI.Simple (mpiWorld, commWorld, unitTag, send, recv)
 import Filesystem.Path.CurrentOS as F
 import qualified Data.Vector.Unboxed as V
 
@@ -34,6 +33,7 @@ import Statistics.Distribution.Normal
 import Statistics.Test.KolmogorovSmirnov
 import qualified Statistics.Sample as Sample
 
+import Control.Concurrent
 import System.Random
 import System.Random.MWC
 import System.Random.MWC.Distributions
@@ -220,12 +220,20 @@ imf modeNo dat = do
                                 } 
                 
                 
-                        Left dat2 <- envelopes envParams ("upper", "lower", "mean") (\_ -> return ()) (putStrLn) (DataUpdateFunc (\_ _ _ -> return ()))
+                        Left dat2 <- envelopes envParams ("upper", "lower", "mean") (\_ -> return ()) (putStrLn) (DataUpdateFunc (\dat id _ -> do
+                                -- _ <- forkIO (do
+                                --        let
+                                --            ([xMin], [xMax]) = dataRange dat
+                                --            step = (xMax - xMin) / 1000
+                                --        if numNodes == 1 then storeData (D.data1' (U.getValues1 (V.fromList [xMin, xMin + step .. xMax]) dat)) ("last_imf" ++ id ++ show i) else return ()
+                                --    )
+                                return ()
+                            ))
                         let 
                             sdev2 = U.stdev dat (Left dat2)
                         
-                        putStrLn $ "sdev: " ++ show sdev2
-                        if numNodes == 1 then storeData dat ("last_imf" ++ show i) else return ()
+                        --putStrLn $ "sdev: " ++ show sdev2
+                        --if numNodes == 1 then storeData dat ("last_imf" ++ show i) else return ()
                         if sdev2 < sdev
                             then 
                                     return dat2
