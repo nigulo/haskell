@@ -4,6 +4,7 @@ module Regression.AnalyticDataTest where
 
 import Regression.AnalyticData as AD
 import Math.Function as F
+import Utils.Test
 import Test.Framework
 import System.Random
 import qualified Data.Vector.Unboxed as V
@@ -20,4 +21,12 @@ test_constantOp = do
     assertEqual 15 (V.length (snd expectedResult))
 
     
+test_getZeroCrossings = do
+    g <- getStdGen 
+    let
+        func :: F.Function Double = F.function "cos(x)"
+        ad = AD.AnalyticData [([-11], [11], func)]
+        result = V.toList $ AD.getZeroCrossings 100000 g ad
+        expectedResult = [-10.9956, -7.854, -4.7124, -1.5708, 1.5708, 4.7124, 7.854, 10.9956]
+    assertEqualDoubleList expectedResult result
     

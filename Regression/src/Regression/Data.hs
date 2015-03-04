@@ -50,6 +50,7 @@ module Regression.Data (
     getMaxima,
     getExtrema,
     getTangent,
+    getZeroCrossings,
     xmlElementName,
     is2d,
     is3d,
@@ -70,18 +71,15 @@ import Data.Either
 import Data.Maybe
 import qualified Data.Vector.Unboxed as V
 
---import Regression.Spline
--- | Defines a 2 dimentional measurement
---data (Real a, Real b) => Measurement a b = Measurement {x :: a, y :: b}
-
--- | Use Data and Spectrum constructors only for relatively small data sets
 data Data = 
+    Data1 (V.Vector (Double {-y-}, Double {-w-})) |
     Data2 (V.Vector (Double {-x-}, Double {-y-}, Double {-w-})) |
     Data3 (V.Vector (Double {-x1-}, Double {-x2-}, Double {-y-}, Double {-w-})) | 
     Spectrum2 ((Double {-offset-}, Double {-step-}), V.Vector (Double {-y-}, Double {-w-}))
              deriving (Show, Read)
 
 instance Xml.XmlElement Data where
+    toElement (Data1 values) = Xml.element xmlElementName [("type", "data1"), ("version", "1")] [Right (show values)]
     toElement (Data2 values) = Xml.element xmlElementName [("type", "data2"), ("version", "1")] [Right (show values)]
     toElement (Data3 values) = Xml.element xmlElementName [("type", "data3"), ("version", "1")] [Right (show values)]
     toElement (Spectrum2 values) = Xml.element xmlElementName [("type", "spectrum2"), ("version", "1")] [Right (show values)]
@@ -96,6 +94,7 @@ instance Xml.XmlElement Data where
                         "0" -> Data2 $ V.fromList $ map (\s -> read s) (Xml.contentTexts e)
                         otherwise -> data2 $ read $ head $ Xml.contentTexts e
                         
+                "data1" -> Data1 $ read $ head $ Xml.contentTexts e
                 "data2" -> Data2 $ read $ head $ Xml.contentTexts e
                 "data3" -> Data3 $ read $ head $ Xml.contentTexts e
                 "spectrum" ->
@@ -119,10 +118,10 @@ xmlElementName :: String
 xmlElementName = "data"
 
 xs :: Data -> [[Double]]
-xs d@(Data2 _) = map (\x -> [x]) (V.toList (xs1 d))
-
+xs d = map (\x -> [x]) (V.toList (xs1 d))
 
 xsi :: Int -> Data -> V.Vector Double
+xsi 0 (Data1 ds) = V.empty 
 xsi 0 (Data2 ds) = 
     let 
         (xs, _, _) = V.unzip3 ds
@@ -145,6 +144,11 @@ xs1 :: Data -> V.Vector Double
 xs1 = xsi 0 
 
 ys :: Data -> V.Vector Double
+ys (Data1 ds) = 
+    let 
+        (y, _) = V.unzip ds
+    in 
+        y
 ys (Data2 ds) = 
     let 
         (_, y, _) = V.unzip3 ds
@@ -158,6 +162,11 @@ ys (Data3 ds) =
 ys (Spectrum2 (_, values)) = fst $ V.unzip values
 
 ws :: Data -> V.Vector Double
+ws (Data1 ds) = 
+    let 
+        (_, w) = V.unzip ds
+    in 
+        w
 ws (Data2 ds) = 
     let 
         (_, _, w) = V.unzip3 ds
@@ -172,10 +181,15 @@ ws (Spectrum2 (_, values)) = snd $ V.unzip $ values
 
 -- | Returns an array of pure measurements - (x, y, w) triples
 values :: Data -> [([Double], Double, Double)]
+values (Data1 ds) = map (\(y, w) -> ([], y, w)) $ V.toList ds
 values (Data2 ds) = map (\(x, y, w) -> ([x], y, w)) $ V.toList ds
 values (Data3 ds) = map (\(x1, x2, y, w) -> ([x1, x2], y, w)) $ V.toList ds
 values (Spectrum2 ((offset, step), values)) = 
     [let (y, w) = values V.! i in ([offset + step * fromIntegral i], y, w) | i <- [0 .. V.length values - 1]]
+
+-- | Returns an array of pure measurements - (y, w) pairs
+values0 :: Data -> V.Vector (Double, Double)
+values0 (Data1 ds) = ds
 
 -- | Returns an array of pure measurements - (x, y, w) triples
 values1 :: Data -> V.Vector (Double, Double, Double)
@@ -201,6 +215,7 @@ xys2 :: Data -> V.Vector (Double, Double, Double)
 xys2 (Data3 ds) = V.map (\(x1, x2, y, _) -> (x1, x2, y) )ds
 
 xAt :: Int -> Data -> [Double]
+xAt _ (Data1 ds) = [] 
 xAt i (Data2 ds) = 
     let 
         (x, _, _) = ds V.! i
@@ -214,6 +229,11 @@ xAt i (Data3 ds) =
 xAt i (Spectrum2 ((offset, step), _)) = [offset + step * fromIntegral i] 
 
 yAt :: Int -> Data -> Double
+yAt i (Data1 ds) = 
+    let 
+        (y, _) = ds V.! i
+    in
+        y
 yAt i (Data2 ds) = 
     let 
         (_, y, _) = ds V.! i
@@ -227,6 +247,11 @@ yAt i (Data3 ds) =
 yAt i (Spectrum2 (_, values)) = fst (values V.! i) 
 
 wAt :: Int -> Data -> Double
+wAt i (Data1 ds) = 
+    let 
+        (_, w) = ds V.! i
+    in
+        w
 wAt i (Data2 ds) = 
     let 
         (_, _, w) = ds V.! i
@@ -240,6 +265,11 @@ wAt i (Data3 ds) =
 wAt i (Spectrum2 (_, values)) = snd (values V.! i)
 
 valueAt :: Int -> Data -> ([Double], Double, Double)
+valueAt i (Data1 ds) = 
+    let
+        (y, w) = ds V.! i
+    in
+        ([], y, w)
 valueAt i (Data2 ds) = 
     let
         (x, y, w) = ds V.! i
@@ -254,20 +284,26 @@ valueAt i (Spectrum2 ((offset, step), values)) =
 setY :: V.Vector Double -- ^ new values of ys
      -> Data 
      -> Data
-setY ys (Data2 ds)= 
+setY ys (Data1 ds) = 
+    Data1 (V.zip ys ws) where
+        (_, ws) = V.unzip ds
+setY ys (Data2 ds) = 
     Data2 (V.zip3 xs ys ws) where
         (xs, _, ws) = V.unzip3 ds
-setY ys (Data3 ds)= 
+setY ys (Data3 ds) = 
     Data3 (V.zip4 x1s x2s ys ws) where
         (x1s, x2s, _, ws) = V.unzip4 ds
-setY ys (Spectrum2 (offsetAndStep, ds))= 
+setY ys (Spectrum2 (offsetAndStep, ds)) = 
     Spectrum2 (offsetAndStep, V.zip ys ws) where
         (_, ws) = V.unzip ds
 
 setW :: V.Vector Double -- ^ new values of ws
      -> Data 
      -> Data
-setW ws (Data2 ds)= 
+setW ws (Data1 ds) = 
+    Data1 (V.zip ys ws) where
+        (ys, _) = V.unzip ds
+setW ws (Data2 ds) = 
     Data2 (V.zip3 xs ys ws) where
         (xs, ys, _) = V.unzip3 ds
 setW ws (Data3 ds)= 
@@ -298,6 +334,7 @@ getY (x1:x2:_) (Data3 ds) =
 -- | Returns the minimum x value for data
 xMins :: Data -> [Double]
 -- here we assume that the data is sorted
+xMins (Data1 ds) = [] 
 xMins d@(Data2 ds) = 
     let
         (x, _, _) = V.head ds
@@ -336,6 +373,7 @@ xMin1 = xMini 0
 -- | Returns the maximum x value for data
 xMaxs :: Data -> [Double]
 -- here we assume that the data is sorted
+xMaxs (Data1 ds) = [] 
 xMaxs d@(Data2 ds) = 
     let
         (x, _, _) = V.last ds
@@ -512,6 +550,12 @@ sampleData xs d =
 filterData :: (([Double], Double, Double) -> Bool) -> Data -> Data
 filterData f d = data2 (filter f (values d))
 
+data0 :: V.Vector (Double, Double) -> Data
+data0 vals = Data1 vals
+
+data0' :: V.Vector (Double) -> Data
+data0' vals = Data1 $ V.map (\y -> (y, 1)) vals
+
 data1 :: V.Vector (Double, Double, Double) -> Data
 data1 vals = Data2 vals
 
@@ -547,6 +591,10 @@ spectrum1' vals =
         Spectrum2 ((xmin, if len > 1 then (xmax - xmin) / (len - 1) else 0), V.zip ys1 (V.replicate (V.length ys1) 1))
 
 
+is1d :: Data -> Bool
+is1d (Data1 _) = True
+is1d _ = False
+
 is2d :: Data -> Bool
 is2d (Data2 _) = True
 is2d (Spectrum2 _) = True
@@ -558,11 +606,13 @@ is3d _ = False
 
 -- | return number of independent ordinal values this data set is defined on
 dim :: Data -> Int
+dim (Data1 _) = 0
 dim (Data2 _) = 1
 dim (Data3 _) = 2
 dim (Spectrum2 _) = 1
 
 isData :: Data -> Bool
+isData (Data1 _) = True
 isData (Data2 _) = True
 isData (Data3 _) = True
 isData _ = False
@@ -583,6 +633,7 @@ toSpectrum d@(Data2 _) =
 toSpectrum _ = Nothing 
 
 dataLength :: Data -> Int
+dataLength (Data1 ds) = V.length ds
 dataLength (Data2 ds) = V.length ds
 dataLength (Data3 ds) = V.length ds
 dataLength (Spectrum2 (_, ds)) = V.length ds
@@ -644,3 +695,20 @@ getExtrema d =
     in        
         getExtrema' vals
 
+-- | Returns an array containing the abscissa of zero-crossings
+--   The values returned are the closest x-values taken from input data (i.e. no interpolation)
+getZeroCrossings :: Data -> V.Vector Double
+getZeroCrossings d =
+    let
+        vals = V.toList $ xys1 d
+        getZeroCrossings' ((_, _):(_, _):[]) = V.empty
+        getZeroCrossings' ((x1, y1):(x2, y2):xys) =
+            let
+                zeroCrossings = getZeroCrossings' ((x2, y2):xys)
+            in
+                if y1 == 0 then V.cons x1 zeroCrossings
+                else if signum y1 /= signum y2 then V.cons (if abs y1 < abs y2 then x1 else x2) zeroCrossings
+                else zeroCrossings
+            
+    in        
+        getZeroCrossings' vals

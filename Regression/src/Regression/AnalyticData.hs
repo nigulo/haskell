@@ -15,7 +15,8 @@ module Regression.AnalyticData (
     dim,
     getMinima,
     getMaxima,
-    getExtrema
+    getExtrema,
+    getZeroCrossings
     ) where
 
 import qualified Math.Expression as E
@@ -200,4 +201,30 @@ getExtrema samplingCount maybePeriod g d =
         y1 = getValue' x1 g d
     in  
         getExtrema' (x0, y0) (x1, y1) 
-            
+
+-- | Returns an array containing the abscissa of zero-crossings
+getZeroCrossings :: (F.Fn d, RandomGen g) => Int -> g -> AnalyticData d  -> V.Vector Double
+getZeroCrossings samplingCount g d =
+    let
+        xLeft = xMin1 d
+        xRight = xMax1 d
+        step = (xRight - xLeft) / (fromIntegral samplingCount)
+
+        getZeroCrossings' :: (Double, Double) -> Int -> V.Vector Double
+        getZeroCrossings' (x1, y1) i =
+            let
+                x2 = xLeft + fromIntegral i * step
+            in
+                if (x2 > xRight) then V.empty
+                else
+                  let
+                        y2 = getValue' x2 g d
+                        zeroCrossings = getZeroCrossings' (x2, y2) (i + 1)
+                    in
+                        if y1 == 0 then V.cons x1 zeroCrossings
+                        else if signum y1 /= signum y2 then V.cons (if abs y1 < abs y2 then x1 else x2) zeroCrossings
+                        else zeroCrossings
+        x1 = xLeft
+        y1 = getValue' x1 g d
+    in  
+        getZeroCrossings' (x1, y1) 1
