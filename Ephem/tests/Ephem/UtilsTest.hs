@@ -1,10 +1,10 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 
-module Astro.Ephem.UtilsTest where
+module Ephem.UtilsTest where
 
-import Astro.Ephem.Types
-import Astro.Ephem.Utils
-import Astro.Ephem.TestUtils
+import Ephem.Types
+import Ephem.Utils
+import Ephem.TestUtils
 import Test.Framework
 
 test_clipAngle = do 

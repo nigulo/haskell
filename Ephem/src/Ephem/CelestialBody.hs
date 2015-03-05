@@ -1,4 +1,4 @@
-module Astro.Ephem.CelestialBody (
+module Ephem.CelestialBody (
     calcHelLongAndDist,
     calcEclCoords,
     calcDistance,
@@ -14,11 +14,11 @@ module Astro.Ephem.CelestialBody (
     ) where
     
     
-import Astro.Ephem.Utils
-import Astro.Ephem.OrbitalElements
-import Astro.Ephem.Types
-import Astro.Ephem.Time
-import Astro.Ephem.Coords
+import Ephem.Utils
+import Ephem.OrbitalElements
+import Ephem.Types
+import Ephem.Time
+import Ephem.Coords
 import Debug.Trace
 
 --    pi2 * (angleBy2Pi - fromIntegral (floor angleBy2Pi :: Int)) where

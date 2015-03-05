@@ -1,4 +1,4 @@
-module Astro.Ephem.Coords (
+module Ephem.Coords (
     RA,
     LHA,
     Dec,
@@ -18,9 +18,9 @@ module Astro.Ephem.Coords (
     calcGeoParallax
     ) where
 
-import Astro.Ephem.Utils
-import Astro.Ephem.Types
-import Astro.Ephem.Time
+import Ephem.Utils
+import Ephem.Types
+import Ephem.Time
 import Debug.Trace
 
 type RA = Hours -- ^ right ascension

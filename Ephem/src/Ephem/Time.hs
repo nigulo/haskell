@@ -1,4 +1,4 @@
-module Astro.Ephem.Time (
+module Ephem.Time (
     GMT (..),
     GST (..),
     LST (..),
@@ -11,8 +11,8 @@ module Astro.Ephem.Time (
     lstToGST
     ) where
 import Debug.Trace
-import Astro.Ephem.Types
-import Astro.Ephem.Utils
+import Ephem.Types
+import Ephem.Utils
 import Data.Time.Calendar as Cal
 
 type GMT = Hours

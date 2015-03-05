@@ -1,9 +1,9 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
-module Astro.Ephem.TimeTest where
+module Ephem.TimeTest where
 
-import Astro.Ephem.Types
-import Astro.Ephem.Time
-import Astro.Ephem.TestUtils
+import Ephem.Types
+import Ephem.Time
+import Ephem.TestUtils
 import Test.Framework
 
 

@@ -20,13 +20,13 @@ import GUI.Widget
 
 import Utils.Misc
 import Utils.List
-import Astro.Ephem.Types
-import Astro.Ephem.Time
-import Astro.Ephem.Coords
-import Astro.Ephem.Utils
-import Astro.Ephem.OrbitalElements
-import Astro.Ephem.Sun hiding (main)
-import Astro.Ephem.CelestialBody
+import Ephem.Types
+import Ephem.Time
+import Ephem.Coords
+import Ephem.Utils
+import Ephem.OrbitalElements
+import Ephem.Sun hiding (main)
+import Ephem.CelestialBody
 import Data.Time.Calendar
 import Data.Time.Calendar.MonthDay
 import qualified Data.Map as M

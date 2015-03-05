@@ -13,7 +13,7 @@ import qualified Data.Vector.Unboxed as V
 import Data.Char
 import Utils.List
 
-import Astro.Ephem.Types
+import Ephem.Types
 
 readDate :: String -> String -> Date
 readDate "ymd" str =

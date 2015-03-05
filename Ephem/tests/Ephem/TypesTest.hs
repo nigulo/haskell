@@ -1,9 +1,9 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 
-module Astro.Ephem.TypesTest where
+module Ephem.TypesTest where
 
-import Astro.Ephem.Types
-import Astro.Ephem.TestUtils
+import Ephem.Types
+import Ephem.TestUtils
 import Test.Framework
 
 test_toDMS = do 

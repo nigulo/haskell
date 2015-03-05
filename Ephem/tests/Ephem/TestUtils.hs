@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
-module Astro.Ephem.TestUtils where
+module Ephem.TestUtils where
 
-import Astro.Ephem.Types
-import Astro.Ephem.Coords
+import Ephem.Types
+import Ephem.Coords
 import Test.Framework
 
 assertEqualDouble x y = 

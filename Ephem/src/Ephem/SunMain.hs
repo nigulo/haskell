@@ -1,8 +1,8 @@
 module Main where
 
-import Astro.Ephem.Sun
-import Astro.Ephem.Types
-import Astro.Ephem.OrbitalElements
+import Ephem.Sun
+import Ephem.Types
+import Ephem.OrbitalElements
 import System.Environment
 
 

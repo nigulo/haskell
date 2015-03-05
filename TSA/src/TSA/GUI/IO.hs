@@ -29,7 +29,7 @@ import Control.Concurrent.MVar
 import System.IO
 import System.Random
 
-import Astro.Ephem.Types
+import Ephem.Types
 
 import qualified Data.Vector.Unboxed as V
 import Control.Applicative

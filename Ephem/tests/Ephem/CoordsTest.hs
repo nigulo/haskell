@@ -1,11 +1,11 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 
-module Astro.Ephem.CoordsTest where
+module Ephem.CoordsTest where
 
-import Astro.Ephem.Types
-import Astro.Ephem.Time
-import Astro.Ephem.Coords
-import Astro.Ephem.TestUtils
+import Ephem.Types
+import Ephem.Time
+import Ephem.Coords
+import Ephem.TestUtils
 import Test.Framework
 import Debug.Trace
 

@@ -31,7 +31,7 @@ executable TSA
                SafeSemaphore -any,
                statistics -any,
                vector -any,
-               Astro -any,
+               Ephem -any,
                statistics-linreg -any,
                mwc-random -any,
                zlib -any,

@@ -1,14 +1,14 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
-module Astro.Ephem.MoonTest where
+module Ephem.MoonTest where
 
-import Astro.Ephem.OrbitalElements
-import Astro.Ephem.CelestialBody
-import Astro.Ephem.Sun
-import Astro.Ephem.Moon
-import Astro.Ephem.Types
-import Astro.Ephem.Coords
-import Astro.Ephem.Time
-import Astro.Ephem.TestUtils
+import Ephem.OrbitalElements
+import Ephem.CelestialBody
+import Ephem.Sun
+import Ephem.Moon
+import Ephem.Types
+import Ephem.Coords
+import Ephem.Time
+import Ephem.TestUtils
 import Test.Framework
 import Debug.Trace
 

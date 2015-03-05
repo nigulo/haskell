@@ -1,4 +1,4 @@
-module Astro.Ephem.Moon (
+module Ephem.Moon (
     calcMoon,
     calcMoon2,
     calcMoonPhase,
@@ -8,13 +8,13 @@ module Astro.Ephem.Moon (
     calcMoonRiseSet
     ) where
 
-import Astro.Ephem.Utils
-import Astro.Ephem.CelestialBody
-import Astro.Ephem.OrbitalElements
-import Astro.Ephem.Types
-import Astro.Ephem.Coords
-import Astro.Ephem.Time
-import Astro.Ephem.Sun
+import Ephem.Utils
+import Ephem.CelestialBody
+import Ephem.OrbitalElements
+import Ephem.Types
+import Ephem.Coords
+import Ephem.Time
+import Ephem.Sun
 import Debug.Trace
 
 calcMoon ::

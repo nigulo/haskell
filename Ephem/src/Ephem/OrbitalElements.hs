@@ -1,4 +1,4 @@
-module Astro.Ephem.OrbitalElements (
+module Ephem.OrbitalElements (
     Planet (..),
     OrbitalElements (..),
     ElementsByOrbitType (..),
@@ -26,8 +26,8 @@ module Astro.Ephem.OrbitalElements (
     planets2000
     ) where
     
-import Astro.Ephem.Types
-import Astro.Ephem.Coords
+import Ephem.Types
+import Ephem.Coords
 
 data Planet = Mercury | Venus | Earth | Mars | Jupiter | Saturn | Uranus | Neptune | Pluto
 

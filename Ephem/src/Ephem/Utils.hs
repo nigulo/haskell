@@ -1,4 +1,4 @@
-module Astro.Ephem.Utils (
+module Ephem.Utils (
     pi2,
     clipAngle,
     clipAngleRad,
@@ -9,7 +9,7 @@ module Astro.Ephem.Utils (
     )
     where
 
-import Astro.Ephem.Types
+import Ephem.Types
 
 pi2 :: Double
 pi2 = 2 * pi

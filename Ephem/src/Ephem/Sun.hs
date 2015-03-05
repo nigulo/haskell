@@ -1,16 +1,16 @@
-module Astro.Ephem.Sun (
+module Ephem.Sun (
     calcSun,
     calcSunRiseSet,
     calcSunRiseSet',
     sunRisesAndSets
     ) where
     
-import Astro.Ephem.OrbitalElements
-import Astro.Ephem.CelestialBody
-import Astro.Ephem.Coords
-import Astro.Ephem.Types
-import Astro.Ephem.Time
-import Astro.Ephem.Utils
+import Ephem.OrbitalElements
+import Ephem.CelestialBody
+import Ephem.Coords
+import Ephem.Types
+import Ephem.Time
+import Ephem.Utils
 import Debug.Trace
 import Data.Time.Calendar hiding (diffDays)
 import Data.Time.Calendar.MonthDay

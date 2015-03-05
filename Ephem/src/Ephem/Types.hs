@@ -1,4 +1,4 @@
-module Astro.Ephem.Types (
+module Ephem.Types (
     SphericalCoord (..),
     Hours (..),
     Angle (..),

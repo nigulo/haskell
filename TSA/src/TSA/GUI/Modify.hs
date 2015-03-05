@@ -19,7 +19,7 @@ import TSA.Data
 import TSA.GUI.Dialog
 import TSA.GUI.Common
 import GUI.Widget
-import Astro.Ephem.Types
+import Ephem.Types
 
 import Utils.Misc
 

@@ -1,13 +1,13 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 
-module Astro.Ephem.SunTest where
+module Ephem.SunTest where
 
-import Astro.Ephem.Types
-import Astro.Ephem.Time
-import Astro.Ephem.Coords
-import Astro.Ephem.OrbitalElements
-import Astro.Ephem.Sun
-import Astro.Ephem.TestUtils
+import Ephem.Types
+import Ephem.Time
+import Ephem.Coords
+import Ephem.OrbitalElements
+import Ephem.Sun
+import Ephem.TestUtils
 import Test.Framework
 import Debug.Trace
 
