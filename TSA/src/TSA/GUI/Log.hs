@@ -31,20 +31,10 @@ showLog stateRef = do
             icon <- pixbufNewFromFile "tsa.bmp"
             win `set` [windowTitle := "Log", windowIcon := Just icon]
             
-            vAdjustment <- adjustmentNew 0 0 100 1 10 10
-            scrolledWindow <- scrolledWindowNew Nothing (Just vAdjustment)
-
-            --vBox <- vBoxNew False 0
-            --set vBox [boxHomogeneous := False]
-            --boxPackStart vBox scrolledWindow PackGrow 0
-            
+            scrolledWindow <- scrolledWindowNew Nothing Nothing
+            containerAdd scrolledWindow textView
             containerAdd win scrolledWindow
             
-            --vBox <- vBoxNew False 0
-            --set vBox [boxHomogeneous := False]
-            --boxPackStart vBox textView PackGrow 0
-            
-            containerAdd scrolledWindow textView
             
             win `on` objectDestroy $
                 modifyMVar_ stateRef $ \state -> return $ state {
@@ -53,8 +43,13 @@ showLog stateRef = do
                         }
                     }
             
-            windowResize win 640 480
             widgetShowAll win
+            windowResize win 640 480
+
+            textMark <- textMarkNew Nothing True 
+            textIter <- textBufferGetEndIter textBuffer
+            textBufferAddMark textBuffer textMark textIter
+            textViewScrollToMark textView textMark 0 Nothing 
             
             modifyMVar_ stateRef $ \state -> return $ state {
                 guiParams = Just (fromJust (guiParams state)) {

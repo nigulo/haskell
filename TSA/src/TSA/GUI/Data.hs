@@ -104,16 +104,19 @@ infoDialog stateRef = do
                 bootstrapCountLabel <- labelNew $ Just $ show $ length (subDataBootstrapSet (head (dataSet dp))) 
                 addWidgetToBox (Just "Bootstrap samples:") bootstrapCountLabel PackNatural dataPage
 
+                hBox <- hBoxNew False 2
+                addWidgetToBox Nothing hBox PackNatural dataPage
+
                 detailsButton <- buttonNewWithLabel "Show info..."
-                on detailsButton buttonReleaseEvent $ liftIO (showInfo state dp >> return True)
-                addWidgetToBox Nothing detailsButton PackNatural dataPage
+                on detailsButton buttonReleaseEvent $ liftIO (showInfo dp >> return True)
+                boxPackStart hBox detailsButton PackNatural 2
                 dataButton <- buttonNewWithLabel "Show data..."
                 on dataButton buttonReleaseEvent $ liftIO (showData dp >> return True)
-                addWidgetToBox Nothing dataButton PackNatural dataPage
+                boxPackStart hBox dataButton PackNatural 2
 
                 exportButton <- buttonNewFromStock stockSave
                 on exportButton buttonReleaseEvent $ liftIO (exportData state dp >> return True)
-                addWidgetToBox Nothing exportButton PackNatural dataPage
+                boxPackEnd hBox exportButton PackNatural 2
                 
                 return $ pages ++ [(dataPage, dataName dp, descEntry, typeLabel)]
     
@@ -126,6 +129,7 @@ infoDialog stateRef = do
     boxPackStart contentBox vBox PackGrow 2
     notebook <- notebookNew
     notebookSetScrollable notebook True
+    boxPackStart vBox notebook PackGrow 2
     
     let
         deleteData page = 
@@ -146,7 +150,6 @@ infoDialog stateRef = do
                 widgetShowAll label
     
     mapM_ mapOp dataPages
-    boxPackStart vBox notebook PackNatural 2
 
     let
         onClose response =
@@ -166,22 +169,17 @@ infoDialog stateRef = do
                     else
                         return ()
                 
-    dialogAddButton dialog "Cancel" ResponseCancel
     dialogAddButton dialog "Ok" ResponseOk
-
     widgetShowAll dialog
-    
     response <- dialogRun dialog 
-
     onClose response
-
     widgetDestroy dialog
 
 formatRangeBound :: [Double] -> String
 formatRangeBound (rangeBound1:rangeBound) = show rangeBound1 ++ concatMap (\rb -> ", " ++ show rb) rangeBound
 
-showInfo :: State -> DataParams -> IO ()
-showInfo state dp = do
+showInfo :: DataParams -> IO ()
+showInfo dp = do
     textBuffer <- textBufferNew Nothing
 
     textBufferSetText textBuffer $ "No Left Right Count\n" ++ (concatMap (\(sdp, i) -> 
@@ -194,30 +192,31 @@ showInfo state dp = do
         in
             (show i) ++ ": " ++ left ++ " - " ++ right ++ (if isDiscrete dp then " " ++ show n else "") ++ "\n"
         ) $ zip (dataSet dp) [1, 2 ..])
+
     textView <- textViewNewWithBuffer textBuffer
     font <- fontDescriptionNew
     fontDescriptionSetFamily font TSA.GUI.Common.defaultFontFamily
     widgetModifyFont textView (Just font)
     textViewSetEditable textView False 
-
+    
     win <- windowNew
     icon <- pixbufNewFromFile "tsa.bmp"
     win `set` [windowTitle := dataName dp, windowIcon := Just icon]
     
-    vAdjustment <- adjustmentNew 0 0 100 1 10 10
-    scrolledWindow <- scrolledWindowNew Nothing (Just vAdjustment)
-
+    scrolledWindow <- scrolledWindowNew Nothing Nothing
+    containerAdd scrolledWindow textView
     containerAdd win scrolledWindow
     
-    containerAdd scrolledWindow textView
-    windowResize win 640 480
     widgetShowAll win
+    windowResize win 640 480
+
 
 showData :: DataParams -> IO ()
 showData dp = do
     textBuffer <- textBufferNew Nothing
     let
         useSegmentPrefix = length (dataSet dp) > 1 
+
     textBufferSetText textBuffer $ concatMap (\(sdp, i) ->
         let
             (rangeStart, rangeEnd) = subDataRange sdp
@@ -227,6 +226,7 @@ showData dp = do
                 else ""
             ) ++ U.format (subData sdp) ++ "\n"
         ) $ zip (dataSet dp) [1, 2 ..]
+
     textView <- textViewNewWithBuffer textBuffer
     font <- fontDescriptionNew
     fontDescriptionSetFamily font TSA.GUI.Common.defaultFontFamily
@@ -237,14 +237,12 @@ showData dp = do
     icon <- pixbufNewFromFile "tsa.bmp"
     win `set` [windowTitle := dataName dp, windowIcon := Just icon]
     
-    vAdjustment <- adjustmentNew 0 0 100 1 10 10
-    scrolledWindow <- scrolledWindowNew Nothing (Just vAdjustment)
-
+    scrolledWindow <- scrolledWindowNew Nothing Nothing
+    containerAdd scrolledWindow textView
     containerAdd win scrolledWindow
     
-    containerAdd scrolledWindow textView
-    windowResize win 640 480
     widgetShowAll win
+    windowResize win 640 480
 
 exportData :: State -> DataParams -> IO ()
 exportData state dp = do

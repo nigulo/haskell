@@ -149,5 +149,5 @@ showMarkers stateRef = do
     
     win `on` objectDestroy $ updateSegments
     
-    windowResize win 640 480
     widgetShowAll win
+    windowResize win 640 480
