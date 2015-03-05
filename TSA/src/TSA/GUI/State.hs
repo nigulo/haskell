@@ -420,14 +420,17 @@ data SettingsParams = SettingsParams {
 instance Xml.XmlElement SettingsParams where
     toElement params = Xml.element "settingsparams" 
         [
-         ("savechanges", show (settingsSaveInZippedFormat params)),
+         ("savechanges", show (settingsSaveChangesOnExit params)),
+         ("savezipped", show (settingsSaveInZippedFormat params)),
          ("activetab", show (settingsActiveTab params))
         ] []
 
     fromElement e = 
             SettingsParams {
                 settingsSaveChangesOnExit = read $ Xml.attrValue e "savechanges",
-                settingsSaveInZippedFormat = True,
+                settingsSaveInZippedFormat = case Xml.maybeAttrValue e "savezipped" of
+                    Just zip -> read zip
+                    Nothing -> True,
                 settingsActiveTab = read $ Xml.attrValue e "activetab"
             }
 
