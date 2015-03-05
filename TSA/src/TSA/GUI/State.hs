@@ -450,7 +450,8 @@ data State = State {
     guiParams :: Maybe GuiParams,
     graphTabs :: [GraphTabParams],
     log :: String,
-    settingsParams :: SettingsParams
+    settingsParams :: SettingsParams,
+    tasks :: [(ThreadId, String {- task name-})]
 }
 
 instance Xml.XmlElement State where
@@ -506,7 +507,8 @@ instance Xml.XmlElement State where
                             (case Xml.maybeContentElement e "log" of
                                 Just e1 -> head $ Xml.contentTexts e1
                                 Nothing -> ""
-                                )
+                                ),
+                        tasks = []
                 }
                 otherwise ->
                     State {
@@ -549,7 +551,8 @@ instance Xml.XmlElement State where
                             (case Xml.maybeContentElement e "log" of
                                 Just e1 -> head $ Xml.contentTexts e1
                                 Nothing -> ""
-                                )
+                                ),
+                        tasks = []
                 }
 
 instance Show State where
@@ -691,7 +694,8 @@ newState p =
             guiParams = Nothing,
             graphTabs = [],
             settingsParams = newSettings,
-            log = ""
+            log = "",
+            tasks = []
             
     }
 

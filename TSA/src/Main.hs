@@ -47,6 +47,7 @@ import TSA.GUI.Sample
 import TSA.GUI.Common
 import TSA.GUI.Preferences
 import TSA.GUI.Log
+import TSA.GUI.Tasks
 import TSA.GUI.Markers
 
 import GUI.Widget
@@ -246,8 +247,11 @@ main = do
     preferencesAct <- actionNew "PreferencesAction" "Preferences..." Nothing (Just stockPreferences)
     on preferencesAct actionActivated (TSA.GUI.Preferences.preferencesDialog stateRef)
 
-    showLogAct <- actionNew "ShowLogAction" "Show log" Nothing (Just stockInfo)
+    showLogAct <- actionNew "ShowLogAction" "Show log..." Nothing (Just stockInfo)
     on showLogAct actionActivated (TSA.GUI.Log.showLog stateRef)
+
+    showTasksAct <- actionNew "ShowTasksAction" "Tasks..." Nothing (Just stockInfo)
+    on showTasksAct actionActivated (TSA.GUI.Tasks.tasksDialog stateRef)
     
     ----------------------------------------------------------------------------
     on win keyPressEvent $
@@ -313,7 +317,8 @@ main = do
        savePDFAct,
        -----------
        preferencesAct,
-       showLogAct       
+       showLogAct,
+       showTasksAct
        ]
     
     ui <- uiManagerNew 

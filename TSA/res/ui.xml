@@ -53,6 +53,7 @@
       <menuitem action="PreferencesAction"/>
       <separator/>
       <menuitem action="ShowLogAction"/>
+      <menuitem action="ShowTasksAction"/>
     </menu>
   </menubar>
 </ui>

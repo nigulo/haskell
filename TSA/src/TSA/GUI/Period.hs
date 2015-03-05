@@ -98,7 +98,7 @@ findPeriodDialog stateRef = do
                         findPeriodCommonParams = updateCommonParams name commonParams
                     }}
                 
-                forkIO $ findPeriod stateRef selectedData periodStart periodEnd (round precision) methodNo name
+                runTask stateRef "Find period" $ findPeriod stateRef selectedData periodStart periodEnd (round precision) methodNo name
                 return ()
         else
             do

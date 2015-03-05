@@ -3,14 +3,6 @@ module TSA.GUI.Preferences (preferencesDialog) where
 
 import Graphics.UI.Gtk hiding (addWidget)
 import Graphics.UI.Gtk.Layout.VBox
-import qualified Regression.Polynom as P
-import Regression.Spline as S
-import Regression.Regression as R
-import Regression.AnalyticData
-import Regression.Data as D
-import Regression.Utils
-import qualified Math.Function as F
-import qualified Math.Expression as E
 
 import TSA.GUI.State
 import TSA.GUI.Data
@@ -43,7 +35,7 @@ preferencesDialog stateRef = do
     
     dialog <- dialogWithTitle state "Preferences"
     dialogAddButton dialog "Cancel" ResponseCancel
-    fitButton <- dialogAddButton dialog "Ok" ResponseOk
+    dialogAddButton dialog "Ok" ResponseOk
     
     saveChangesOnExitCheck <- checkButtonNew >>= \button -> toggleButtonSetActive button (settingsSaveChangesOnExit params) >> return button
     addWidget (Just "Save changes on exit: ") saveChangesOnExitCheck dialog 
