@@ -95,10 +95,17 @@ statisticDialog stateRef = do
                             textBufferSetText statisticTextBuffer (statisticDefinition statParams)
                             statisticTextView <- textViewNewWithBuffer statisticTextBuffer
                             font <- fontDescriptionNew
-                            fontDescriptionSetFamily font "Courier New"
+                            fontDescriptionSetFamily font TSA.GUI.Common.defaultFontFamily
                             widgetModifyFont statisticTextView (Just font)
                             textViewSetAcceptsTab statisticTextView False
-                            addWidgetToBox (Just "Definition:") statisticTextView PackNatural page
+
+                            scrolledWindow <- scrolledWindowNew Nothing Nothing
+                            containerAdd scrolledWindow statisticTextView
+
+                            statisticFrame <- frameNew
+                            frameSetLabel statisticFrame (stringToGlib "Definition" )
+                            containerAdd statisticFrame scrolledWindow
+                            addWidgetToBox Nothing statisticFrame PackGrow page
                             
                             hBox <- hBoxNew False 0
                             addButton <- buttonNewWithLabel "Add"
@@ -131,53 +138,51 @@ statisticDialog stateRef = do
                         do
                             let
                                 name = (commonName . statisticCommonParams) statParams
+
+                            vBox1 <- vBoxNew False 0
                             statisticTextBuffer <- textBufferNew Nothing
                             textBufferSetText statisticTextBuffer (statisticDefinition statParams)
                             statisticTextView <- textViewNewWithBuffer statisticTextBuffer
                             font <- fontDescriptionNew
-                            fontDescriptionSetFamily font "Courier New"
+                            fontDescriptionSetFamily font TSA.GUI.Common.defaultFontFamily
                             widgetModifyFont statisticTextView (Just font)
                             textViewSetAcceptsTab statisticTextView False
 
-                            hAdjustment <- adjustmentNew
-                                0 {- the initial value -}
-                                0 {- the minimum value -}
-                                10000 {- the maximum value -}
-                                1 {- the step increment -}
-                                10 {- the page increment -}
-                                100 {- the page size -}
+                            scrolledWindow <- scrolledWindowNew Nothing Nothing
+                            containerAdd scrolledWindow statisticTextView
 
-                            vAdjustment <- adjustmentNew
-                                0 {- the initial value -}
-                                0 {- the minimum value -}
-                                100000 {- the maximum value -}
-                                1 {- the step increment -}
-                                10 {- the page increment -}
-                                10 {- the page size -}
-
-                            scrollwdTextView <- scrolledWindowNew (Just hAdjustment) (Just vAdjustment)
-
-                            scrolledWindowAddWithViewport scrollwdTextView statisticTextView
-                            addWidgetToBox (Just "Definition:") scrollwdTextView PackNatural page
+                            statisticFrame <- frameNew
+                            frameSetLabel statisticFrame (stringToGlib "Definition" )
+                            containerAdd statisticFrame scrolledWindow
+                            addWidgetToBox Nothing statisticFrame PackGrow vBox1
                             
-                            
-                            hBox <- hBoxNew False 0
+                            hBox1 <- hBoxNew False 0
                             saveButton <- buttonNewWithLabel "Save changes"
-                            boxPackEnd hBox saveButton PackNatural 2
-                                    
-                            addWidgetToBox Nothing hBox PackNatural page
-                
+                            boxPackEnd hBox1 saveButton PackNatural 2
+                            addWidgetToBox Nothing hBox1 PackNatural vBox1
+
+                            vBox2 <- vBoxNew False 0
                             dataChooser <- dataSetChooserNew (\_ -> True) state
-                            addWidgetToBox Nothing (dataSetChooserToWidget dataChooser) PackGrow page
+                            addWidgetToBox Nothing (dataSetChooserToWidget dataChooser) PackGrow vBox2
             
                             nameEntry <- entryNew 
                             nameEntry `entrySetText` name
-                            addWidgetToBox (Just "Name:") nameEntry PackNatural page
+                            addWidgetToBox (Just "Name:") nameEntry PackNatural vBox2
             
                             varValDefsEntry <- entryNew
                             varValDefsEntry `entrySetText` (statisticVarValsDef statParams)
-                            addWidgetToBox (Just "Variable values: ") varValDefsEntry PackNatural page
+                            addWidgetToBox (Just "Variable values: ") varValDefsEntry PackNatural vBox2
                         
+                            hBox2 <- hBoxNew False 0
+                            applyButton <- buttonNewWithLabel "Apply to data"
+                            boxPackEnd hBox2 applyButton PackNatural 2
+                            addWidgetToBox Nothing hBox2 PackNatural vBox2
+
+                            vPane <- vPanedNew
+                            vPane `panedAdd1` vBox1
+                            vPane `panedAdd2` vBox2
+                            containerAdd page vPane
+
                             on saveButton buttonActivated $
                                 do
                                     startIter <- textBufferGetStartIter statisticTextBuffer
@@ -188,10 +193,6 @@ statisticDialog stateRef = do
                                         statParams {statisticDefinition = statisticStr, 
                                         statisticVarValsDef = varValDefsStr
                                     }) params
-                        
-                            hBox <- hBoxNew False 0
-                            applyButton <- buttonNewWithLabel "Apply to data"
-                            boxPackEnd hBox applyButton PackNatural 2
                             on applyButton buttonActivated $
                                 do
                                     startIter <- textBufferGetStartIter statisticTextBuffer
@@ -280,7 +281,6 @@ statisticDialog stateRef = do
                                         else forkIO applyStatistic >> return ()
     
 
-                            addWidgetToBox Nothing hBox PackNatural page
                             addPageToNotebook (page, Just name, statisticTextBuffer)
                             modifyIORef pagesRef (\pages -> pages ++ [(page, name, statisticTextBuffer)]) 
                             --return (page, name, statisticEntry)

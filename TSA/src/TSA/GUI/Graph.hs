@@ -9,13 +9,14 @@ module TSA.GUI.Graph (
     TSA.GUI.Graph.onMouseButton,
     TSA.GUI.Graph.onMouseScroll,
     updateGuiChanged,
-    updateGraphSettings
+    updateGraphSettings,
+    addGraphTab, 
+    setNotebookEvents
+    
     ) where
 
-import Graphics.UI.Gtk hiding (addWidget, Plus, Cross, Circle, TimeStamp)
+import Graphics.UI.Gtk hiding (addWidget, Plus, Cross, Circle)
 import Graphics.Rendering.Cairo
-import Graphics.UI.Gtk.Gdk.Events
-import Graphics.UI.Gtk.Layout.VBox
 
 import Debug.Trace
 import qualified Data.Map as M
@@ -31,7 +32,6 @@ import qualified Regression.Utils as U
 import TSA.Params
 import TSA.GUI.State
 import TSA.GUI.Dialog
-import GUI.Widget
 import TSA.GUI.Data
 import TSA.Data
 import qualified TSA.GUI.Gnu as Gnu
@@ -1142,7 +1142,7 @@ getPlotSettings state currentTab currentGraph selectedGraph (w, h) randomGen =
                             (1, 1, 1)
         }
 
-updateGraphSettings :: State -> Int -> Int  -> PlotSettings -> State
+updateGraphSettings :: State -> Int -> Int -> PlotSettings -> State
 updateGraphSettings state currentTab currentGraph plotSettings =
         let
             graphTabParms = (graphTabs state) !! currentTab
@@ -1178,5 +1178,105 @@ updateGraphSettings state currentTab currentGraph plotSettings =
                 }) (graphTabs state)
             }
 
+setNotebookEvents :: StateRef -> IO ()
+setNotebookEvents stateRef =
+    do
+        state <- readMVar stateRef
+        let
+            notebook = getGraphTabs state
+            
+        on notebook switchPage $
+            \i ->
+                do 
+                    modifyMVar_ stateRef $ \state -> return $ updateGuiChanged True state
+                    numPages <- notebookGetNPages notebook
+                    if numPages > 1 && i == numPages - 1 
+                        then 
+                            do
+                                    addGraphTab stateRef Nothing
+                                    notebookPrevPage notebook
+                                    return ()
+                        else return ()
+            
+        numPages <- notebookGetNPages notebook
+    
+        let    
+            mapOp i = 
+                do    
+                    Just page <- notebookGetNthPage notebook i
+                    widgetAddEvents page [ButtonMotionMask, ButtonPressMask, ButtonReleaseMask]
+                    on page draw $ liftIO (drawGraph stateRef Nothing)
+                    on page buttonPressEvent $
+                        do 
+                            button <- eventButton
+                            modifiers <- eventModifier
+                            click <- eventClick
+                            (x, y) <- eventCoordinates
+                            timestamp <- eventTime
+                            liftIO $ TSA.GUI.Graph.onMouseButton stateRef button modifiers click (x, y) timestamp
+                    on page buttonReleaseEvent $ 
+                        do 
+                            button <- eventButton
+                            modifiers <- eventModifier
+                            click <- eventClick
+                            (x, y) <- eventCoordinates
+                            timestamp <- eventTime
+                            liftIO $ TSA.GUI.Graph.onMouseButton stateRef button modifiers click (x, y) timestamp
+                    on page motionNotifyEvent $ 
+                        do 
+                            (x, y) <- eventCoordinates
+                            modifiers <- eventModifier
+                            liftIO $ TSA.GUI.Graph.onMouseMove stateRef (x, y) modifiers
+                    on page scrollEvent $
+                        do
+                            (x, y) <- eventCoordinates
+                            direction <- eventScrollDirection
+                            liftIO $ TSA.GUI.Graph.onMouseScroll stateRef (x, y) direction
+        mapM_ mapOp [0 .. numPages - 2] 
+
+addGraphTab :: StateRef -> Maybe String -> IO Int
+addGraphTab stateRef maybeGraphName =
+    do
+        state <- readMVar stateRef
+        let
+            notebook = getGraphTabs state
+        pageIndex <- notebookGetNPages notebook
+        page <- drawingAreaNew
+        widgetModifyBg page StateNormal (Color 65535 65535 65535)
+        let
+            removeTab page =
+                do
+                    numPages <- notebookGetNPages notebook
+                    if numPages > 2 
+                        then
+                            do
+                                Just pageIndex <- notebookPageNum notebook page
+                                if pageIndex == numPages - 2
+                                    then
+                                        notebookPrevPage notebook
+                                    else
+                                        return ()
+                                notebookRemovePage notebook pageIndex
+                                modifyMVar_ stateRef $ \state -> return $ state {graphTabs = (removeAt pageIndex (graphTabs state))}
+                        else 
+                            return ()
+            tabName = 
+                case maybeGraphName of
+                    Nothing -> "Graph " ++ show pageIndex
+                    Just graphName -> graphName
+        label <- labelWithButton (Just tabName) stockRemove (removeTab page)
+        
+        case maybeGraphName of
+            Nothing ->
+                modifyMVar_ stateRef $ \state -> return $ state {graphTabs = (insertAt (pageIndex - 1) (newGraphTab tabName) (graphTabs state))}
+            Just _ -> 
+                return ()
+        
+        notebookInsertPageMenu notebook page label label (pageIndex - 1)
+        notebookSetCurrentPage notebook (pageIndex - 1)
+        setNotebookEvents stateRef
+        widgetShowAll label
+        widgetShowAll notebook
+        return (pageIndex - 1)
 
 

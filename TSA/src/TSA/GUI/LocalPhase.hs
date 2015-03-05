@@ -21,6 +21,7 @@ import TSA.Data
 import TSA.GUI.Dialog
 import TSA.GUI.Common
 import TSA.GUI.Log
+import TSA.GUI.Graph
 
 import GUI.Widget
 

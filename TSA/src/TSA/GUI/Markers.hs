@@ -115,7 +115,7 @@ showMarkers stateRef = do
     textBufferSetText textBuffer (concatMap (\segment -> show segment ++ "\n") segments)
     textView <- textViewNewWithBuffer textBuffer
     font <- fontDescriptionNew
-    fontDescriptionSetFamily font "Arial"
+    fontDescriptionSetFamily font TSA.GUI.Common.defaultFontFamily
     widgetModifyFont textView (Just font)
     
     win <- windowNew

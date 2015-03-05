@@ -57,6 +57,7 @@ import TSA.Params
 import TSA.Data
 import TSA.GUI.State
 import TSA.GUI.Dialog
+import TSA.GUI.Common
 import GUI.Widget
 import GUI.Plot
 import Utils.List
@@ -195,7 +196,7 @@ showInfo state dp = do
         ) $ zip (dataSet dp) [1, 2 ..])
     textView <- textViewNewWithBuffer textBuffer
     font <- fontDescriptionNew
-    fontDescriptionSetFamily font "Arial"
+    fontDescriptionSetFamily font TSA.GUI.Common.defaultFontFamily
     widgetModifyFont textView (Just font)
     textViewSetEditable textView False 
 
@@ -228,7 +229,7 @@ showData dp = do
         ) $ zip (dataSet dp) [1, 2 ..]
     textView <- textViewNewWithBuffer textBuffer
     font <- fontDescriptionNew
-    fontDescriptionSetFamily font "Arial"
+    fontDescriptionSetFamily font TSA.GUI.Common.defaultFontFamily
     widgetModifyFont textView (Just font)
     textViewSetEditable textView False 
 

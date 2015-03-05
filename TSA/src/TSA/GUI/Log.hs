@@ -22,7 +22,7 @@ showLog stateRef = do
             textBufferSetText textBuffer (TSA.GUI.State.log state)
             textView <- textViewNewWithBuffer textBuffer
             font <- fontDescriptionNew
-            fontDescriptionSetFamily font "Arial"
+            fontDescriptionSetFamily font TSA.GUI.Common.defaultFontFamily
             widgetModifyFont textView (Just font)
             --textViewSetAcceptsTab textView False
             textViewSetEditable textView False 
