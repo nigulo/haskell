@@ -11,12 +11,10 @@ import GUI.Widget
 
 import Utils.Misc
 
-import Data.IORef
-import qualified Data.Map as M
-import qualified Data.Vector.Unboxed as V
 import Control.Concurrent.MVar
 import Control.Concurrent
 import Control.Applicative
+import Control.Monad.IO.Class
 
 import System.Random
 
@@ -28,10 +26,11 @@ tasksDialog stateRef = do
     dialog <- dialogWithTitle state "Tasks"
     dialogAddButton dialog "Ok" ResponseOk
     
-    mapM_ (\(_, taskName) -> do
-            taskLabel <- labelNew (Just taskName)
-            addWidget Nothing taskLabel dialog 
-        ) $ tasks state
+    mapM_ (\(Task threadId taskName _) -> do
+            stopButton <- buttonNewFromStock stockStop
+            on stopButton buttonReleaseEvent $ liftIO (killThread threadId >> return True)
+            addWidget (Just taskName) stopButton dialog 
+        ) $ filter (\(Task _ taskName _) -> taskName /= "") $ tasks state
         
     widgetShowAll dialog
     response <- dialogRun dialog

@@ -6,8 +6,9 @@ module TSA.GUI.State  (
     GraphDataParams (..),
     GnuParams (..),
     GraphSelection (..),
-    SettingsParams(..),
+    SettingsParams (..),
     StateRef,
+    Task (..),
     newState,
     progressUpdate,
     readState,
@@ -445,13 +446,15 @@ data GuiParams = GuiParams {
     guiChanged :: Bool
 }
 
+data Task = Task ThreadId String {- task name-} [Task {- subtasks -}]
+
 data State = State {
     params :: Params,
     guiParams :: Maybe GuiParams,
     graphTabs :: [GraphTabParams],
     log :: String,
     settingsParams :: SettingsParams,
-    tasks :: [(ThreadId, String {- task name-})]
+    tasks :: [Task]
 }
 
 instance Xml.XmlElement State where
