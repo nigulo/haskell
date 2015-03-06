@@ -110,7 +110,7 @@ d2Dialog stateRef = do
                         d2CommonParams = updateCommonParams name commonParams
                     }}
                 
-                forkIO $ d2 stateRef selectedData periodStart periodEnd corrLenStart corrLenEnd methodNo (round precision) name
+                runTask stateRef "D2 statistic" $ d2 stateRef selectedData periodStart periodEnd corrLenStart corrLenEnd methodNo (round precision) name
                 return ()
         else
             do

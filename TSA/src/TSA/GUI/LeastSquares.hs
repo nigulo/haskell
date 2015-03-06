@@ -106,7 +106,7 @@ paramsDialog stateRef = do
                     lsqFitParams = newFitParams,
                     lsqBootstrapCount = round bootstrapCount
                 }}
-                forkIO $ fit stateRef selectedData name
+                runTask stateRef "Least squares fit" $ fit stateRef selectedData name
                 return ()
         else
             do

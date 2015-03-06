@@ -341,7 +341,7 @@ main = do
     
     containerAdd win vBox
 
-    timeoutAdd (
+    _ <- timeoutAdd (
         do
             state <- readMVar stateRef
             -- Update progressBar and statusBar
@@ -370,7 +370,7 @@ main = do
             return True
         ) 200
 
-    timeoutAdd (
+    _ <- timeoutAdd (
         do
             modifyMVar_ stateRef $ \state -> return $ updateGuiChanged True state
             return True

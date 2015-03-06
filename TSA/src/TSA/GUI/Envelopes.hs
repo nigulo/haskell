@@ -137,7 +137,7 @@ paramsDialog stateRef = do
                         } 
 
                 modifyStateParams stateRef $ \params -> params {envParams = newEnvParams}
-                forkIO (envelopes stateRef (upperName, lowerName, meanName))
+                runTask stateRef "Find envelopes" $ (envelopes stateRef (upperName, lowerName, meanName))
                 return ()
         else
             do

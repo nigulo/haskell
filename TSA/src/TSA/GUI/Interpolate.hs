@@ -89,7 +89,7 @@ paramsDialog stateRef = do
                         interpolateCommonParams = updateCommonParams name commonParams
                     }}
 
-                forkIO $ fit stateRef methodNo name selectedData
+                runTask stateRef "Interpolate" $ fit stateRef methodNo name selectedData
                 return ()
         else
             do

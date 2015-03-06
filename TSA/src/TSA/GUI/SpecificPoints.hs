@@ -81,7 +81,7 @@ findSpecificPointsDialog stateRef = do
                     }}
                 
                 
-                forkIO $ findSpecificPoints stateRef selectedData (round precision) name spType
+                runTask stateRef "Find specific points" $ findSpecificPoints stateRef selectedData (round precision) name spType
                 return ()
         else
             do

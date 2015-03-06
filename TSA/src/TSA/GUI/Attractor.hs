@@ -73,7 +73,7 @@ attractorDialog stateRef = do
                     }}
                 
                 
-                forkIO $ findAttractor stateRef selectedData (dimension + 2)
+                runTask stateRef "Find attractor" $ findAttractor stateRef selectedData (dimension + 2)
                 return ()
         else
             do

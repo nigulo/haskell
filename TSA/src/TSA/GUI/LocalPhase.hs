@@ -129,7 +129,7 @@ localPhaseDialog stateRef = do
                                 Just d
                         Nothing -> Nothing
                 
-                forkIO $ localPhase stateRef selectedData period maxPeriod epoch (round precision) name calculateColorMap barCodeData calculatePhaseDispersion (round avgOverCycles) normalize
+                runTask stateRef "Local phase" $ localPhase stateRef selectedData period maxPeriod epoch (round precision) name calculateColorMap barCodeData calculatePhaseDispersion (round avgOverCycles) normalize
                 return ()
         else
             do

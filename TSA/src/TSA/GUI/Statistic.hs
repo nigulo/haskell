@@ -278,7 +278,7 @@ statisticDialog stateRef = do
                                                 widgetShowAll messageDialog
                                                 dialogRun messageDialog 
                                                 widgetDestroy messageDialog
-                                        else forkIO applyStatistic >> return ()
+                                        else runTask stateRef "Calculate statistic" $ applyStatistic >> return ()
     
 
                             addPageToNotebook (page, Just name, statisticTextBuffer)

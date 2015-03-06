@@ -36,8 +36,6 @@ dialogWithTitle state name =
 addWidget :: (WidgetClass w, DialogClass d) => Maybe String -> w -> d -> IO (HBox)
 addWidget maybeName w dialog = do
     contentBox <- castToBox <$> dialogGetContentArea dialog
-    vBox <- vBoxNew False 2
-    boxPackStart contentBox vBox PackGrow 2
     
     hBox <- hBoxNew True 0
     case maybeName of 
@@ -47,7 +45,7 @@ addWidget maybeName w dialog = do
                 boxPackStart hBox label PackNatural 2
         Nothing -> return ()
     boxPackEnd hBox w PackGrow 2
-    boxPackStart vBox hBox PackNatural 2
+    boxPackStart contentBox hBox PackNatural 2
     return hBox
 
 addLabel :: DialogClass d => String -> d -> IO ()

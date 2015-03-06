@@ -99,7 +99,7 @@ analyticSignalDialog stateRef = do
                     asImagData = conjugatedData                    
                 }}
                 
-                forkIO $ analyticSignal stateRef (round precision) (amplitudeName, phaseName, frequencyName)
+                runTask stateRef "Analytic signal" $ analyticSignal stateRef (round precision) (amplitudeName, phaseName, frequencyName)
                 return ()
                 
         else

@@ -37,7 +37,6 @@ runTask stateRef taskName task = do
     newThreadId <- forkFinally task $ \_ -> do
         SSem.wait sem
         threadId <- myThreadId
-        putStrLn $ "finalize " ++ show threadId
         removeTask stateRef threadId
     initTask stateRef taskName newThreadId
     SSem.signal sem
@@ -48,7 +47,6 @@ removeTask stateRef threadId =
         case find (\(Task threadId' _ _) -> threadId' == threadId) (tasks state) of
             Just (Task _ _ children) -> mapM_ (\(Task threadId _ _) -> killThread threadId) children
             Nothing -> return ()
-        putStrLn $ "removeTask " ++ show threadId
         return $ state {
             tasks = filter (\(Task threadId' _ _) -> threadId' /= threadId) (tasks state)
         }

@@ -87,7 +87,7 @@ correlationDialog stateRef = do
                         correlationCommonParams = updateCommonParams name commonParams
                     }}
 
-                forkIO $ findCorrelation stateRef selectedData1 selectedData2 precision name
+                runTask stateRef "Find correlation" $ findCorrelation stateRef selectedData1 selectedData2 precision name
                 return ()
         else
             do
