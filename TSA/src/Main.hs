@@ -47,7 +47,7 @@ import TSA.GUI.Sample
 import TSA.GUI.Common
 import TSA.GUI.Preferences
 import TSA.GUI.Log
-import TSA.GUI.Tasks
+import TSA.GUI.TaskManager
 import TSA.GUI.Markers
 
 import GUI.Widget
@@ -250,8 +250,8 @@ main = do
     showLogAct <- actionNew "ShowLogAction" "Show log..." Nothing (Just stockInfo)
     on showLogAct actionActivated (TSA.GUI.Log.showLog stateRef)
 
-    showTasksAct <- actionNew "ShowTasksAction" "Tasks..." Nothing (Just stockInfo)
-    on showTasksAct actionActivated (TSA.GUI.Tasks.tasksDialog stateRef)
+    taskManagerAct <- actionNew "TaskManagerAction" "Task manager..." Nothing (Just stockInfo)
+    on taskManagerAct actionActivated (TSA.GUI.TaskManager.taskManagerDialog stateRef)
     
     ----------------------------------------------------------------------------
     on win keyPressEvent $
@@ -318,7 +318,7 @@ main = do
        -----------
        preferencesAct,
        showLogAct,
-       showTasksAct
+       taskManagerAct
        ]
     
     ui <- uiManagerNew 

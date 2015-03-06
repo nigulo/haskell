@@ -1,4 +1,4 @@
-module TSA.GUI.Tasks (tasksDialog) where
+module TSA.GUI.TaskManager (taskManagerDialog) where
 
 
 import Graphics.UI.Gtk hiding (addWidget)
@@ -18,8 +18,8 @@ import Control.Monad.IO.Class
 
 import System.Random
 
-tasksDialog :: StateRef -> IO ()
-tasksDialog stateRef = do
+taskManagerDialog :: StateRef -> IO ()
+taskManagerDialog stateRef = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
     

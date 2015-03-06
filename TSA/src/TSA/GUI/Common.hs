@@ -5,7 +5,6 @@ module TSA.GUI.Common (
     defaultFontFamily,
     runTask,
     initTask,
-    removeTask,
     taskEnv) where
 
 import TSA.Params
@@ -38,6 +37,7 @@ runTask stateRef taskName task = do
     newThreadId <- forkFinally task $ \_ -> do
         SSem.wait sem
         threadId <- myThreadId
+        putStrLn $ "finalize " ++ show threadId
         removeTask stateRef threadId
     initTask stateRef taskName newThreadId
     SSem.signal sem
@@ -46,13 +46,9 @@ removeTask :: StateRef -> ThreadId -> IO ()
 removeTask stateRef threadId = 
     modifyMVar_ stateRef $ \state -> do
         case find (\(Task threadId' _ _) -> threadId' == threadId) (tasks state) of
-            Just task -> do
-                let
-                    removeTask' (Task threadId _ children) = do
-                        killThread threadId
-                        mapM_ (\(Task threadId _ _) -> killThread threadId) children
-                removeTask' task 
+            Just (Task _ _ children) -> mapM_ (\(Task threadId _ _) -> killThread threadId) children
             Nothing -> return ()
+        putStrLn $ "removeTask " ++ show threadId
         return $ state {
             tasks = filter (\(Task threadId' _ _) -> threadId' /= threadId) (tasks state)
         }
