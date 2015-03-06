@@ -233,7 +233,7 @@ modifyDialog stateRef = do
                                                             vals = V.fromList $ func (V.toList (D.values1 ds1)) (V.toList (D.values1 ds2)) 
                                                         return $ Left (D.data1 vals)
                                                                                 
-                                                result <- applyToData1 func selectedData1 name (progressUpdate stateRef)
+                                                result <- applyToData1 func selectedData1 name (taskEnv stateRef)
                                                 modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                                             else return ()
                                 else if (op == Join)
@@ -294,7 +294,7 @@ modifyDialog stateRef = do
                                                             (xs, ys, ws) = V.unzip3 $ D.values1 ds1
                                                         return $ Left (D.data1 (V.zip3 ys xs ws))
                                                                                 
-                                                result <- applyToData1 func selectedData1 name (progressUpdate stateRef)
+                                                result <- applyToData1 func selectedData1 name (taskEnv stateRef)
                                                 modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                                             else return ()
                                     Split ->
@@ -386,18 +386,18 @@ modifyDialog stateRef = do
                                         else return ()
                                     SetWeights ->
                                         if isDiscrete selectedData1 then do
-                                            dataWithWeights <- applyToData1 (\_ _ (Left dat) _ -> return (Left (D.setW (V.replicate (D.dataLength dat) constant) dat))) selectedData1 name (progressUpdate stateRef)
+                                            dataWithWeights <- applyToData1 (\_ _ (Left dat) _ -> return (Left (D.setW (V.replicate (D.dataLength dat) constant) dat))) selectedData1 name (taskEnv stateRef)
                                             modifyState stateRef $ addDataParams dataWithWeights (Just (currentGraphTab, selectedGraph))
                                         else return ()
                                     --MovingAverage ->
                                     JDToYear ->
                                         if isDiscrete selectedData1 then do
-                                            dataWithWeights <- applyToData1 (\_ _ (Left dat) _ -> return (Left (D.data1 (V.map (\(x, y, w) -> let TropicalYears year = toTropicalYears (JD x) in (year, y, w) ) (D.values1 dat))))) selectedData1 name (progressUpdate stateRef)
+                                            dataWithWeights <- applyToData1 (\_ _ (Left dat) _ -> return (Left (D.data1 (V.map (\(x, y, w) -> let TropicalYears year = toTropicalYears (JD x) in (year, y, w) ) (D.values1 dat))))) selectedData1 name (taskEnv stateRef)
                                             modifyState stateRef $ addDataParams dataWithWeights (Just (currentGraphTab, selectedGraph))
                                         else return ()
                                     YearToJD ->
                                         if isDiscrete selectedData1 then do
-                                            dataWithWeights <- applyToData1 (\_ _ (Left dat) _ -> return (Left (D.data1 (V.map (\(x, y, w) -> let JD jd = toJD (TropicalYears x) in (jd, y, w) ) (D.values1 dat))))) selectedData1 name (progressUpdate stateRef)
+                                            dataWithWeights <- applyToData1 (\_ _ (Left dat) _ -> return (Left (D.data1 (V.map (\(x, y, w) -> let JD jd = toJD (TropicalYears x) in (jd, y, w) ) (D.values1 dat))))) selectedData1 name (taskEnv stateRef)
                                             modifyState stateRef $ addDataParams dataWithWeights (Just (currentGraphTab, selectedGraph))
                                         else return ()
                                     Round ->
@@ -408,7 +408,7 @@ modifyDialog stateRef = do
                                                         e = 10 ^ (round constant) 
                                                     in 
                                                  if (opType == Y) then (x, (fromIntegral (round (y * e))) / e, w) 
-                                                        else ((fromIntegral (round (x * e))) / e, y, w)) (D.values1 dat))))) selectedData1 name (progressUpdate stateRef)
+                                                        else ((fromIntegral (round (x * e))) / e, y, w)) (D.values1 dat))))) selectedData1 name (taskEnv stateRef)
                                             modifyState stateRef $ addDataParams dataWithWeights (Just (currentGraphTab, selectedGraph))
                                         else return ()
                                     RemoveNeighbour ->
@@ -426,7 +426,7 @@ modifyDialog stateRef = do
                                                                         else filterFunc vals res (Just lastVal)
                                                                           
                                                 return (Left (D.data1 (V.fromList (filterFunc (V.toList (D.values1 dat)) [] Nothing))))
-                                                        ) selectedData1 name (progressUpdate stateRef)
+                                                        ) selectedData1 name (taskEnv stateRef)
                                             modifyState stateRef $ addDataParams dataWithWeights (Just (currentGraphTab, selectedGraph))
                                         else return ()
                                     Scale ->
@@ -440,7 +440,7 @@ modifyDialog stateRef = do
                                                             (maxVal, minVal) = if (opType == Y) then (D.yMax dat, D.yMin dat) else (D.xMax1 dat, D.xMin1 dat)
                                                             f = F.function ("(x-" ++ show minVal ++")*" ++ show constant ++ "/(" ++ show (maxVal - minVal) ++ ")")
                                                         return $ constantOp f d 0 (opType == Y)
-                                            result <- applyToData1 func selectedData1 name (progressUpdate stateRef)
+                                            result <- applyToData1 func selectedData1 name (taskEnv stateRef)
                                             modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                                         else
                                             return ()
@@ -454,7 +454,7 @@ modifyDialog stateRef = do
                                                             Left dat = d 
                                                             newVals = zipWith (\(x, y, w) r -> if (opType == Y) then (x, y + r, w) else (x + r, y, w)) (V.toList (D.values1 dat)) (randomRs (-constant, constant) g)
                                                         return $ Left (D.data1 (V.fromList newVals))
-                                            result <- applyToData1 func selectedData1 name (progressUpdate stateRef)
+                                            result <- applyToData1 func selectedData1 name (taskEnv stateRef)
                                             modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                                         else
                                             return ()
@@ -474,7 +474,7 @@ modifyDialog stateRef = do
                                                             --xVals1 = (V.concatMap (\(x1, x2) -> V.init (V.fromList [x1, x1 + (x2 - x1) / constant .. x2])) (V.zip (V.init xVals) (V.tail xVals))) `V.snoc` (V.last xVals)
                                                             newDat = D.interpolatedData1 xVals1 dat
                                                         return $ Left newDat
-                                            result <- applyToData1 func selectedData1 name (progressUpdate stateRef)
+                                            result <- applyToData1 func selectedData1 name (taskEnv stateRef)
                                             modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                                         else
                                             return ()
@@ -491,7 +491,7 @@ modifyDialog stateRef = do
                                                                 1 -> D.data1
                                                             newDat = dataCreateFunc (D.values1 dat)
                                                         return $ Left newDat
-                                            result <- applyToData1 func selectedData1 name (progressUpdate stateRef)
+                                            result <- applyToData1 func selectedData1 name (taskEnv stateRef)
                                             modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                                         else
                                             return ()
@@ -499,7 +499,7 @@ modifyDialog stateRef = do
                                         if constant /= 0 
                                         then do
                                             let func i j d _ = return $ constantOp (getModifyFunc op) d constant (opType == Y)
-                                            result <- applyToData1 func selectedData1 name (progressUpdate stateRef)
+                                            result <- applyToData1 func selectedData1 name (taskEnv stateRef)
                                             modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                                         else
                                             return ()

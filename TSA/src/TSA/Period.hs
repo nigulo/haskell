@@ -30,14 +30,17 @@ import System.Random
 import qualified Data.Vector.Unboxed as V
 import Statistics.Sample
 
-calcDispersions :: DataParams -> Double -> Double -> Int -> Int -> String -> Bool -> (Double -> IO ()) -> (String -> IO ()) -> IO [(Double, DataParams)]
-calcDispersions dataParams periodStart' periodEnd' precision method name bootstrap puFunc logFunc = do
+calcDispersions :: DataParams -> Double -> Double -> Int -> Int -> String -> Bool 
+    -> TaskEnv 
+    -> IO [(Double, DataParams)]
+calcDispersions dataParams periodStart' periodEnd' precision method name bootstrap taskEnv = do
     let 
         periodStart = min periodStart' periodEnd'
         periodEnd = max periodStart' periodEnd'
         freqStart = 1 / periodEnd
         freqEnd = 1 / periodStart
         step = (freqEnd - freqStart) / (fromIntegral precision)
+        puFunc = progressUpdateFunc taskEnv
 
         findDispersions :: Int -> Double -> (Double, [(Double, Double)]) -> Either D.Data (Either S.Spline FS.Functions) -> (Double -> IO ()) -> IO (Either D.Data (Either S.Spline FS.Functions), [(Double, Double)]) 
         findDispersions method corrLen (prevCorrLen, info) (Left dat) puFunc = do
@@ -59,7 +62,7 @@ calcDispersions dataParams periodStart' periodEnd' precision method name bootstr
                                         return (res, (0, 0))
                         --puFunc $ (fromIntegral i) / (fromIntegral precision)
                         return dispersionAndInfo
-            dispersionAndInfo <- calcConcurrently mapFunc puFunc [0 .. precision]
+            dispersionAndInfo <- calcConcurrently mapFunc puFunc (taskInitializer taskEnv) (taskFinalizer taskEnv) [0 .. precision]
             let
                 (dispersions, info) = unzip dispersionAndInfo
                 norm = maximum dispersions
@@ -88,7 +91,7 @@ calcDispersions dataParams periodStart' periodEnd' precision method name bootstr
                     let
                         freqDisps = sortBy (\(_, disp1) (_, disp2) -> compare disp1 disp2) $ V.toList $ D.getMinima periodSpec
                         freqs = map fst freqDisps
-                    logFunc ("Possible freqs for " ++ name ++ "[" ++ show i ++ "] = " ++ (show freqs))
+                    (logFunc taskEnv) ("Possible freqs for " ++ name ++ "[" ++ show i ++ "] = " ++ (show freqs))
                     case freqDisps of 
                          [] -> return Nothing
                          ((freq, disp):_) -> return $ Just (1 / freq, (1 - disp) ^ 2)  
@@ -98,7 +101,7 @@ calcDispersions dataParams periodStart' periodEnd' precision method name bootstr
                 periodVar = varianceWeighted $ V.fromList $ catMaybes bestPeriods
                 periodDisp = mean $ V.map (\(p, d) -> 1 - sqrt d) $ V.fromList $ catMaybes bestPeriods
                 
-            logFunc ("Period mean stdev disp: " ++ show periodMean ++ " " ++ show periodVar ++ " " ++ show periodDisp)
+            (logFunc taskEnv) ("Period mean stdev disp: " ++ show periodMean ++ " " ++ show periodVar ++ " " ++ show periodDisp)
             next <- corrLenFunc namesCorrLenghts corrLen infos
             return $ (corrLen, dispersions):next
     dispersions <- corrLenFunc namesCorrLenghts 0 (repeat (repeat (0, 0)))

@@ -30,8 +30,10 @@ import System.Random
 import qualified Data.Vector.Unboxed as V
 import Statistics.Sample
 
-calcDispersions :: DataParams -> Double -> Double -> Double -> Double -> Int -> Int -> String -> Bool -> (Double -> IO ()) -> (String -> IO ()) -> IO [(Double, DataParams)]
-calcDispersions dataParams periodStart' periodEnd' minCorrLen' maxCorrLen' method precision name bootstrap puFunc logFunc = do
+calcDispersions :: DataParams -> Double -> Double -> Double -> Double -> Int -> Int -> String -> Bool 
+    -> TaskEnv
+    -> IO [(Double, DataParams)]
+calcDispersions dataParams periodStart' periodEnd' minCorrLen' maxCorrLen' method precision name bootstrap taskEnv = do
     let 
         periodStart = min periodStart' periodEnd'
         periodEnd = max periodStart' periodEnd'
@@ -40,6 +42,7 @@ calcDispersions dataParams periodStart' periodEnd' minCorrLen' maxCorrLen' metho
         freqStart = 1 / periodEnd
         freqEnd = 1 / periodStart
         step = (freqEnd - freqStart) / (fromIntegral precision)
+        puFunc = progressUpdateFunc taskEnv
 
         findDispersions :: Double -> (Double, [(Double, Double)]) -> Either D.Data (Either S.Spline FS.Functions) -> (Double -> IO ()) -> IO (Either D.Data (Either S.Spline FS.Functions), [(Double, Double)]) 
         findDispersions corrLen (prevCorrLen, info) (Left dat) puFunc = do
@@ -59,7 +62,7 @@ calcDispersions dataParams periodStart' periodEnd' minCorrLen' maxCorrLen' metho
                                 --return (disp, (0, 0))
                         --puFunc $ (fromIntegral i) / (fromIntegral precision)
                         return dispersionAndInfo
-            dispersionAndInfo <- calcConcurrently mapFunc puFunc [0 .. precision]
+            dispersionAndInfo <- calcConcurrently mapFunc puFunc (taskInitializer taskEnv) (taskFinalizer taskEnv) [0 .. precision]
             let
                 (dispersions, info) = unzip dispersionAndInfo
                 norm = maximum dispersions
@@ -83,7 +86,7 @@ calcDispersions dataParams periodStart' periodEnd' minCorrLen' maxCorrLen' metho
                     let
                         Left dat = subData sdp
                     dat1 <- if bootstrap then reshuffleData dat else return dat
-                    findDispersions corrLen (prevCorrLen, prevInfo) (Left dat1) (puFunc)
+                    findDispersions corrLen (prevCorrLen, prevInfo) (Left dat1) puFunc
                 ) (zip (dataSet dataParams) prevInfos)
             let
                 (subDispersions, infos) = unzip subDispersionsAndInfo
@@ -103,7 +106,7 @@ calcDispersions dataParams periodStart' periodEnd' minCorrLen' maxCorrLen' metho
                 periodVar = varianceWeighted $ V.fromList $ catMaybes bestPeriods
                 periodDisp = mean $ V.map (\(p, d) -> 1 - sqrt d) $ V.fromList $ catMaybes bestPeriods
                 
-            logFunc ("Period mean stdev disp: " ++ show periodMean ++ " " ++ show periodVar ++ " " ++ show periodDisp)
+            (logFunc taskEnv) ("Period mean stdev disp: " ++ show periodMean ++ " " ++ show periodVar ++ " " ++ show periodDisp)
             next <- corrLenFunc namesCorrLenghts corrLen infos
             return $ (corrLen, dispersions):next
     dispersions <- corrLenFunc namesCorrLenghts 0 (repeat (repeat (0, 0)))

@@ -151,7 +151,7 @@ calcAnalyticSignal imfDat modeNo freq = do
                 asImagData = Nothing
             }
     env <- ask
-    asData <- liftIO $ analyticSignal asParams 0 ("amplitude", "phase", "frequency", "conjugated") (\_ -> return ()) (putStrLn) (DataUpdateFunc (\_ _ _ -> return ()))
+    asData <- liftIO $ analyticSignal asParams 0 ("amplitude", "phase", "frequency", "conjugated") defaultTaskEnv (DataUpdateFunc (\_ _ _ -> return ()))
     let
         Just (Left frequency) = lookup "frequency" asData
         Just (Left amplitude) = lookup "amplitude" asData
@@ -174,7 +174,7 @@ imf modeNo dat = do
     let
         dataParams = createDataParams_ "data" [createSubDataParams__ (Left dat)]
 
-    (minimaDp, maximaDp) <- liftIO $ findExtrema dataParams 0 "extrema" (\_ -> return ())
+    (minimaDp, maximaDp) <- liftIO $ findExtrema dataParams 0 "extrema" defaultTaskEnv
     let
         Left minima = subData $ head $ dataSet minimaDp 
         Left maxima = subData $ head $ dataSet maximaDp
@@ -183,8 +183,8 @@ imf modeNo dat = do
         findNumNodes minimaDp maximaDp numExtrema modesSkipped = do
             if modeNo == 1 && modesSkipped < (modesToSkip env)
                 then do
-                    (minimaDp, _) <- findExtrema minimaDp 0 "extrema" (\_ -> return ())
-                    (_, maximaDp) <- findExtrema maximaDp 0 "extrema" (\_ -> return ())
+                    (minimaDp, _) <- findExtrema minimaDp 0 "extrema" defaultTaskEnv
+                    (_, maximaDp) <- findExtrema maximaDp 0 "extrema" defaultTaskEnv
                     let
                         Left minima = subData $ head $ dataSet minimaDp 
                         Left maxima = subData $ head $ dataSet maximaDp
@@ -220,7 +220,7 @@ imf modeNo dat = do
                                 } 
                 
                 
-                        Left dat2 <- envelopes envParams ("upper", "lower", "mean") (\_ -> return ()) (putStrLn) (DataUpdateFunc (\dat id _ -> do
+                        Left dat2 <- envelopes envParams ("upper", "lower", "mean") defaultTaskEnv (DataUpdateFunc (\dat id _ -> do
                                 -- _ <- forkIO (do
                                 --        let
                                 --            ([xMin], [xMax]) = dataRange dat

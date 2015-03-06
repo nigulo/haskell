@@ -212,7 +212,7 @@ statisticDialog stateRef = do
                                                 (currentGraphTab, _) <- getCurrentGraphTab state
                                                 
                                                 let
-                                                    puFunc = progressUpdate stateRef
+                                                    tEnv = taskEnv stateRef
                                                     graphTabParms = (graphTabs state) !! currentGraphTab
                                                     selectedGraph = graphTabSelection graphTabParms
                                                     statistic = S.statistic text
@@ -255,7 +255,7 @@ statisticDialog stateRef = do
                                                                     Right (Left s) -> Right (analyticDataWrapper s)
                                                                     Right (Right f) -> Right (analyticDataWrapper f)
                                                             segments = List.map (\i -> List.map (mapOp i) dataParams) [0 .. minSegments - 1]
-                                                        results <- calcConcurrently (\dataSets puFunc -> S.getValues dataSets varValDefs (mkStdGen 1) puFunc statistic) puFunc segments
+                                                        results <- calcConcurrently (\dataSets puFunc -> S.getValues dataSets varValDefs (mkStdGen 1) puFunc (taskInitializer tEnv) (taskFinalizer tEnv) statistic) (progressUpdateFunc tEnv) (taskInitializer tEnv) (taskFinalizer tEnv) segments
                                                         modifyMVar_ stateRef $ \state -> 
                                                             return $ addSegmentedData (List.map Left results) name (Just (currentGraphTab, selectedGraph)) state
                                     

@@ -22,7 +22,9 @@ module TSA.GUI.State  (
     newGraphTab,
     newGraph,
     getNormalizedScreenArea,
-    insertGraphRowsCols
+    insertGraphRowsCols,
+    appendLog,
+    refreshLog
     ) where
 
 import TSA.Params
@@ -801,3 +803,26 @@ getNormalizedScreenArea graphTab selectedGraph =
         bottom = top + graphHeight (graphTabGraphs graphTab!! selectedGraph)
     in
         (left, top, right, bottom)
+
+appendLog :: StateRef -> String -> IO ()
+appendLog stateRef text = do
+    state <- readMVar stateRef
+    let 
+        newText = TSA.GUI.State.log state ++ text ++ "\n"
+    modifyMVar_ stateRef $ \state -> return $ state {
+        TSA.GUI.State.log = newText
+        }
+    refreshLog stateRef
+
+refreshLog :: StateRef -> IO ()
+refreshLog stateRef = postGUIAsync $ do
+    state <- readMVar stateRef
+    case guiLog (fromJust (guiParams state)) of
+        Just textView -> do
+            textBuffer <- textViewGetBuffer textView
+            textBufferSetText textBuffer (TSA.GUI.State.log state)
+            textMark <- textMarkNew Nothing True 
+            textIter <- textBufferGetEndIter textBuffer
+            textBufferAddMark textBuffer textMark textIter
+            textViewScrollToMark textView textMark 0 Nothing 
+        otherwise -> return ()

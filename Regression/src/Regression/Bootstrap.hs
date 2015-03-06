@@ -43,10 +43,10 @@ bootstrapSplines bootstrapCount fitFunc spline dat progressUpdateFunc = do
     putStrLn $ "Bootstrap time:"  ++ show (fromIntegral time / 1e12) ++ "s"
     return splines
 
-bootstrapSpline :: Int -> (Data -> (Double -> IO ()) -> IO Spline) -> Spline -> Data -> Data -> IO (Spline)
+bootstrapSpline :: Int -> (Data -> IO Spline) -> Spline -> Data -> Data -> IO (Spline)
 bootstrapSpline i fitFunc spline dat diff = do
     bsData <- U.bootstrap (Left spline) dat diff
-    bsSpline <- fitFunc bsData (\_ -> return ())
+    bsSpline <- fitFunc bsData
     return bsSpline    
 
 -- | Returns upper and lower splines representing standard deviation of the given bootstrap set 

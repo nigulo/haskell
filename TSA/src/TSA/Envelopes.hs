@@ -23,8 +23,8 @@ import System.Random
 import Control.Applicative
 
 
-envelopes :: EnvParams -> (String, String, String) -> ProgressUpdateFunc -> LogFunc -> DataUpdateFunc String -> IO (Either D.Data (Either S.Spline FS.Functions))
-envelopes parms (upperName, lowerName, meanName) puFunc logFunc (DataUpdateFunc dataUpdateFunc) =
+envelopes :: EnvParams -> (String, String, String) -> TaskEnv -> DataUpdateFunc String -> IO (Either D.Data (Either S.Spline FS.Functions))
+envelopes parms (upperName, lowerName, meanName) taskEnv (DataUpdateFunc dataUpdateFunc) =
     do
         g <- getStdGen 
         let
@@ -33,6 +33,7 @@ envelopes parms (upperName, lowerName, meanName) puFunc logFunc (DataUpdateFunc 
             Just dataParms = envData parms
             sdp = head $ dataSet $ dataParms
             Left dat = subData sdp
+            puFunc = progressUpdateFunc taskEnv
             
         upperSpline <- fitWithSpline_ 
             (fitPolynomRank upperParams) 

@@ -27,8 +27,10 @@ import System.Random
 import qualified Data.Vector.Unboxed as V
 import Statistics.Sample
 
-findExtrema :: DataParams -> Int  -> String -> (Double -> IO ()) -> IO (DataParams, DataParams)
-findExtrema dataParams precision name puFunc = do
+findExtrema :: DataParams -> Int  -> String 
+    -> TaskEnv
+    -> IO (DataParams, DataParams)
+findExtrema dataParams precision name taskEnv = do
     g <- getStdGen 
     let 
         findExtremaFunc i j (Left d) puFunc = do
@@ -42,11 +44,11 @@ findExtrema dataParams precision name puFunc = do
                     Right f -> AD.getExtrema precision Nothing g f
             return [Left $ D.data1' minima, Left $ D.data1' maxima] 
 
-    [minima, maxima] <- applyToData findExtremaFunc dataParams [name ++ "_min", name ++ "_max"] puFunc
+    [minima, maxima] <- applyToData findExtremaFunc dataParams [name ++ "_min", name ++ "_max"] taskEnv
     return (minima, maxima)
 
-findZeroCrossings :: DataParams -> Int  -> String -> (Double -> IO ()) -> IO DataParams
-findZeroCrossings dataParams precision name puFunc = do
+findZeroCrossings :: DataParams -> Int  -> String -> TaskEnv -> IO DataParams
+findZeroCrossings dataParams precision name taskEnv = do
     g <- getStdGen 
     let 
         findZCFunc i j (Left d) puFunc = do
@@ -60,5 +62,5 @@ findZeroCrossings dataParams precision name puFunc = do
                     Right f -> AD.getZeroCrossings precision g f
             return [Left $ D.data1 (V.map (\x -> (x, 0, 1)) zc)] 
 
-    [zc] <- applyToData findZCFunc dataParams [name] puFunc
+    [zc] <- applyToData findZCFunc dataParams [name] taskEnv
     return zc

@@ -41,8 +41,8 @@ module TSA.Params (
     updateEnvParams,
     readParams,
 
-    ProgressUpdateFunc,
-    LogFunc,
+    TaskEnv (..),
+    defaultTaskEnv,
     DataUpdateFunc (..)
     ) where
 
@@ -1326,6 +1326,21 @@ updateEnvParams envParms state =
 type ProgressUpdateFunc = Double -> IO ()
 
 type LogFunc = String -> IO ()
+
+data TaskEnv = TaskEnv {
+    progressUpdateFunc :: Double -> IO (),
+    logFunc :: String -> IO (),
+    taskInitializer :: ThreadId -> IO (),
+    taskFinalizer :: IO ()
+}
+
+defaultTaskEnv :: TaskEnv
+defaultTaskEnv = TaskEnv {
+    progressUpdateFunc = \_ -> return (),
+    logFunc = putStrLn,
+    taskInitializer = \_ -> return (),
+    taskFinalizer = return ()
+} 
 
 newtype (Eq id) => DataUpdateFunc id = DataUpdateFunc (Either D.Data (Either S.Spline F.Functions) -> id -> Bool -> IO ())
 

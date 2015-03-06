@@ -483,3 +483,4 @@ removeDataByNameFromTab' tabIndex row col name state =
         dataSets = filter (\dp -> graphDataParamsName dp /= name) (graphData graphParms)
     in 
         state {graphTabs = updateAt tabIndex (graphTabParms {graphTabGraphs = updateAt graphIndex (graphParms {graphData = dataSets}) (graphTabGraphs graphTabParms)}) (graphTabs state)}
+

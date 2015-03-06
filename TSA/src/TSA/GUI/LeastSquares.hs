@@ -123,9 +123,10 @@ fit stateRef dataParams fitName = do
 
         lsqParms = lsqParams (params state)
         bootstrapCount = lsqBootstrapCount lsqParms
+        tEnv = taskEnv stateRef
         
         func i maybeJ (Left dat) puFunc = do 
-            spline <- fitData (lsqFitParams lsqParms) dat puFunc 
+            spline <- fitData (lsqFitParams lsqParms) dat tEnv
             g <- getStdGen 
             let
                 Left diff = U.binaryOp (F.subtr) (Left dat) (Right (Left spline)) True g
@@ -152,7 +153,7 @@ fit stateRef dataParams fitName = do
             --appendLog stateRef ("KS statistic D = " ++ (show (kolmogorovSmirnovD normal diffSample)))
             --modifyState stateRef $ addData (Left dist) (fitName ++ "_residueDist") (Just (currentGraphTab, selectedGraph))
             return $ Right $ Left spline
-    fitDataParams <- applyToData1 func dataParams fitName (progressUpdate stateRef)
+    fitDataParams <- applyToData1 func dataParams fitName tEnv
     modifyState stateRef $ (addDataParams fitDataParams (Just (currentGraphTab, selectedGraph)))
 
     if bootstrapCount > 0
@@ -177,7 +178,7 @@ fit stateRef dataParams fitName = do
                             Left dat = subData dataParams
                         Xml.renderToFile (Xml.toDocument spline) ("spline" ++ show i)
                         Xml.renderToFile (Xml.toDocument dat) ("data" ++ show i)
-                        bsSplines <- B.bootstrapSplines bootstrapCount (fitData (lsqFitParams lsqParms)) spline dat (\pct -> progressUpdate stateRef (pct * fromIntegral i / fromIntegral numSubData))
+                        bsSplines <- B.bootstrapSplines bootstrapCount (fitData (lsqFitParams lsqParms)) spline dat (\pct -> (progressUpdateFunc tEnv) (pct * fromIntegral i / fromIntegral numSubData))
                         --mapM (\(j, bsSpline) -> 
                         --        modifyState stateRef $ addDataParams (DataParams {
                         --            dataName = fitName ++ "_b" ++ show j,

@@ -1,4 +1,4 @@
-module TSA.GUI.Log (showLog, appendLog) where
+module TSA.GUI.Log (showLog) where
 
 import Graphics.UI.Gtk hiding (addWidget)
 import Graphics.UI.Gtk.Layout.VBox
@@ -67,32 +67,9 @@ showLog stateRef = do
                     }
                 }
 
-appendLog :: StateRef -> String -> IO ()
-appendLog stateRef text = do
-    state <- readMVar stateRef
-    let 
-        newText = TSA.GUI.State.log state ++ text ++ "\n"
-    modifyMVar_ stateRef $ \state -> return $ state {
-        TSA.GUI.State.log = newText
-        }
-    updateLog stateRef
-
 clearLog :: StateRef -> IO ()
 clearLog stateRef = do
     modifyMVar_ stateRef $ \state -> return $ state {
         TSA.GUI.State.log = ""
         }
-    updateLog stateRef
-
-updateLog :: StateRef -> IO ()
-updateLog stateRef = postGUIAsync $ do
-    state <- readMVar stateRef
-    case guiLog (fromJust (guiParams state)) of
-        Just textView -> do
-            textBuffer <- textViewGetBuffer textView
-            textBufferSetText textBuffer (TSA.GUI.State.log state)
-            textMark <- textMarkNew Nothing True 
-            textIter <- textBufferGetEndIter textBuffer
-            textBufferAddMark textBuffer textMark textIter
-            textViewScrollToMark textView textMark 0 Nothing 
-        otherwise -> return ()
+    refreshLog stateRef

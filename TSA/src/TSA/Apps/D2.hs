@@ -21,13 +21,13 @@ main = do
         
     handle <- openFile ("result") AppendMode
     let
-        logFunc str = hPutStr handle (str ++ "\n")
+        taskEnv = defaultTaskEnv {logFunc = \str -> hPutStr handle (str ++ "\n")}
 
     dp <- Xml.parseFromFile "data" "data" >>= \doc -> return (Xml.fromDocument doc)
-    dispersions <- calcDispersions dp periodStart periodEnd corrLenStart corrLenEnd method precision (dataName dp ++ "_period") False (\_ -> return ()) (logFunc)
+    dispersions <- calcDispersions dp periodStart periodEnd corrLenStart corrLenEnd method precision (dataName dp ++ "_period") False taskEnv
 
     mapM_ (\i -> do
-        calcDispersions dp periodStart periodEnd corrLenStart corrLenEnd method precision (dataName dp ++ "_period" ++ (show i)) True (\_ -> return ()) (logFunc)
+        calcDispersions dp periodStart periodEnd corrLenStart corrLenEnd method precision (dataName dp ++ "_period" ++ (show i)) True taskEnv
         return ()
         ) [1 .. bootstrapCount]
     hClose handle

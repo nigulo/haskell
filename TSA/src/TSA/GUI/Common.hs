@@ -3,7 +3,10 @@ module TSA.GUI.Common (
     modifyState, 
     modifyStateParams, 
     defaultFontFamily,
-    runTask) where
+    runTask,
+    initTask,
+    removeTask,
+    taskEnv) where
 
 import TSA.Params
 import TSA.GUI.State
@@ -36,21 +39,9 @@ runTask stateRef taskName task = do
         SSem.wait sem
         threadId <- myThreadId
         removeTask stateRef threadId
-    state <- readMVar stateRef
-    currentThreadId <- myThreadId
-    let
-        newTask = Task newThreadId taskName []
-        (parentTask, otherTasks) = partition (\(Task threadId _ _) -> threadId == currentThreadId) (tasks state)
-        updatedParentTask =
-            case parentTask of
-                [Task parentThreadId parentTaskName childern] -> [Task parentThreadId parentTaskName (newTask:childern)]
-                [] -> []
-    modifyState stateRef $ \state ->
-        state {
-            tasks = (newTask:(updatedParentTask ++ otherTasks))
-        }
+    initTask stateRef taskName newThreadId
     SSem.signal sem
-         
+
 removeTask :: StateRef -> ThreadId -> IO ()
 removeTask stateRef threadId = 
     modifyMVar_ stateRef $ \state -> do
@@ -66,3 +57,28 @@ removeTask stateRef threadId =
             tasks = filter (\(Task threadId' _ _) -> threadId' /= threadId) (tasks state)
         }
 
+initTask :: StateRef -> String -> ThreadId -> IO ()
+initTask stateRef taskName newThreadId = do
+    state <- readMVar stateRef
+    currentThreadId <- myThreadId
+    let
+        newTask = Task newThreadId taskName []
+        (parentTask, otherTasks) = partition (\(Task threadId _ _) -> threadId == currentThreadId) (tasks state)
+        updatedParentTask =
+            case parentTask of
+                [Task parentThreadId parentTaskName childern] -> [Task parentThreadId parentTaskName (newTask:childern)]
+                [] -> []
+    modifyState stateRef $ \state ->
+        state {
+            tasks = (newTask:(updatedParentTask ++ otherTasks))
+        }
+
+taskEnv :: StateRef -> TaskEnv
+taskEnv stateRef = 
+    TaskEnv {
+        progressUpdateFunc = progressUpdate stateRef, 
+        logFunc = appendLog stateRef,
+        taskInitializer = initTask stateRef "",
+        taskFinalizer = myThreadId >>= \threadId -> removeTask stateRef threadId
+    }
+    

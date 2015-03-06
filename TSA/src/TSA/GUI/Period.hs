@@ -108,7 +108,7 @@ findPeriod :: StateRef -> DataParams -> Double -> Double -> Int -> Int -> String
 findPeriod stateRef dataParams periodStart periodEnd precision method name = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
-    dispersions <- calcDispersions dataParams periodStart periodEnd precision method name False (progressUpdate stateRef) (appendLog stateRef)
+    dispersions <- calcDispersions dataParams periodStart periodEnd precision method name False (taskEnv stateRef)
     let 
         graphTabParms = (graphTabs state) !! currentGraphTab
         selectedGraph = graphTabSelection graphTabParms
