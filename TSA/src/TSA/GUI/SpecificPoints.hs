@@ -94,7 +94,7 @@ findSpecificPoints stateRef dataParams precision name spType = do
     let 
         graphTabParms = (graphTabs state) !! currentGraphTab
         selectedGraph = graphTabSelection graphTabParms
-        tEnv = taskEnv stateRef
+    tEnv <- taskEnv stateRef
     results <-
         case spType of
             0 -> do
@@ -104,5 +104,5 @@ findSpecificPoints stateRef dataParams precision name spType = do
                 zc <- TSA.SpecificPoints.findZeroCrossings dataParams precision name tEnv
                 return [zc]
     mapM_ (\dp -> modifyState stateRef $ addDataParams dp (Just (currentGraphTab, selectedGraph))) results
-    progressUpdate stateRef 0
+    (progressUpdateFunc tEnv) 1
 

@@ -210,9 +210,9 @@ statisticDialog stateRef = do
                                                 name <- entryGetString nameEntry
                                                 varValDefsStr <- entryGetString varValDefsEntry
                                                 (currentGraphTab, _) <- getCurrentGraphTab state
+                                                tEnv <- taskEnv stateRef
                                                 
                                                 let
-                                                    tEnv = taskEnv stateRef
                                                     graphTabParms = (graphTabs state) !! currentGraphTab
                                                     selectedGraph = graphTabSelection graphTabParms
                                                     statistic = S.statistic text

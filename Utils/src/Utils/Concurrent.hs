@@ -21,13 +21,14 @@ calcConcurrently' :: Int -- ^ Number of CPU cores
     -> IO [b] -- ^ List of final values
 calcConcurrently' numCapabilities f puFunc initializer finalizer vals = do
     let
-        numValsPerThread = length vals `div` numCapabilities
+        valCount = length vals
+        numValsPerThread = valCount `div` numCapabilities
     sem <- SSem.new (-numCapabilities + 1)
     resultsRef <- newMVar []
-    pctRef <- newMVar 0
+    pctRef <- newMVar (replicate valCount 0)
     foldM_ (\vals i -> do
             let
-                (initVals, tailVals) = if i < numCapabilities
+                (initVals, tailVals) = if i < numCapabilities - 1
                     then
                         splitAt numValsPerThread vals
                     else (vals, [])
@@ -35,27 +36,24 @@ calcConcurrently' numCapabilities f puFunc initializer finalizer vals = do
             threadId <- forkFinally (
                 do
                     SSem.wait threadSem
-                    results <- mapM (\val -> do
+                    results <- zipWithM (\val j -> do
                             result <- f val (\pct ->
-                                    modifyMVar_ pctRef (\oldPct -> do
-                                        if pct > oldPct 
-                                            then 
-                                                do
-                                                    puFunc pct
-                                                    return pct
-                                            else
-                                                return oldPct
-                                        )
+                                    modifyMVar_ pctRef $ \oldPcts -> do
+                                        let
+                                            pctIndex = i * numValsPerThread + j
+                                            newPcts = take pctIndex oldPcts ++ [pct] ++ drop (pctIndex + 1) oldPcts
+                                        puFunc $ sum newPcts / fromIntegral valCount
+                                        return newPcts
                                 )
                             return result
-                        ) initVals
+                        ) initVals [0 ..]
                     modifyMVar_ resultsRef (\allResults -> return (allResults ++ [(i, results)]))
                     SSem.signal sem
                 ) (\_ -> finalizer)
             initializer threadId
             SSem.signal threadSem
             return tailVals
-        ) vals [1 .. numCapabilities]
+        ) vals [0 .. numCapabilities - 1]
     SSem.wait sem
     results <- readMVar resultsRef
     return $ concatMap snd $ sortBy (\(i1, _) (i2, _) -> compare i1 i2) results

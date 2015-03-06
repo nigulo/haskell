@@ -99,10 +99,11 @@ fit :: StateRef -> Int -> String -> DataParams -> IO ()
 fit stateRef method fitName dat = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
+    tEnv <- taskEnv stateRef
     let 
         graphTabParms = (graphTabs state) !! currentGraphTab
         selectedGraph = graphTabSelection graphTabParms
-        func i j (Left dat) _ = fitWithSpline_ 1 1 dat True 0 (progressUpdate stateRef) >>= \spline -> return $ Right $ Left spline
-    result <- applyToData1 func dat fitName (taskEnv stateRef)
+        func i j (Left dat) _ = fitWithSpline_ 1 1 dat True 0 (progressUpdateFunc tEnv) >>= \spline -> return $ Right $ Left spline
+    result <- applyToData1 func dat fitName tEnv
     modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
 

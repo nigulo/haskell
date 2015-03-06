@@ -10,7 +10,6 @@ module TSA.GUI.State  (
     StateRef,
     Task (..),
     newState,
-    progressUpdate,
     readState,
     getWindow,
     getCurrentGraphTab,
@@ -448,7 +447,7 @@ data GuiParams = GuiParams {
     guiChanged :: Bool
 }
 
-data Task = Task ThreadId String {- task name-} [Task {- subtasks -}]
+data Task = Task ThreadId String {- task name-} Double {- progress -} [Task {- subtasks -}]
 
 data State = State {
     params :: Params,
@@ -777,14 +776,9 @@ newSettings =
     }
 
 
-progressUpdate :: StateRef -> Double -> IO ()
-progressUpdate stateRef percent = 
-    modifyMVar_ stateRef $ \state -> return $ setProgressBarPercent percent state
---    do
---        state <- readMVar stateRef
---        let (pb, _) = getProgressBar state
---        postGUIAsync $ pb `progressBarSetFraction` percent
---        --threadDelay (100 * 1000)
+--progressUpdate :: StateRef -> Double -> IO ()
+--progressUpdate stateRef percent = 
+--    modifyMVar_ stateRef $ \state -> return $ setProgressBarPercent percent state
 
 -- | Returns normalized screen area for given graph, where
 --   top left = (0,0) and bottom right = (1, 1)

@@ -120,7 +120,8 @@ d2 :: StateRef -> DataParams -> Double -> Double -> Double -> Double -> Int -> I
 d2 stateRef dataParams periodStart periodEnd minCorrLen maxCorrLen method precision name = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
-    dispersions <- calcDispersions dataParams periodStart periodEnd minCorrLen maxCorrLen method precision name False (taskEnv stateRef)
+    tEnv <- taskEnv stateRef
+    dispersions <- calcDispersions dataParams periodStart periodEnd minCorrLen maxCorrLen method precision name False tEnv
     let 
         graphTabParms = (graphTabs state) !! currentGraphTab
         selectedGraph = graphTabSelection graphTabParms
@@ -145,4 +146,4 @@ d2 stateRef dataParams periodStart periodEnd minCorrLen maxCorrLen method precis
                     ) dispersions
         else 
             return ()
-    progressUpdate stateRef 0
+    (progressUpdateFunc tEnv) 1

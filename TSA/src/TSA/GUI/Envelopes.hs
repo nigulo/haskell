@@ -154,6 +154,7 @@ envelopes stateRef (upperName, lowerName, meanName) =
             selectedGraph = graphTabSelection graphTabParms
 
             parms = envParams (params state)
+        tEnv <- taskEnv stateRef
         
-        E.envelopes parms (upperName, lowerName, meanName) (taskEnv stateRef) (DataUpdateFunc (\dat name update -> modifyState stateRef $ addOrUpdateData dat name (Just (currentGraphTab, selectedGraph)) update))
+        E.envelopes parms (upperName, lowerName, meanName) tEnv (DataUpdateFunc (\dat name update -> modifyState stateRef $ addOrUpdateData dat name (Just (currentGraphTab, selectedGraph)) update))
         return ()

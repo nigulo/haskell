@@ -21,6 +21,7 @@ import Utils.Concurrent
 
 import Control.Concurrent.MVar
 import Control.Concurrent
+import Control.Monad
 import System.CPUTime
 import System.IO
 import Math.Expression
@@ -32,7 +33,7 @@ import Statistics.Sample
 
 calcDispersions :: DataParams -> Double -> Double -> Int -> Int -> String -> Bool 
     -> TaskEnv 
-    -> IO [(Double, DataParams)]
+    -> IO DataParams
 calcDispersions dataParams periodStart' periodEnd' precision method name bootstrap taskEnv = do
     let 
         periodStart = min periodStart' periodEnd'
@@ -42,70 +43,65 @@ calcDispersions dataParams periodStart' periodEnd' precision method name bootstr
         step = (freqEnd - freqStart) / (fromIntegral precision)
         puFunc = progressUpdateFunc taskEnv
 
-        findDispersions :: Int -> Double -> (Double, [(Double, Double)]) -> Either D.Data (Either S.Spline FS.Functions) -> (Double -> IO ()) -> IO (Either D.Data (Either S.Spline FS.Functions), [(Double, Double)]) 
-        findDispersions method corrLen (prevCorrLen, info) (Left dat) puFunc = do
+        findDispersions :: Int -> Either D.Data (Either S.Spline FS.Functions) -> (Double -> IO ()) -> IO (Either D.Data (Either S.Spline FS.Functions)) 
+        findDispersions method (Left dat) puFunc = do
             let
                 mapFunc i puFunc = 
                     do
                         dispersionAndInfo <- 
                             case method of 
                                 0 -> do --LeastSquares
-                                    res <- leastSquares dat (1 / (freqStart + fromIntegral i * step))
-                                    return (res, (0, 0))
+                                    leastSquares dat (1 / (freqStart + fromIntegral i * step))
                                 1 -> do --StringLength
                                     do
                                         let 
                                             ymin = D.yMin dat
                                             yNorm = D.yMax dat - ymin
                                             vals = D.xys1 dat --map (\(x, y) -> (x, (y - ymin) / yNorm)) $ D.xys1 dat
-                                        res <- stringLength vals (1 / (freqStart + fromIntegral i * step))
-                                        return (res, (0, 0))
-                        --puFunc $ (fromIntegral i) / (fromIntegral precision)
+                                        stringLength vals (1 / (freqStart + fromIntegral i * step))
+                        puFunc 1
                         return dispersionAndInfo
-            dispersionAndInfo <- calcConcurrently mapFunc puFunc (taskInitializer taskEnv) (taskFinalizer taskEnv) [0 .. precision]
+            dispersions <- calcConcurrently mapFunc puFunc (taskInitializer taskEnv) (taskFinalizer taskEnv) [0 .. precision - 1]
             let
-                (dispersions, info) = unzip dispersionAndInfo
                 norm = maximum dispersions
                 normalizedDispersions =  
                     if False -- norm > 0 
                         then map (\d -> d / norm) dispersions 
                         else dispersions
                 freqSpec = D.Spectrum2 ((freqStart, step), V.zip (V.fromList normalizedDispersions) (V.replicate (length normalizedDispersions) 1))
-            return (Left freqSpec, info)
+            return $ Left freqSpec
+
     let
-        namesCorrLenghts = [(name, 0)]
-        corrLenFunc :: [(String, Double)] -> Double -> [[(Double, Double)]] -> IO [(Double, DataParams)]
-        corrLenFunc [] _ _ = return []
-        corrLenFunc ((name, corrLen):namesCorrLenghts) prevCorrLen prevInfos = do
-            subDispersionsAndInfo <- mapM (\(sdp, prevInfo) -> do
-                    let
-                        Left dat = subData sdp
-                    dat1 <- if bootstrap then reshuffleData dat else return dat
-                    findDispersions method corrLen (prevCorrLen, prevInfo) (Left dat1) (puFunc)
-                ) (zip (dataSet dataParams) prevInfos)
+        numSubData = length $ dataSet dataParams
+    
+    subDispersions <- zipWithM (\sdp i -> do
             let
-                (subDispersions, infos) = unzip subDispersionsAndInfo
-                dispersions = createDataParams_ name (map (\sd -> createSubDataParams__ sd) subDispersions)
-                    
-            bestPeriods <- mapM (\(i, SubDataParams _ (Left periodSpec) _) -> do
-                    let
-                        freqDisps = sortBy (\(_, disp1) (_, disp2) -> compare disp1 disp2) $ V.toList $ D.getMinima periodSpec
-                        freqs = map fst freqDisps
-                    (logFunc taskEnv) ("Possible freqs for " ++ name ++ "[" ++ show i ++ "] = " ++ (show freqs))
-                    case freqDisps of 
-                         [] -> return Nothing
-                         ((freq, disp):_) -> return $ Just (1 / freq, (1 - disp) ^ 2)  
-                ) (zip [1, 2 ..] (dataSet dispersions))
+                Left dat = subData sdp
+            dat1 <- if bootstrap then reshuffleData dat else return dat
+            disps <- findDispersions method (Left dat1) (\percent -> puFunc (percent * (fromIntegral i / fromIntegral numSubData)))
+            puFunc $ fromIntegral i / fromIntegral numSubData
+            return disps
+        ) (dataSet dataParams) [1 ..]
+    let
+        dispersions = createDataParams_ name (map (\sd -> createSubDataParams__ sd) subDispersions)
+            
+    bestPeriods <- mapM (\(i, SubDataParams _ (Left periodSpec) _) -> do
             let
-                periodMean = meanWeighted $ V.fromList $ catMaybes bestPeriods
-                periodVar = varianceWeighted $ V.fromList $ catMaybes bestPeriods
-                periodDisp = mean $ V.map (\(p, d) -> 1 - sqrt d) $ V.fromList $ catMaybes bestPeriods
-                
-            (logFunc taskEnv) ("Period mean stdev disp: " ++ show periodMean ++ " " ++ show periodVar ++ " " ++ show periodDisp)
-            next <- corrLenFunc namesCorrLenghts corrLen infos
-            return $ (corrLen, dispersions):next
-    dispersions <- corrLenFunc namesCorrLenghts 0 (repeat (repeat (0, 0)))
-    puFunc 0
+                freqDisps = sortBy (\(_, disp1) (_, disp2) -> compare disp1 disp2) $ V.toList $ D.getMinima periodSpec
+                freqs = map fst freqDisps
+            (logFunc taskEnv) ("Possible freqs for " ++ name ++ "[" ++ show i ++ "] = " ++ (show freqs))
+            case freqDisps of 
+                 [] -> return Nothing
+                 ((freq, disp):_) -> return $ Just (1 / freq, (1 - disp) ^ 2)  
+        ) (zip [1, 2 ..] (dataSet dispersions))
+    let
+        periodMean = meanWeighted $ V.fromList $ catMaybes bestPeriods
+        periodVar = varianceWeighted $ V.fromList $ catMaybes bestPeriods
+        periodDisp = mean $ V.map (\(p, d) -> 1 - sqrt d) $ V.fromList $ catMaybes bestPeriods
+        
+    (logFunc taskEnv) ("Period mean stdev disp: " ++ show periodMean ++ " " ++ show periodVar ++ " " ++ show periodDisp)
+
+    puFunc 1
     return dispersions
 
 leastSquares :: Data -> Double -> IO Double

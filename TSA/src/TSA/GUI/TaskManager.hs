@@ -45,33 +45,38 @@ taskManagerDialog stateRef = do
 
 refresh :: StateRef -> Dialog -> MVar Bool -> IO ()
 refresh stateRef dialog destroyedRef =
-    modifyMVar_ destroyedRef $ \destroyed -> do 
-        if destroyed
-            then
-                return ()
-            else do
-                state <- readMVar stateRef
-                contentBox <- castToBox <$> dialogGetContentArea dialog
-                containerForeach contentBox (\widget -> 
-                        widgetGetName widget >>= \name -> 
-                            if name == "TaskWidget" then containerRemove contentBox widget else return ()
-                    )
-                case tasks state of
-                    [] -> do
-                        label <- labelNew (Just "No tasks")
-                        hBox <- addWidget Nothing label dialog
-                        widgetSetName hBox "TaskWidget"
-                    otherwise ->
-                        mapM_ (\(Task threadId taskName _) -> do
-                                stopButton <- buttonNewFromStock stockStop
-                                on stopButton buttonReleaseEvent $ liftIO $ 
-                                    do
-                                        killThread threadId
-                                        refresh stateRef dialog destroyedRef
-                                        return True
-                                hBox <- addWidget (Just taskName) stopButton dialog
-                                widgetSetName hBox "TaskWidget"
-                            ) $ filter (\(Task _ taskName _) -> taskName /= "") $ tasks state
-                widgetShowAll dialog
-        return destroyed
+    --postGUIAsync $
+        modifyMVar_ destroyedRef $ \destroyed -> do 
+            if destroyed
+                then
+                    return ()
+                else do
+                    state <- readMVar stateRef
+                    contentBox <- castToBox <$> dialogGetContentArea dialog
+                    containerForeach contentBox (\widget -> 
+                            widgetGetName widget >>= \name -> 
+                                if name == "TaskWidget" then containerRemove contentBox widget else return ()
+                        )
+                    case tasks state of
+                        [] -> do
+                            label <- labelNew (Just "No tasks")
+                            hBox <- addWidget Nothing label dialog
+                            widgetSetName hBox "TaskWidget"
+                        otherwise ->
+                            mapM_ (\(Task threadId taskName percent _) -> do
+                                    progressBar <- progressBarNew
+                                    progressBarSetFraction progressBar percent
+                                    stopButton <- buttonNewFromStock stockStop
+                                    hBox <- hBoxNew False 2
+                                    boxPackStart hBox progressBar PackGrow 2
+                                    boxPackStart hBox stopButton PackNatural 2
+                                    addWidget (Just taskName) hBox dialog >>= (flip widgetSetName) "TaskWidget" 
+                                    on stopButton buttonReleaseEvent $ liftIO $ 
+                                        do
+                                            killThread threadId
+                                            refresh stateRef dialog destroyedRef
+                                            return True
+                                ) $ filter (\(Task _ taskName _ _) -> taskName /= "") $ tasks state
+                    widgetShowAll dialog
+            return destroyed
         

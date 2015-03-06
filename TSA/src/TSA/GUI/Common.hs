@@ -44,11 +44,11 @@ runTask stateRef taskName task = do
 removeTask :: StateRef -> ThreadId -> IO ()
 removeTask stateRef threadId = 
     modifyMVar_ stateRef $ \state -> do
-        case find (\(Task threadId' _ _) -> threadId' == threadId) (tasks state) of
-            Just (Task _ _ children) -> mapM_ (\(Task threadId _ _) -> killThread threadId) children
+        case find (\(Task threadId' _ _ _) -> threadId' == threadId) (tasks state) of
+            Just (Task _ _ _ children) -> mapM_ (\(Task threadId _ _ _) -> killThread threadId) children
             Nothing -> return ()
         return $ state {
-            tasks = filter (\(Task threadId' _ _) -> threadId' /= threadId) (tasks state)
+            tasks = filter (\(Task threadId' _ _ _) -> threadId' /= threadId) (tasks state)
         }
 
 initTask :: StateRef -> String -> ThreadId -> IO ()
@@ -56,23 +56,36 @@ initTask stateRef taskName newThreadId = do
     state <- readMVar stateRef
     currentThreadId <- myThreadId
     let
-        newTask = Task newThreadId taskName []
-        (parentTask, otherTasks) = partition (\(Task threadId _ _) -> threadId == currentThreadId) (tasks state)
+        newTask = Task newThreadId taskName 0 []
+        (parentTask, otherTasks) = partition (\(Task threadId _ _ _) -> threadId == currentThreadId) (tasks state)
         updatedParentTask =
             case parentTask of
-                [Task parentThreadId parentTaskName childern] -> [Task parentThreadId parentTaskName (newTask:childern)]
+                [Task parentThreadId parentTaskName percent childern] -> [Task parentThreadId parentTaskName percent (newTask:childern)]
                 [] -> []
     modifyState stateRef $ \state ->
         state {
             tasks = (newTask:(updatedParentTask ++ otherTasks))
         }
 
-taskEnv :: StateRef -> TaskEnv
-taskEnv stateRef = 
-    TaskEnv {
-        progressUpdateFunc = progressUpdate stateRef, 
-        logFunc = appendLog stateRef,
-        taskInitializer = initTask stateRef "",
-        taskFinalizer = myThreadId >>= \threadId -> removeTask stateRef threadId
-    }
+progressUpdate :: StateRef -> ThreadId -> Double -> IO ()
+progressUpdate stateRef threadId percent = do
+    modifyMVar_ stateRef $ \state -> do
+        case find (\(Task threadId' _ _ _) -> threadId' == threadId) (tasks state) of
+            Just (Task threadId taskName _ children) -> 
+                return $ state {
+                    tasks = Task threadId taskName percent children:filter (\(Task threadId' _ _ _) -> threadId' /= threadId) (tasks state)
+                }
+            Nothing -> return state
+
+
+
+taskEnv :: StateRef -> IO TaskEnv
+taskEnv stateRef = do
+    threadId <- myThreadId
+    return TaskEnv {
+            progressUpdateFunc = progressUpdate stateRef threadId, 
+            logFunc = appendLog stateRef,
+            taskInitializer = initTask stateRef "",
+            taskFinalizer = myThreadId >>= \threadId -> removeTask stateRef threadId
+        }
     

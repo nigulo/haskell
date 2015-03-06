@@ -117,13 +117,13 @@ fit :: StateRef -> DataParams -> String -> IO ()
 fit stateRef dataParams fitName = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
+    tEnv <- taskEnv stateRef
     let 
         graphTabParms = (graphTabs state) !! currentGraphTab
         selectedGraph = graphTabSelection graphTabParms
 
         lsqParms = lsqParams (params state)
         bootstrapCount = lsqBootstrapCount lsqParms
-        tEnv = taskEnv stateRef
         
         func i maybeJ (Left dat) puFunc = do 
             spline <- fitData (lsqFitParams lsqParms) dat tEnv
@@ -200,10 +200,10 @@ fit stateRef dataParams fitName = do
                     dataParams = getDataByName fitName state
                 return $ updateData (dataParams {dataSet = subDataParams}) state
 -}
-            progressUpdate stateRef 0
+            (progressUpdateFunc tEnv) 1
         else do
-            progressUpdate stateRef 0
-            return ()
+            (progressUpdateFunc tEnv) 1
+
 
 getDegreesOfFreedom :: FitParams -> Int
 getDegreesOfFreedom fitParams =
