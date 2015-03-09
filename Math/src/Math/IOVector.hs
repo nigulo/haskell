@@ -17,6 +17,7 @@ module Math.IOVector (
 import Debug.Trace
 import Data.Array.IO
 import Utils.Misc
+import Control.Monad
 
 
 newtype Num a => IOVector a = IOVector (IOArray Int a)
@@ -76,12 +77,13 @@ dotProduct v@(IOVector v1) (IOVector v2) =
     do
         (l1, u1) <- getBounds v1
         (l2, u2) <- getBounds v2
-        forMl_ [0 .. min (u1 - l1) (u2 - l2)] 0 $
-            \i retVal -> 
+        let
+            func retVal i = 
                 do
                     v1i <- readArray v1 i
                     v2i <- readArray v2 i
                     return $ retVal + v1i * v2i
+        foldM (func) 0 [0 .. min (u1 - l1) (u2 - l2)] 
 
 -- binary operation between two vectors
 -- first vector will be changed and returned
@@ -89,12 +91,13 @@ op :: (Num a, Num b) => (a -> b -> a) -> IOVector a -> IOVector b -> IO (IOVecto
 op f (IOVector v1) (IOVector v2) =
     do
         (l, u) <- getBounds v1
-        forMl_ [0 .. u - l] () $
-            \i _ -> 
+        let
+            func _ i =
                 do
                     v1i <- readArray v1 i
                     v2i <- readArray v2 i
                     writeArray v1 i (v1i `f` v2i)
+        foldM_ (func) () [0 .. u - l]
         return $ IOVector v1
 
 -- binary operation between two vectors
@@ -103,13 +106,14 @@ op3 :: (Num a, Num b, Num c) => (a -> b -> c -> a) -> IOVector a -> IOVector b -
 op3 f (IOVector v1) (IOVector v2) (IOVector v3) =
     do
         (l, u) <- getBounds v1
-        forMl_ [0 .. u - l] () $
-            \i _ -> 
+        let
+            func _ i =
                 do
                     v1i <- readArray v1 i
                     v2i <- readArray v2 i
                     v3i <- readArray v3 i
                     writeArray v1 i (f v1i v2i v3i)
+        foldM_ (func) () [0 .. u - l]
         return $ IOVector v1
 
 -- | Adds second vector to first and returns the result

@@ -6,10 +6,10 @@ module TSA.GUI.State  (
     GraphDataParams (..),
     GnuParams (..),
     GraphSelection (..),
-    SettingsParams(..),
+    SettingsParams (..),
     StateRef,
+    Task (..),
     newState,
-    progressUpdate,
     readState,
     getWindow,
     getCurrentGraphTab,
@@ -21,7 +21,9 @@ module TSA.GUI.State  (
     newGraphTab,
     newGraph,
     getNormalizedScreenArea,
-    insertGraphRowsCols
+    insertGraphRowsCols,
+    appendLog,
+    refreshLog
     ) where
 
 import TSA.Params
@@ -299,7 +301,8 @@ data GnuParams = GnuParams {
     gnuNegativePalette :: Bool,
     gnuLogScaleX :: Bool,
     gnuLogScaleY :: Bool,
-    gnuLogScaleZ :: Bool
+    gnuLogScaleZ :: Bool,
+    gnuGrid :: Bool
 } deriving (Show, Read)
 
 defaultGnuTitleOpts = "font \"Arial,12\""
@@ -318,7 +321,8 @@ instance Xml.XmlElement GnuParams where
          ("negativepalette", show (gnuNegativePalette params)),
          ("logscalex", show (gnuLogScaleX params)),
          ("logscaley", show (gnuLogScaleY params)),
-         ("logscalez", show (gnuLogScaleZ params))
+         ("logscalez", show (gnuLogScaleZ params)),
+         ("grid", show (gnuGrid params))
         ]
         [Left (Xml.element "titleopts" [] [Right (gnuTitleOpts params)]),
         Left (Xml.element "xlabelopts" [] [Right (gnuXLabelOpts params)]),
@@ -380,7 +384,10 @@ instance Xml.XmlElement GnuParams where
             gnuMap = case Xml.maybeAttrValue e "map" of
                 Just map -> read map
                 Nothing -> True,
-            gnuNegativePalette = read $ Xml.attrValue e "negativepalette"
+            gnuNegativePalette = read $ Xml.attrValue e "negativepalette",
+            gnuGrid = case Xml.maybeAttrValue e "grid" of
+                Just grid -> read grid
+                Nothing -> True
         } 
 
 data GraphSelection = GraphSelection {
@@ -415,14 +422,17 @@ data SettingsParams = SettingsParams {
 instance Xml.XmlElement SettingsParams where
     toElement params = Xml.element "settingsparams" 
         [
-         ("savechanges", show (settingsSaveInZippedFormat params)),
+         ("savechanges", show (settingsSaveChangesOnExit params)),
+         ("savezipped", show (settingsSaveInZippedFormat params)),
          ("activetab", show (settingsActiveTab params))
         ] []
 
     fromElement e = 
             SettingsParams {
                 settingsSaveChangesOnExit = read $ Xml.attrValue e "savechanges",
-                settingsSaveInZippedFormat = True,
+                settingsSaveInZippedFormat = case Xml.maybeAttrValue e "savezipped" of
+                    Just zip -> read zip
+                    Nothing -> True,
                 settingsActiveTab = read $ Xml.attrValue e "activetab"
             }
 
@@ -437,12 +447,15 @@ data GuiParams = GuiParams {
     guiChanged :: Bool
 }
 
+data Task = Task ThreadId String {- task name-} Double {- progress -} [Task {- subtasks -}]
+
 data State = State {
     params :: Params,
     guiParams :: Maybe GuiParams,
     graphTabs :: [GraphTabParams],
     log :: String,
-    settingsParams :: SettingsParams
+    settingsParams :: SettingsParams,
+    tasks :: [Task]
 }
 
 instance Xml.XmlElement State where
@@ -498,7 +511,8 @@ instance Xml.XmlElement State where
                             (case Xml.maybeContentElement e "log" of
                                 Just e1 -> head $ Xml.contentTexts e1
                                 Nothing -> ""
-                                )
+                                ),
+                        tasks = []
                 }
                 otherwise ->
                     State {
@@ -541,7 +555,8 @@ instance Xml.XmlElement State where
                             (case Xml.maybeContentElement e "log" of
                                 Just e1 -> head $ Xml.contentTexts e1
                                 Nothing -> ""
-                                )
+                                ),
+                        tasks = []
                 }
 
 instance Show State where
@@ -683,7 +698,8 @@ newState p =
             guiParams = Nothing,
             graphTabs = [],
             settingsParams = newSettings,
-            log = ""
+            log = "",
+            tasks = []
             
     }
 
@@ -747,7 +763,8 @@ newGnuParams =
        gnuNegativePalette = True,
        gnuLogScaleX = False,
        gnuLogScaleY = False,
-       gnuLogScaleZ = False
+       gnuLogScaleZ = False,
+       gnuGrid = True
    }
 
 newSettings :: SettingsParams
@@ -759,14 +776,9 @@ newSettings =
     }
 
 
-progressUpdate :: StateRef -> Double -> IO ()
-progressUpdate stateRef percent = 
-    modifyMVar_ stateRef $ \state -> return $ setProgressBarPercent percent state
---    do
---        state <- readMVar stateRef
---        let (pb, _) = getProgressBar state
---        postGUIAsync $ pb `progressBarSetFraction` percent
---        --threadDelay (100 * 1000)
+--progressUpdate :: StateRef -> Double -> IO ()
+--progressUpdate stateRef percent = 
+--    modifyMVar_ stateRef $ \state -> return $ setProgressBarPercent percent state
 
 -- | Returns normalized screen area for given graph, where
 --   top left = (0,0) and bottom right = (1, 1)
@@ -785,3 +797,26 @@ getNormalizedScreenArea graphTab selectedGraph =
         bottom = top + graphHeight (graphTabGraphs graphTab!! selectedGraph)
     in
         (left, top, right, bottom)
+
+appendLog :: StateRef -> String -> IO ()
+appendLog stateRef text = do
+    state <- readMVar stateRef
+    let 
+        newText = TSA.GUI.State.log state ++ text ++ "\n"
+    modifyMVar_ stateRef $ \state -> return $ state {
+        TSA.GUI.State.log = newText
+        }
+    refreshLog stateRef
+
+refreshLog :: StateRef -> IO ()
+refreshLog stateRef = postGUIAsync $ do
+    state <- readMVar stateRef
+    case guiLog (fromJust (guiParams state)) of
+        Just textView -> do
+            textBuffer <- textViewGetBuffer textView
+            textBufferSetText textBuffer (TSA.GUI.State.log state)
+            textMark <- textMarkNew Nothing True 
+            textIter <- textBufferGetEndIter textBuffer
+            textBufferAddMark textBuffer textMark textIter
+            textViewScrollToMark textView textMark 0 Nothing 
+        otherwise -> return ()

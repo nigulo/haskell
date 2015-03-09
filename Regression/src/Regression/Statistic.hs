@@ -17,6 +17,7 @@ import qualified Regression.AnalyticDataWrapper as AD
 import Data.List
 import Data.Maybe
 import System.Random
+import Control.Concurrent
 import Debug.Trace
 import Utils.Num
 import Utils.Misc
@@ -53,17 +54,24 @@ getVarVals ds g (startFn:endFn:stepFn:valueFn:[]) =
         [F.getValue [i] (map mapOp (F.funcNames valueFn)) g valueFn | i <- [start, start + step .. end]]
 
 
-getValues :: (RandomGen g) => [Either D.Data AD.AnalyticDataWrapper] -> [[F.Function Double]] -> g -> (Double -> IO ()) -> Statistic -> IO D.Data
-getValues ds [varValDef] g puFunc statistic = do
+getValues :: (RandomGen g) => [Either D.Data AD.AnalyticDataWrapper] 
+    -> [[F.Function Double]] 
+    -> g 
+    -> (Double -> IO ()) 
+    -> (ThreadId -> IO ())
+    -> IO ()
+    -> Statistic 
+    -> IO D.Data
+getValues ds [varValDef] g puFunc initializer finalizer statistic = do
     let
         xs = getVarVals ds g varValDef
     ys <- calcConcurrently (\x puFunc ->
             return $ getValue ds [x] (mkStdGen 1) statistic
-        ) puFunc xs
+        ) puFunc initializer finalizer xs
     let
         spec2d = D.data1 (V.fromList (zip3 xs ys (replicate (length xs) 1)))
     return spec2d
-getValues ds [varValDef1, varValDef2] g puFunc statistic = do
+getValues ds [varValDef1, varValDef2] g puFunc initializer finalizer statistic = do
     let
         xs = getVarVals ds g varValDef1
         ys = getVarVals ds g varValDef2
@@ -71,7 +79,7 @@ getValues ds [varValDef1, varValDef2] g puFunc statistic = do
             do
                 y <- return $ getValue ds [xs !! i, ys !! j] (mkStdGen 1) statistic
                 return ([xs !! i, ys !! j], y, 0)
-        )  puFunc [(i, j) | i <- [0 .. length xs - 1], j <- [0 .. length ys - 1]]
+        )  puFunc initializer finalizer [(i, j) | i <- [0 .. length xs - 1], j <- [0 .. length ys - 1]]
 
     let
         spec3d = D.data2 vals

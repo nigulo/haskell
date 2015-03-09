@@ -22,7 +22,6 @@ import Control.Concurrent
 import System.CPUTime
 import System.Environment
 import Math.Expression
-import Math.Statistics
 import System.Random
 
 import qualified Data.Vector.Unboxed as V
@@ -74,8 +73,8 @@ main = do --mpiWorld $ \size rank ->
     unlockFile fileLock
 -}
 
-fitData :: FitParams -> Data -> (Double -> IO ()) -> IO Spline
-fitData fitParams dat progressUpdateFunc = do
+fitData :: FitParams -> Data -> TaskEnv -> IO Spline
+fitData fitParams dat taskEnv = do
     let
         rank = fitPolynomRank fitParams
         fitTyp = fitType fitParams
@@ -87,7 +86,7 @@ fitData fitParams dat progressUpdateFunc = do
             let
                 numNodes = splineNumNodes (fitSplineParams fitParams)
             case per of 
-                0 -> fitWithSpline_ rank numNodes dat False 2 progressUpdateFunc
+                0 -> fitWithSpline_ rank numNodes dat False 2 (progressUpdateFunc taskEnv)
                 per -> do
                         let
                             templates =
@@ -99,7 +98,7 @@ fitData fitParams dat progressUpdateFunc = do
                         --putStrLn ("modulatedUnitPolynoms: " ++ render (toDocument (modulatedUnitPolynoms templates)))
                         --putStrLn ("numNodes: " ++ show numNodes)
                         --putStrLn ("dat: " ++ render (toDocument (dat)))
-                        fitWithSpline (modulatedUnitPolynoms templates) numNodes dat False 2 progressUpdateFunc
+                        fitWithSpline (modulatedUnitPolynoms templates) numNodes dat False 2 (progressUpdateFunc taskEnv)
         FitTypeHarmonic -> do
             let
                 coverageFactor = harmonicCoverageFactor (fitHarmonicParams fitParams)
@@ -131,5 +130,5 @@ fitData fitParams dat progressUpdateFunc = do
             putStrLn ("num parameters: " ++ (show (Prelude.length templates)))
             --putStrLn ("modulatedUnitPolynoms: " ++ render (toDocument (modulatedUnitPolynoms templates)))
             --putStrLn ("dat: " ++ render (toDocument (dat)))
-            fitWithSpline (modulatedUnitPolynoms templates) 1 dat False 0 progressUpdateFunc
+            fitWithSpline (modulatedUnitPolynoms templates) 1 dat False 0 (progressUpdateFunc taskEnv)
 

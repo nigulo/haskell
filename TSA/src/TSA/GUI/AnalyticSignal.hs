@@ -99,7 +99,7 @@ analyticSignalDialog stateRef = do
                     asImagData = conjugatedData                    
                 }}
                 
-                forkIO $ analyticSignal stateRef (round precision) (amplitudeName, phaseName, frequencyName)
+                runTask stateRef "Analytic signal" $ analyticSignal stateRef (round precision) (amplitudeName, phaseName, frequencyName)
                 return ()
                 
         else
@@ -116,6 +116,6 @@ analyticSignal stateRef precision (amplitudeName, phaseName, frequencyName) =
             selectedGraph = graphTabSelection graphTabParms
             asParms = asParams (params state)
             dataParams = fromJust (asRealData asParms)
-            
-        AS.analyticSignal asParms precision (amplitudeName, phaseName, frequencyName, ((dataName dataParams) ++ "_conj")) (progressUpdate stateRef) (appendLog stateRef) (DataUpdateFunc (\dat name update -> modifyState stateRef $ addOrUpdateData dat name (Just (currentGraphTab, selectedGraph)) update)) 
-            
+        tEnv <- taskEnv stateRef
+        AS.analyticSignal asParms precision (amplitudeName, phaseName, frequencyName, ((dataName dataParams) ++ "_conj")) tEnv (DataUpdateFunc (\dat name update -> modifyState stateRef $ addOrUpdateData dat name (Just (currentGraphTab, selectedGraph)) update)) 
+        return ()            

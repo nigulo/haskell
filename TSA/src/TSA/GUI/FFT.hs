@@ -19,6 +19,7 @@ import Utils.Misc
 
 import Data.IORef
 import Data.Complex
+import Data.Maybe
 import qualified Data.Vector.Unboxed as V
 import Debug.Trace
 import Control.Concurrent
@@ -59,6 +60,9 @@ paramsDialog stateRef = do
     phaseShiftAdjustment <- adjustmentNew (fftPhaseShift parms) (-1) 1 0.1 0.1 1
     phaseShiftSpin <- spinButtonNew phaseShiftAdjustment 1 2
     addWidget (Just "Phase shift: ") phaseShiftSpin dialog
+    
+    infoLabel <- labelNew $ Just "Number of samples will be truncated to closest power of 2"
+    addWidget Nothing infoLabel dialog
 
     let 
         toggleFftButton :: IO ()
@@ -123,42 +127,33 @@ fft stateRef name =
             parms = fftParams (params state)
             --Just (realSpec@(Spectrum (offset, step, _))) = fftRealData parms
             --reals = D.ys realSpec
-            n = case fftRealData parms of 
-                Just s -> V.length $ D.xs1 s
-                Nothing -> case fftImagData parms of
-                    Just s -> V.length $ D.xs1 s
-                    Nothing -> 0
+            
+            
+            numSamples dat defVal = maybe defVal (\d -> V.length $ D.xs1 d) $ dat
+            
+            n1 = numSamples (fftRealData parms) (numSamples (fftImagData parms) 0)
+            n2 = numSamples (fftImagData parms) (numSamples (fftRealData parms) 0)
+            n = min n1 n2
+
             (reals, realStep) = case fftRealData parms of 
                 Nothing -> (V.replicate n 0, 0)
-                Just s@(Spectrum (((_, step):_), _)) -> (D.ys s, step)
                 Just s@(Spectrum2 ((_, step), _)) -> (D.ys s, step)
             (imags, imagStep) = case fftImagData parms of 
                 Nothing -> (V.replicate n 0, 0)
-                Just s@(Spectrum (((_, step):_), _)) -> (D.ys s, step)
                 Just s@(Spectrum2 ((_, step), _)) -> (D.ys s, step)
             step = max realStep imagStep
             fftFunc = if fftDirection parms then fromTimeToFrequency else fromFrequencyToTime
             phaseShift = fftPhaseShift parms
-            numToAdd = 2 ^ (ceiling (logBase 2 (fromIntegral n))) - n
-            ys1 = trace ("numToAdd: " ++ show numToAdd) $ V.zipWith (\r i -> (:+) r i) (reals V.++ V.replicate numToAdd 0) (imags V.++ V.replicate numToAdd 0)
+            numToUse = 2 ^ (floor (logBase 2 (fromIntegral n)))
+            ys1 = V.take numToUse $ V.zipWith (\r i -> (:+) r i) reals imags
         
-        spec1 <- trace ("ys1: " ++ show (V.length ys1)) $ fftFunc ys1 phaseShift
+        spec1 <- fftFunc ys1 phaseShift
         let
             len = V.length spec1
             specStep = if len == 0 then 0 else 1 / (fromIntegral len * step)
-        putStrLn "Tere siin" 
         realSpec <- return $ D.Spectrum2 ((0, specStep), V.zip (V.map realPart spec1) (V.replicate len 0))
-        putStrLn "Tere siin1" 
         imagSpec <- return $ D.Spectrum2 ((0, specStep), V.zip (V.map imagPart spec1) (V.replicate len 0))
-        putStrLn $ "Tere siin2:"
         
-        --putStrLn $ "realSpec xs:" ++ show (xs realSpec)
-        --putStrLn $ "realSpec ys:" ++ show (spec1)
-
-        --putStrLn $ "imagSpec xs:" ++ show (xs imagSpec)
-        --putStrLn $ "imafSpec ys:" ++ show (ys imagSpec)
-
         modifyState stateRef $ addDiscreteData realSpec (name ++ "_Real") (Just (currentGraphTab, selectedGraph))
         modifyState stateRef $ addDiscreteData imagSpec (name ++ "_Imag") (Just (currentGraphTab, selectedGraph))
-        putStrLn "Tere siin3"
 

@@ -1,0 +1,23 @@
+name:                Almanac
+version:             0.0.1
+cabal-version:       >= 1.2
+build-type:          Simple
+license:             AllRightsReserved
+extra-source-files:  extra-tmp-files:
+
+executable Almanac
+  build-depends:   
+                   base >= 4,
+                   Utils -any,
+                   Ephem -any,
+                   GUI -any,
+                   cairo -any,
+                   containers -any,
+                   gtk3 -any,
+                   transformers -any,
+                   vector -any,
+                   time -any
+  hs-source-dirs:  src
+  ghc-options:     -Wall -rtsopts
+  main-is:         Main.hs
+

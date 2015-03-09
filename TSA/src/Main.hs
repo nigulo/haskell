@@ -38,7 +38,7 @@ import TSA.GUI.AnalyticSignal
 import TSA.GUI.LocalPhase
 import TSA.GUI.D2
 import TSA.GUI.Period
-import TSA.GUI.Extrema
+import TSA.GUI.SpecificPoints
 import TSA.GUI.Attractor
 import TSA.GUI.Function
 import TSA.GUI.Statistic
@@ -47,6 +47,7 @@ import TSA.GUI.Sample
 import TSA.GUI.Common
 import TSA.GUI.Preferences
 import TSA.GUI.Log
+import TSA.GUI.TaskManager
 import TSA.GUI.Markers
 
 import GUI.Widget
@@ -198,8 +199,8 @@ main = do
     d2Act <- actionNew "D2Action" "D2... " Nothing Nothing
     on d2Act actionActivated (d2Dialog stateRef)
 
-    findExtremaAct <- actionNew "FindExtremaAction" "Find extrema... " Nothing Nothing
-    on findExtremaAct actionActivated (findExtremaDialog stateRef)
+    findSpecificPointsAct <- actionNew "FindSpecificPointsAction" "Find specific points... " Nothing Nothing
+    on findSpecificPointsAct actionActivated (findSpecificPointsDialog stateRef)
 
     attractorAct <- actionNew "AttractorAction" "Find attractor... " Nothing Nothing
     on attractorAct actionActivated (attractorDialog stateRef)
@@ -246,8 +247,11 @@ main = do
     preferencesAct <- actionNew "PreferencesAction" "Preferences..." Nothing (Just stockPreferences)
     on preferencesAct actionActivated (TSA.GUI.Preferences.preferencesDialog stateRef)
 
-    showLogAct <- actionNew "ShowLogAction" "Show log" Nothing (Just stockInfo)
+    showLogAct <- actionNew "ShowLogAction" "Show log..." Nothing (Just stockInfo)
     on showLogAct actionActivated (TSA.GUI.Log.showLog stateRef)
+
+    taskManagerAct <- actionNew "TaskManagerAction" "Task manager..." Nothing (Just stockInfo)
+    on taskManagerAct actionActivated (TSA.GUI.TaskManager.taskManagerDialog stateRef)
     
     ----------------------------------------------------------------------------
     on win keyPressEvent $
@@ -300,7 +304,7 @@ main = do
        ----------- 
        findPeriodAct,
        d2Act,
-       findExtremaAct,
+       findSpecificPointsAct,
        attractorAct,
        correlationAct,
        ----------- 
@@ -313,7 +317,8 @@ main = do
        savePDFAct,
        -----------
        preferencesAct,
-       showLogAct       
+       showLogAct,
+       taskManagerAct
        ]
     
     ui <- uiManagerNew 
@@ -336,7 +341,7 @@ main = do
     
     containerAdd win vBox
 
-    timeoutAdd (
+    _ <- timeoutAdd (
         do
             state <- readMVar stateRef
             -- Update progressBar and statusBar
@@ -365,7 +370,7 @@ main = do
             return True
         ) 200
 
-    timeoutAdd (
+    _ <- timeoutAdd (
         do
             modifyMVar_ stateRef $ \state -> return $ updateGuiChanged True state
             return True

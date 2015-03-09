@@ -5,6 +5,7 @@ module Math.IOLinearEquations (solveGauss, backSubstitution) where
 import Math.IOVector as IOVector
 import Math.IOMatrix as IOMatrix
 import Utils.List
+import Control.Monad
 
 -- | Solves the system of linear equations using Gauss' method
 solveGauss :: (Fractional a, Ord a, Show a) => IOMatrix a -> IO (IOVector a)
@@ -22,15 +23,9 @@ calcForward i m =
         numRows <- getNumRows m
         let p = numRows - 1
         col <- IOMatrix.getColumn i m
-        ----------------------
-        -- with row exchange
         let iMax = maxi + i where
             Just maxi = maxIndex (map (abs) (drop i col))
         IOMatrix.swapRows iMax i m
-        ----------------------
-        -- without row exchange
-        --m1 = m
-        -----------------------
         let
             a j k = IOMatrix.get (j, k) m
         aii_ <- a i i
@@ -60,8 +55,13 @@ backSubstitution m =
                 do
                     aipp1 <- a i (p + 1)
                     aii <- a i i
-                    toSum <- mapM (\j -> do aij <- a i j; bsj <- IOVector.get j retVal; return (aij * bsj)) [i + 1 .. p]
-                    let bi = (aipp1 - (sum toSum)) / aii
+                    sum' <- foldM (\s j -> do 
+                            aij <- a i j
+                            bsj <- IOVector.get j retVal
+                            return $ s + (aij * bsj)
+                        ) 0 [i + 1 .. p]
+                    let 
+                        bi = (aipp1 - sum') / aii
                     IOVector.set i bi retVal
         mapM_ calc [p, p - 1 .. 0]
         return retVal

@@ -33,12 +33,12 @@ matrix [[]] =
         array <- newListArray ((0, 0), (0, 0)) []
         return (IOMatrix array)
 
-matrix rows@(r0:rs) =
+matrix rows@(r0:_) =
     do
         let 
             lastRow = length rows - 1
             lastCol = length r0 - 1
-        array <- newListArray ((0, 0), (lastRow, lastCol)) [((rows !! i) !! j) | i <- [0 .. lastRow], j <- [0 .. lastCol]]
+        array <- newListArray ((0, 0), (lastRow, lastCol)) (concat rows)
         return (IOMatrix array)
 
 cloneMatrix :: Num a => IOMatrix a -> IO (IOMatrix a)

@@ -137,7 +137,7 @@ paramsDialog stateRef = do
                         } 
 
                 modifyStateParams stateRef $ \params -> params {envParams = newEnvParams}
-                forkIO (envelopes stateRef (upperName, lowerName, meanName))
+                runTask stateRef "Find envelopes" $ (envelopes stateRef (upperName, lowerName, meanName))
                 return ()
         else
             do
@@ -154,6 +154,7 @@ envelopes stateRef (upperName, lowerName, meanName) =
             selectedGraph = graphTabSelection graphTabParms
 
             parms = envParams (params state)
+        tEnv <- taskEnv stateRef
         
-        E.envelopes parms (upperName, lowerName, meanName) (progressUpdate stateRef) (appendLog stateRef) (DataUpdateFunc (\dat name update -> modifyState stateRef $ addOrUpdateData dat name (Just (currentGraphTab, selectedGraph)) update))
+        E.envelopes parms (upperName, lowerName, meanName) tEnv (DataUpdateFunc (\dat name update -> modifyState stateRef $ addOrUpdateData dat name (Just (currentGraphTab, selectedGraph)) update))
         return ()

@@ -33,7 +33,6 @@ import Control.Concurrent.MVar
 import Control.Concurrent
 import System.CPUTime
 import Math.Expression
-import Math.Statistics
 import System.Random
 
 import qualified Data.Vector.Unboxed as V
@@ -107,7 +106,7 @@ paramsDialog stateRef = do
                     lsqFitParams = newFitParams,
                     lsqBootstrapCount = round bootstrapCount
                 }}
-                forkIO $ fit stateRef selectedData name
+                runTask stateRef "Least squares fit" $ fit stateRef selectedData name
                 return ()
         else
             do
@@ -118,6 +117,7 @@ fit :: StateRef -> DataParams -> String -> IO ()
 fit stateRef dataParams fitName = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
+    tEnv <- taskEnv stateRef
     let 
         graphTabParms = (graphTabs state) !! currentGraphTab
         selectedGraph = graphTabSelection graphTabParms
@@ -126,7 +126,7 @@ fit stateRef dataParams fitName = do
         bootstrapCount = lsqBootstrapCount lsqParms
         
         func i maybeJ (Left dat) puFunc = do 
-            spline <- fitData (lsqFitParams lsqParms) dat puFunc 
+            spline <- fitData (lsqFitParams lsqParms) dat tEnv
             g <- getStdGen 
             let
                 Left diff = U.binaryOp (F.subtr) (Left dat) (Right (Left spline)) True g
@@ -143,7 +143,7 @@ fit stateRef dataParams fitName = do
                 redChiSquared = (V.sum $ V.map (\(x, y, w) -> y * y * w) diffVals) / (n - degFreedom - 1)
                 diffSample = D.ys diff
                 normal = normalFromSample diffSample
-                dist = D.data1 $ V.map (\(x, y) -> (x, y, 1)) (cumulProbDist_ diffSample)
+                --dist = D.data1 $ V.map (\(x, y) -> (x, y, 1)) (cumulProbDist_ diffSample)
             appendLog stateRef ("Results for " ++ fitName ++ " " ++ show i ++ (case maybeJ of Just j -> ", " ++ show j; Nothing -> "") ++  ":")
             appendLog stateRef ("stdev residuals = " ++ (show (stdDev normal)))
             appendLog stateRef ("num parameters = " ++ (show degFreedom))
@@ -153,7 +153,7 @@ fit stateRef dataParams fitName = do
             --appendLog stateRef ("KS statistic D = " ++ (show (kolmogorovSmirnovD normal diffSample)))
             --modifyState stateRef $ addData (Left dist) (fitName ++ "_residueDist") (Just (currentGraphTab, selectedGraph))
             return $ Right $ Left spline
-    fitDataParams <- applyToData1 func dataParams fitName (progressUpdate stateRef)
+    fitDataParams <- applyToData1 func dataParams fitName tEnv
     modifyState stateRef $ (addDataParams fitDataParams (Just (currentGraphTab, selectedGraph)))
 
     if bootstrapCount > 0
@@ -178,7 +178,7 @@ fit stateRef dataParams fitName = do
                             Left dat = subData dataParams
                         Xml.renderToFile (Xml.toDocument spline) ("spline" ++ show i)
                         Xml.renderToFile (Xml.toDocument dat) ("data" ++ show i)
-                        bsSplines <- B.bootstrapSplines bootstrapCount (fitData (lsqFitParams lsqParms)) spline dat (\pct -> progressUpdate stateRef (pct * fromIntegral i / fromIntegral numSubData))
+                        bsSplines <- B.bootstrapSplines bootstrapCount (fitData (lsqFitParams lsqParms)) spline dat (\pct -> (progressUpdateFunc tEnv) (pct * fromIntegral i / fromIntegral numSubData))
                         --mapM (\(j, bsSpline) -> 
                         --        modifyState stateRef $ addDataParams (DataParams {
                         --            dataName = fitName ++ "_b" ++ show j,
@@ -200,10 +200,10 @@ fit stateRef dataParams fitName = do
                     dataParams = getDataByName fitName state
                 return $ updateData (dataParams {dataSet = subDataParams}) state
 -}
-            progressUpdate stateRef 0
+            (progressUpdateFunc tEnv) 1
         else do
-            progressUpdate stateRef 0
-            return ()
+            (progressUpdateFunc tEnv) 1
+
 
 getDegreesOfFreedom :: FitParams -> Int
 getDegreesOfFreedom fitParams =

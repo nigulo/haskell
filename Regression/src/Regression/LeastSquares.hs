@@ -9,7 +9,7 @@ module Regression.LeastSquares (
     solve,
     solveIO) where
 
-import Utils.Misc
+import Data.List
 import Math.Matrix as M
 import Math.Vector as V
 import Math.LinearEquations (backSubstitution, backSubstitutionIO)
@@ -27,12 +27,12 @@ newtype LSQState = LSQState (
 initialize :: Int -- ^ Number of x variables
            -> LSQState
 initialize p = 
-    let (b, d) = for__ 0 (p - 1) (nullMatrix p (p + 1), nullVector (p + 1)) f where
-    --let (b, d) = forl_ [0 .. (p - 1)] (nullMatrix p (p + 1), nullVector (p + 1)) f where
-        f j (b, d) = 
-            let (b1, d1) = (M.set (j, j) 1 b, V.set j 0 d);
-            --in (for__ (j + 1) (p - 1) b1 (\k b -> M.set (j, k) 0 b), d1)
-            in (forl_ [(j + 1) .. (p - 1)] b1 (\k b -> M.set (j, k) 0 b), d1)
+    let (b, d) = foldl' (f) (nullMatrix p (p + 1), nullVector (p + 1)) [0 .. p - 1] where
+        f (b, d) j = 
+            let
+                (b1, d1) = (M.set (j, j) 1 b, V.set j 0 d);
+            in 
+                (foldl' (\b k -> M.set (j, k) 0 b) b1 [(j + 1) .. (p - 1)], d1)
     in LSQState (b, d, 0)
 
 -- | Adds a next row of measurements to the computation. If you have
@@ -49,7 +49,7 @@ addMeasurement _ _ 0 state = state -- return same state if weight is zero
 addMeasurement xVect y w (LSQState (b, d, e)) = 
     let 
         p = getLength xVect
-        fori i (b, x, d) = 
+        fori (b, x, d) i = 
             let h = V.get i x;
                 dm = (V.get p d);
             in
@@ -71,11 +71,7 @@ addMeasurement xVect y w (LSQState (b, d, e)) =
                         x1 = V.setAll [(k, (g k x - h * (f k b))) | k <- [i + 1 .. p]] x
                         --------------------------------------------------------
                      in (b1, x1, d1)
-        --(b1, x1, d1) = f (b, vector (values xVect ++ [y]), (V.set p w d)) where
-        --    f = foldr1 (.) [fori i | i <- [p - 1, p - 2 .. 0]]
-        --(b1, x1, d1) = foldl (\x f -> f x) (b, Vector (x ++ [y]), (V.set p w d)) [fori i | i <- [0 .. (p - 1)]]
-        --(b1, x1, d1) = forl_ [0 .. (p - 1)] (b, Vector (x ++ [y]), (V.set p w d)) fori;
-        (b1, x1, d1) = for__ 0 (p - 1) (b, vector (values xVect ++ [y]), (V.set p w d)) fori;
+        (b1, x1, d1) = foldl' (fori) (b, vector (values xVect ++ [y]), (V.set p w d)) [0 .. (p - 1)]
         xyp = (V.get p x1);
     in LSQState (b1, d1, e + (V.get p d1) * xyp * xyp)
 
@@ -95,19 +91,15 @@ addConstraint ::
 addConstraint rVect s w (LSQState (b, f, e)) = 
     let
         p = getLength rVect
-        fori i (b, r, f) = 
+        fori (b, r, f) i = 
             let h = V.get i r;
             in
                 if (V.get i f) == 0 && h /= 0 then 
                     let 
-                        fork k r = V.set k ((V.get k r) - h * (M.get (i, k) b)) r
-                        --func = foldr1 (.) [fork k | k <- [p, p - 1 .. i + 1]]
+                        fork r k = V.set k ((V.get k r) - h * (M.get (i, k) b)) r
                     in 
-                        --(b, func r, f)
-                            
-                        --(b, foldl (\x f -> f x) r [fork k | k <- [(i + 1) .. p]], f)
-                        --(b, forl_ [(i + 1) .. p] r fork, f)
-                        (b, for__ (i + 1) p r fork, f)
+                        --(b, for__ (i + 1) p r fork, f)
+                        (b, foldl' (fork) r [i + 1 .. p], f)
                 else if h /= 0 then 
                     let 
                         fm = (V.get p f);
@@ -116,24 +108,18 @@ addConstraint rVect s w (LSQState (b, f, e)) =
                         c' = fm / f';
                         s' = fi * h / f';
                         f1 = ((V.set p f').(V.set i (c' * fi))) f;
-                        fork k (b, r) = 
+                        fork (b, r) k = 
                             let
                                 g1 = M.get (i, k) b;
                                 g2 = V.get k r
                             in
                                 (M.set (i, k) (c' * g1 + s' * g2) b, V.set k (g2 - h * g1) r);
-                        --(b1, r1) = func (b, r) where
-                        --    func = foldr1 (.) [fork k | k <- [p, p - 1 .. i + 1]]
-                        --(b1, r1) = foldl (\x f -> f x) (b, r) [fork k | k <- [(i + 1) .. p]]
-                        --(b1, r1) = forl_ [(i + 1) .. p] (b, r) fork
-                        (b1, r1) = for__ (i + 1) p (b, r) fork
+                        --(b1, r1) = for__ (i + 1) p (b, r) fork
+                        (b1, r1) = foldl' (fork) (b, r) [i + 1 .. p]
                      in (b1, r1, f1)
                 else (b, r, f);
-        --(b1, r1, f1) = func (b, vector (values rVect ++ [s]), (V.set p w f)) where
-        --    func = foldr1 (.) [fori i | i <- [p - 1, p - 2 .. 0]]
-        --(b1, r1, f1) = foldl (\x f -> f x) (b, Vector (r ++ [s]), (V.set p w f)) [fori i | i <- [0 .. (p - 1)]]
-        --(b1, r1, f1) = forl_ [0 .. (p - 1)] (b, Vector (r ++ [s]), (V.set p w f)) fori;
-        (b1, r1, f1) = for__ 0 (p - 1) (b, vector (values rVect ++ [s]), (V.set p w f)) fori;
+        --(b1, r1, f1) = for__ 0 (p - 1) (b, vector (values rVect ++ [s]), (V.set p w f)) fori;
+        (b1, r1, f1) = foldl' (fori) (b, vector (values rVect ++ [s]), (V.set p w f)) [0 .. p - 1] 
         rsp = (V.get p r1);
         fm = V.get p f;
         e1 = if fm /= 0 then (e + rsp * rsp / fm) else e

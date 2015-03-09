@@ -68,13 +68,14 @@ getSubSplines s@(AnalyticData ps) =
     if isModulated s then
         let (xMins, xMaxs, polynoms) = unzip3 ps
             subPolynoms =  map P.getSubPolynoms polynoms
-            fori i subSplines = 
+            fori subSplines i = 
                 let
                     pols = map (\p -> (xMins !! i, xMaxs !! i, p)) (subPolynoms !! i)
                 in zipWith (\ps pol -> ps ++ [pol]) subSplines pols
         in 
             --trace ("subPols1: " ++ show (length (subPolynoms  !! 0))) $
-            map (\ps -> AnalyticData ps) (forl_ [0 .. (length polynoms - 1)] (replicate (length (subPolynoms !! 0)) []) fori)
+            --map (\ps -> AnalyticData ps) (forl_ [0 .. (length polynoms - 1)] (replicate (length (subPolynoms !! 0)) []) fori)
+            map (\ps -> AnalyticData ps) (foldl' (fori) (replicate (length (subPolynoms !! 0)) []) [0 .. (length polynoms - 1)])
     else []
 
 -- | Returns modulating functions from underlaying polynoms

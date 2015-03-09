@@ -1,4 +1,4 @@
-module TSA.GUI.Log (showLog, appendLog) where
+module TSA.GUI.Log (showLog) where
 
 import Graphics.UI.Gtk hiding (addWidget)
 import Graphics.UI.Gtk.Layout.VBox
@@ -10,6 +10,7 @@ import Utils.Misc
 
 import Control.Concurrent.MVar
 import Control.Concurrent
+import Control.Monad.IO.Class
 import Data.Maybe
 
 showLog :: StateRef -> IO ()
@@ -18,33 +19,32 @@ showLog stateRef = do
     case guiLog (fromJust (guiParams state)) of
         Just _ -> return ()
         otherwise -> do
+            win <- windowNew
+            icon <- pixbufNewFromFile "tsa.bmp"
+            win `set` [windowTitle := "Log", windowIcon := Just icon]
+
+            vBox <- vBoxNew False 2
             textBuffer <- textBufferNew Nothing
             textBufferSetText textBuffer (TSA.GUI.State.log state)
             textView <- textViewNewWithBuffer textBuffer
             font <- fontDescriptionNew
-            fontDescriptionSetFamily font "Arial"
+            fontDescriptionSetFamily font TSA.GUI.Common.defaultFontFamily
             widgetModifyFont textView (Just font)
             --textViewSetAcceptsTab textView False
             textViewSetEditable textView False 
             
-            win <- windowNew
-            icon <- pixbufNewFromFile "tsa.bmp"
-            win `set` [windowTitle := "Log", windowIcon := Just icon]
-            
-            vAdjustment <- adjustmentNew 0 0 100 1 10 10
-            scrolledWindow <- scrolledWindowNew Nothing (Just vAdjustment)
-
-            --vBox <- vBoxNew False 0
-            --set vBox [boxHomogeneous := False]
-            --boxPackStart vBox scrolledWindow PackGrow 0
-            
-            containerAdd win scrolledWindow
-            
-            --vBox <- vBoxNew False 0
-            --set vBox [boxHomogeneous := False]
-            --boxPackStart vBox textView PackGrow 0
-            
+            scrolledWindow <- scrolledWindowNew Nothing Nothing
             containerAdd scrolledWindow textView
+            
+            boxPackStart vBox scrolledWindow PackGrow 2
+            
+            hBox <- hBoxNew False 2
+            clearButton <- buttonNewWithLabel "Clear"
+            on clearButton buttonReleaseEvent $ liftIO (clearLog stateRef >> return True)
+            boxPackEnd hBox clearButton PackNatural 2
+            boxPackEnd vBox hBox PackNatural 2
+            
+            containerAdd win vBox
             
             win `on` objectDestroy $
                 modifyMVar_ stateRef $ \state -> return $ state {
@@ -53,8 +53,13 @@ showLog stateRef = do
                         }
                     }
             
-            windowResize win 640 480
             widgetShowAll win
+            windowResize win 640 480
+
+            textMark <- textMarkNew Nothing True 
+            textIter <- textBufferGetEndIter textBuffer
+            textBufferAddMark textBuffer textMark textIter
+            textViewScrollToMark textView textMark 0 Nothing 
             
             modifyMVar_ stateRef $ \state -> return $ state {
                 guiParams = Just (fromJust (guiParams state)) {
@@ -62,17 +67,9 @@ showLog stateRef = do
                     }
                 }
 
-appendLog :: StateRef -> String -> IO ()
-appendLog stateRef text = do
-    state <- readMVar stateRef
-    let 
-        newText = TSA.GUI.State.log state ++ text ++ "\n"
+clearLog :: StateRef -> IO ()
+clearLog stateRef = do
     modifyMVar_ stateRef $ \state -> return $ state {
-        TSA.GUI.State.log = newText
+        TSA.GUI.State.log = ""
         }
-    case guiLog (fromJust (guiParams state)) of
-        Just textView -> do
-            textBuffer <- textViewGetBuffer textView
-            textBufferSetText textBuffer newText
-        otherwise -> return ()
-
+    refreshLog stateRef

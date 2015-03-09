@@ -21,7 +21,7 @@ executable Math
                pretty -any,
                random -any
   hs-source-dirs:  src
-  ghc-options:     -O2 -fexcess-precision
+  ghc-options:     -O2 -fexcess-precision -rtsopts
   main-is:         Main.hs
   other-modules:   
                    Math.Expression,
@@ -32,8 +32,7 @@ executable Math
                    Math.IODoubleVector,
                    Math.LinearEquations,
                    Math.Matrix,
-                   Math.Vector,
-                   Math.Statistics
+                   Math.Vector
   extensions:      
                ExistentialQuantification,
                FlexibleInstances,
@@ -74,7 +73,6 @@ library
                    Math.IODoubleVector,
                    Math.LinearEquations,
                    Math.Matrix,
-                   Math.Statistics,
                    Math.Vector
   extensions:       
                    FlexibleInstances,
@@ -90,12 +88,14 @@ test-suite MathTests
                    src/Math, 
                    tests
   other-modules:   
-                   Math.StatisticsTest,
                    CUDALinearEquations,
                    Math.ExpressionTest,
                    Math.FunctionTest,
                    IODoubleVector,
-                   IODoubleMatrix
+                   IODoubleMatrix,
+                   Math.LinearEquationsTest,
+                   Math.IOLinearEquationsTest,
+                   Math.IODoubleLinearEquationsTest
   extensions:      
                    FlexibleInstances, 
                    ScopedTypeVariables

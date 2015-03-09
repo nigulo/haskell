@@ -6,12 +6,14 @@ module Regression.Utils (
     sampleAnalyticData_,
     sample2dAnalyticData,
     getValues,
+    getValues1,
     bootstrap,
     var,
     stdev,
     format,
     dataRange,
-    reshuffleData    
+    reshuffleData,
+    bootstrapSample    
     ) where
 
 import Regression.Data as D
@@ -21,7 +23,6 @@ import qualified Regression.Functions as FS
 import qualified Regression.AnalyticData as AD
 import qualified Math.Function as F
 import qualified Math.Expression as E
-import qualified Math.Statistics
 
 import Data.List
 import qualified Data.Vector.Unboxed as V
@@ -29,6 +30,7 @@ import System.Random
 import System.Random.MWC
 import Utils.Misc
 import Debug.Trace
+import qualified Statistics.Sample as Sample
 
 import System.Random
 import System.Random.MWC
@@ -48,8 +50,8 @@ binaryOp op (Left d1) (Left d2) yOrx _ =
                 V.zipWith (\(x1, y1, w1) (x2, _, w2) -> (F.getValue_ [x1, x2] op, y1, w1)) (values1 d1') (values1 d2')
     in
         case d1 of 
-            Data _ -> Left $ data1 vs
-            Spectrum _ -> Left $ spectrum1 vs
+--            Data _ -> Left $ data1 vs
+--            Spectrum _ -> Left $ spectrum1 vs
             Data2 _ -> Left $ data1 vs
             Spectrum2 _ -> Left $ spectrum1 vs
 binaryOp op (Left d) (Right s) yOrx g = 
@@ -66,8 +68,8 @@ binaryOp op (Left d) (Right s) yOrx g =
             else zipWith (\(x1, y1, w1) (x, g) -> (F.getValue [x1, x] [] g op, y1, w1)) (V.toList (values1 d)) (zip (V.toList (xs1 d)) (randomGens g2))
     in
         case d of 
-            Data _ -> Left $ data1 $ V.fromList vs
-            Spectrum _ -> Left $ spectrum1 $ V.fromList vs
+--            Data _ -> Left $ data1 $ V.fromList vs
+--            Spectrum _ -> Left $ spectrum1 $ V.fromList vs
             Data2 _ -> Left $ data1 $ V.fromList vs
             Spectrum2 _ -> Left $ spectrum1 $ V.fromList vs
 binaryOp op (Right (Left s1)) (Right (Left s2)) _ g = 
@@ -86,8 +88,8 @@ constantOp op (Left d) k yOrx =
             else V.map (\(x, y, w) -> (F.getValue_ [x, k] op, y, w)) (values1 d)
     in
         case d of 
-            Data _ -> Left $ data1 vs
-            Spectrum _ -> Left $ spectrum1 vs
+--            Data _ -> Left $ data1 vs
+--            Spectrum _ -> Left $ spectrum1 vs
             Data2 _ -> Left $ data1 vs
             Spectrum2 _ -> Left $ spectrum1 vs
 constantOp op (Right s) k _ = 
@@ -109,7 +111,7 @@ sampleAnalyticData s@(AD.AnalyticData (((_:[]), _, _):_)) [minx] [maxx] [num] g 
         Spectrum2 ((minx, step),
             V.zip (V.fromList (AD.getValues (map (\x ->  [x]) [minx, minx + step .. maxx]) g s)) (V.replicate num 1))
 
--- multidimensional analytic data sampling
+-- 3d analytic data sampling
 sampleAnalyticData s minxs maxxs nums g =
     let 
         xs =
@@ -121,7 +123,7 @@ sampleAnalyticData s minxs maxxs nums g =
         xss = sequence xs
         
     in 
-        Data (zip3 xss (AD.getValues xss g s) (replicate (length xss) 1))
+        data2 (zip3 xss (AD.getValues xss g s) (replicate (length xss) 1))
 
 sampleAnalyticData_ :: (F.Fn d, RandomGen g) => AD.AnalyticData d -> [Int] -> g -> Data
 sampleAnalyticData_ s nums g = sampleAnalyticData s (AD.xMins s) (AD.xMaxs s) nums g  
@@ -205,12 +207,12 @@ bootstrap ad d diff = do
 var :: Data -> Either Data (Either S.Spline FS.Functions) -> Double
 var dat1 (Left dat2) = 
     -- Both data sets must have the same x coordinates and weights
-    Math.Statistics.varw_ (zipWith (\y1 y2 -> (y1 - y2)) ys1 ys2) ws1 where
-        ys1 = V.toList $ D.ys dat1
-        ws1 = V.toList $ D.ws dat1
-        ys2 = V.toList $ D.ys dat2
+    Sample.varianceWeighted (V.zip (V.zipWith (\y1 y2 -> (y1 - y2)) ys1 ys2) ws1) where
+        ys1 = D.ys dat1
+        ws1 = D.ws dat1
+        ys2 = D.ys dat2
 var dat (Right ad) = 
-    Math.Statistics.varw_ (zipWith (\y y1 -> (y - y1)) ys adValues) ws where
+    Sample.varianceWeighted (V.fromList (zip (zipWith (\y y1 -> (y - y1)) ys adValues) ws)) where
         (xs, ys, ws) = unzip3 $ D.values dat
         adValues = 
             case ad of
@@ -232,6 +234,7 @@ dataRange (Left d) = (D.xMins d, D.xMaxs d)
 dataRange (Right (Left s)) = (AD.xMins s, AD.xMaxs s)
 dataRange (Right (Right f)) = (AD.xMins f, AD.xMaxs f)
 
+-- | reshuffle the data set (without replacements)
 reshuffleData :: Data -> IO Data
 reshuffleData dat = 
     do 
@@ -253,3 +256,21 @@ reshuffleData dat =
         shuffledVals <-shuffleFunc 0 vals 
         --putStrLn (show shuffledVals)
         return $ D.data1 shuffledVals
+
+-- | bootstrap sample of the data
+bootstrapSample :: Int -> Data -> IO Data
+bootstrapSample count dat =
+    do 
+        gen <- createSystemRandom
+        let
+            vals = D.values1 dat
+        vals1 <- V.generateM count (\_ -> do
+            r :: Int <- asGenIO (uniform) gen
+            let 
+                r1 = r `mod` V.length vals
+            return $ vals V.! r1
+            )
+        return $ data1 vals1    
+            
+            
+            

@@ -66,6 +66,7 @@ test-suite UtilsTests
                    tests
   other-modules:   
                    Utils.MiscTest,
-                   Concurrent
+                   Concurrent,
+                   Utils.ConcurrentTest
   extensions:      ScopedTypeVariables
 

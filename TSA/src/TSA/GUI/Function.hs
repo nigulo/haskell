@@ -35,29 +35,15 @@ functionDialog stateRef = do
     dialog <- dialogWithTitle state "Add function"
     
     dialogAddButton dialog "Cancel" ResponseCancel
-    hBox <- castToBox <$> dialogGetActionArea dialog
-    okButton <- buttonNewWithLabel "Ok"
-    --okButton <- dialogAddButton dialog "Ok" ResponseNone
-    boxPackEnd hBox okButton PackNatural 2
+    okButton <- dialogAddButton dialog "Ok" ResponseNone
 
     contentBox <- castToBox <$> dialogGetContentArea dialog
     vBox <- vBoxNew False 2
     boxPackStart contentBox vBox PackGrow 2
-    
-    
+
     nameEntry <- entryNew
     nameEntry `entrySetText` (getNameWithNo commonParams)
-    addWidget (Just "Name: ") nameEntry dialog
-
-    functionTextBuffer <- textBufferNew Nothing
-    textBufferSetText functionTextBuffer (functionDefinition parms)
-    functionTextView <- textViewNewWithBuffer functionTextBuffer
-    font <- fontDescriptionNew
-    fontDescriptionSetFamily font "Courier New"
-    widgetModifyFont functionTextView (Just font)
-    textViewSetAcceptsTab functionTextView False
-    addWidget (Just "Function: ") functionTextView dialog
-
+    addWidgetToBox (Just "Name: ") nameEntry PackNatural vBox
 
     let
         xLeft = case functionLeft parms of
@@ -73,7 +59,6 @@ functionDialog stateRef = do
             Nothing -> plotAreaTop ga
             Just top -> top
             
-
     leftAdjustment <- adjustmentNew xLeft (-2**52) (2**52) 1 1 10
     leftSpin <- spinButtonNew leftAdjustment 1 10
     addWidgetToBox (Just "Left: ") leftSpin PackNatural vBox
@@ -89,6 +74,22 @@ functionDialog stateRef = do
     topAdjustment <- adjustmentNew yTop (-2**52) (2**52) 1 1 10
     topSpin <- spinButtonNew topAdjustment 1 10
     addWidgetToBox (Just "Top: ") topSpin PackNatural vBox
+    
+    functionTextBuffer <- textBufferNew Nothing
+    textBufferSetText functionTextBuffer (functionDefinition parms)
+    functionTextView <- textViewNewWithBuffer functionTextBuffer
+    font <- fontDescriptionNew
+    fontDescriptionSetFamily font TSA.GUI.Common.defaultFontFamily
+    widgetModifyFont functionTextView (Just font)
+    textViewSetAcceptsTab functionTextView False
+
+    scrolledWindow <- scrolledWindowNew Nothing Nothing
+    containerAdd scrolledWindow functionTextView
+
+    functionFrame <- frameNew
+    frameSetLabel functionFrame (stringToGlib "Function" )
+    containerAdd functionFrame scrolledWindow
+    addWidgetToBox Nothing functionFrame PackGrow vBox
 
     on okButton buttonActivated $
         do

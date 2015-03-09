@@ -21,6 +21,9 @@ import qualified Data.Vector.Unboxed as V
 import Statistics.Test.KolmogorovSmirnov
 import Statistics.Distribution.Normal
 import Statistics.Types
+import System.CPUTime
+import Control.Monad
+import Data.Array.IO
 
 main :: IO ()
 main = 
@@ -61,5 +64,15 @@ main =
             l2 = sum $ Prelude.map (\x -> x * x) l
         putStrLn (show l2)
         
+        putStrLn "-------------"
         
+        let
+            rows@(r0:_) = Prelude.map (\x -> replicate 10 x) [0 .. 9]
+            lastRow = length rows - 1
+            lastCol = length r0 - 1
+        --array :: IOArray (Int, Int) Int <- newListArray ((0, 0), (lastRow, lastCol)) [((rows !! i) !! j) | i <- [0 .. lastRow], j <- [0 .. lastCol]]
+        array :: IOArray (Int, Int) Int <- newListArray ((0, 0), (lastRow, lastCol)) (concat rows)
+        
+        assocs <- getAssocs array
+        print assocs
         

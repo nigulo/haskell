@@ -31,7 +31,7 @@ module Math.Expression (
     setVarValue,
     xmlElementName) where
 
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
 import Data.List
 import Data.Complex 
 import Data.Char 

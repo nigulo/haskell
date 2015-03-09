@@ -22,7 +22,6 @@ module TSA.Data (
     ) where
 
 import Debug.Trace
-import qualified Data.Map as M
 
 import qualified Regression.Data as D
 import qualified Regression.AnalyticData as AD
@@ -87,17 +86,20 @@ merge name dp1 dp2 =
 applyToData :: (Int {- subdata no-} -> Maybe Int {- bootstrap no -} -> Either D.Data (Either S.Spline FS.Functions) -> (Double -> IO ()) -> IO [Either D.Data (Either S.Spline FS.Functions)]) 
         -> DataParams 
         -> [String] 
-        -> (Double -> IO ()) -- ^ progressUpdate func
+        -> TaskEnv
         -> IO [DataParams]
-applyToData func dp names puFunc = do
+applyToData func dp names taskEnv = do
     let
         numSubSets = length $ dataSet dp
         numBootstrapSets = length $ subDataBootstrapSet $ head $ dataSet dp
         subSetNum = 1 + numBootstrapSets
-        totalNum = numSubSets * (1 + numBootstrapSets) 
+        totalNum = numSubSets * (1 + numBootstrapSets)
+        puFunc = progressUpdateFunc taskEnv 
         mapOp (i, sdp) = do
             results <- func i Nothing (subData sdp) (\pct -> puFunc ((fromIntegral (i * subSetNum) + pct) / fromIntegral totalNum))
-            bootstrapResults <- calcConcurrently (\(j, d) puFunc -> func i (Just j) d (\pct -> puFunc ((fromIntegral (i * subSetNum) + pct * fromIntegral subSetNum) / fromIntegral totalNum))) puFunc (zip [0, 1 ..] (subDataBootstrapSet sdp))
+            bootstrapResults <- calcConcurrently (\(j, d) puFunc -> 
+                    func i (Just j) d (\pct -> puFunc ((fromIntegral (i * subSetNum) + pct * fromIntegral subSetNum) / fromIntegral totalNum))
+                ) (progressUpdateFunc taskEnv) (taskInitializer taskEnv) (taskFinalizer taskEnv) (zip [0, 1 ..] (subDataBootstrapSet sdp))
             puFunc $ fromIntegral (i + 1) / fromIntegral numSubSets
             return (results, case transpose bootstrapResults of 
                 [] -> replicate (length names) []
@@ -120,9 +122,10 @@ applyToData func dp names puFunc = do
 applyToData1 :: (Int -> Maybe Int -> Either D.Data (Either S.Spline FS.Functions) -> (Double -> IO ()) -> IO (Either D.Data (Either S.Spline FS.Functions))) 
         -> DataParams 
         -> String 
-        -> (Double -> IO ()) -- ^ progressUpdate func
+        -> TaskEnv
         -> IO DataParams
-applyToData1 func dp name puFunc = applyToData (\i j d pu -> func i j d pu >>= \result -> return [result]) dp [name] puFunc >>= \[result] -> return result
+applyToData1 func dp name taskEnv = 
+    applyToData (\i j d pu -> func i j d pu >>= \result -> return [result]) dp [name] taskEnv >>= \[result] -> return result
 
 calculateWeights :: DataParams -> Bool -> DataParams
 calculateWeights dp dropBootstrapData = dp {dataSet = map mapOp (dataSet dp)} where

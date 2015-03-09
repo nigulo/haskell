@@ -15,7 +15,8 @@ module Regression.AnalyticData (
     dim,
     getMinima,
     getMaxima,
-    getExtrema
+    getExtrema,
+    getZeroCrossings
     ) where
 
 import qualified Math.Expression as E
@@ -144,69 +145,6 @@ op'' f x g (AnalyticData ds) =
     in
         f [x] g (findAD x)
 
-{-
--- | Calculates the value of the analytic data at the given coordinate
-op :: (F.Fn d, RandomGen g) => ([Double] -> g -> d -> Double) -> (Double -> Double -> Bool) -> [[Double]] -> g -> AnalyticData d -> [Double]
-op f comp xs g (AnalyticData ds) = 
-    let
-    
-        dist :: (F.Fn d) => [Double] -> ([Double], [Double], d) -> (d, Double)
-        dist xs (xMins1, xMaxs1, p) = 
-            let
-                (xMins, xMaxs) = unzip $ zipWith3 (\x xMin xMax -> if x >= xMin && x <= xMax then (x, x) else (xMin, xMax)) xs xMins1 xMaxs1
-            in
---                if all (\(x, xMin, xMax) -> x >= xMin && x <= xMax) (zip3 xs xMins1 xMaxs1) then (p, 0)
---                else
-                    let 
-                        minsMaxs = [xMins, xMaxs]
-                        genArray i j currentArray =
-                            let 
-                                newElem = ((minsMaxs !! i) !! j)
-                                newArray = map (\e -> e ++ [newElem]) currentArray  
-                            in
-                                if (j >= (length xMins) - 1) then newArray
-                                else (genArray 0 (j + 1) newArray) ++ (genArray 1 (j + 1) newArray)
-                
-                        corners = (genArray 0 0 [[]]) ++ (genArray 1 0 [[]])
-                    in
-                        (p, minimum $ map (\corner -> sqrt (sum (map (\(cx, x) -> (x - cx) ^ 2) (zip corner xs)))) corners)
-
-    in
-        zipWith (\x g ->
-            let 
-                dists = map (dist x) ds
-                p = fst $ minimumBy (\(p1, dist1) (p2, dist2) -> if dist1 <= dist2 then LT else GT) dists
-            in
-                f x g p
-            ) xs  (randomGens g)
--}
-{-
--- | Calculates the value of the analytic data at the given coordinate
-op :: (F.Fn d, RandomGen g) => ([Double] -> g -> d -> Double) -> (Double -> Double -> Bool) -> [[Double]] -> g -> AnalyticData d -> [Double]
-op f comp xs g (AnalyticData ds) = 
-    let
-        (xMins, xMaxs, ps) = unzip3 $ map (\(xMin:[], xMax:[], p) -> (xMin, xMax, p)) ds
-        minx = minimum xMins
-        maxx = maximum xMaxs
-        minIdx = just $ minIndex xMins
-        maxIdx = just $ maxIndex xMaxs
-
-        op2 ([x], g) =     
-            if x <= minx then f [x] g (ps !! minIdx)
-            else if x >= maxx then f [x] g (ps !! maxIdx)
-            else
-                let
-                    op1 i =
-                        if (x >= xMins !! i && x `comp` (xMaxs !! i))
-                            then Just $ f [x] g (ps !! i)
-                        else Nothing
-                in
-                    just $ just $ find isJust $ map op1 [0 .. length ds - 1]
-
-    in
-        map op2 (zip xs (randomGens g))
--}
-
 is2d :: (F.Fn d) => AnalyticData d -> Bool
 is2d (AnalyticData (((_:[]), _, _):_)) = True
 is2d _ = False
@@ -263,4 +201,30 @@ getExtrema samplingCount maybePeriod g d =
         y1 = getValue' x1 g d
     in  
         getExtrema' (x0, y0) (x1, y1) 
-            
+
+-- | Returns an array containing the abscissa of zero-crossings
+getZeroCrossings :: (F.Fn d, RandomGen g) => Int -> g -> AnalyticData d  -> V.Vector Double
+getZeroCrossings samplingCount g d =
+    let
+        xLeft = xMin1 d
+        xRight = xMax1 d
+        step = (xRight - xLeft) / (fromIntegral samplingCount)
+
+        getZeroCrossings' :: (Double, Double) -> Int -> V.Vector Double
+        getZeroCrossings' (x1, y1) i =
+            let
+                x2 = xLeft + fromIntegral i * step
+            in
+                if (x2 > xRight) then V.empty
+                else
+                  let
+                        y2 = getValue' x2 g d
+                        zeroCrossings = getZeroCrossings' (x2, y2) (i + 1)
+                    in
+                        if y1 == 0 then V.cons x1 zeroCrossings
+                        else if signum y1 /= signum y2 then V.cons (if abs y1 < abs y2 then x1 else x2) zeroCrossings
+                        else zeroCrossings
+        x1 = xLeft
+        y1 = getValue' x1 g d
+    in  
+        getZeroCrossings' (x1, y1) 1

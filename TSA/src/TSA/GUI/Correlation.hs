@@ -5,7 +5,6 @@ import Graphics.UI.Gtk hiding (addWidget)
 import Regression.Data as D
 import Regression.Utils as U
 import Regression.AnalyticData as AD
-import Math.Statistics as S
 
 import TSA.Params
 import TSA.GUI.State
@@ -88,7 +87,7 @@ correlationDialog stateRef = do
                         correlationCommonParams = updateCommonParams name commonParams
                     }}
 
-                forkIO $ findCorrelation stateRef selectedData1 selectedData2 precision name
+                runTask stateRef "Find correlation" $ findCorrelation stateRef selectedData1 selectedData2 precision name
                 return ()
         else
             do

@@ -110,7 +110,7 @@ d2Dialog stateRef = do
                         d2CommonParams = updateCommonParams name commonParams
                     }}
                 
-                forkIO $ d2 stateRef selectedData periodStart periodEnd corrLenStart corrLenEnd methodNo (round precision) name
+                runTask stateRef "D2 statistic" $ d2 stateRef selectedData periodStart periodEnd corrLenStart corrLenEnd methodNo (round precision) name
                 return ()
         else
             do
@@ -120,7 +120,8 @@ d2 :: StateRef -> DataParams -> Double -> Double -> Double -> Double -> Int -> I
 d2 stateRef dataParams periodStart periodEnd minCorrLen maxCorrLen method precision name = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
-    dispersions <- calcDispersions dataParams periodStart periodEnd minCorrLen maxCorrLen method precision name False (progressUpdate stateRef) (appendLog stateRef)
+    tEnv <- taskEnv stateRef
+    dispersions <- calcDispersions dataParams periodStart periodEnd minCorrLen maxCorrLen method precision name False tEnv
     let 
         graphTabParms = (graphTabs state) !! currentGraphTab
         selectedGraph = graphTabSelection graphTabParms
@@ -145,4 +146,4 @@ d2 stateRef dataParams periodStart periodEnd minCorrLen maxCorrLen method precis
                     ) dispersions
         else 
             return ()
-    progressUpdate stateRef 0
+    (progressUpdateFunc tEnv) 1

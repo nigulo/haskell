@@ -98,7 +98,7 @@ findPeriodDialog stateRef = do
                         findPeriodCommonParams = updateCommonParams name commonParams
                     }}
                 
-                forkIO $ findPeriod stateRef selectedData periodStart periodEnd (round precision) methodNo name
+                runTask stateRef "Find period" $ findPeriod stateRef selectedData periodStart periodEnd (round precision) methodNo name
                 return ()
         else
             do
@@ -108,29 +108,9 @@ findPeriod :: StateRef -> DataParams -> Double -> Double -> Int -> Int -> String
 findPeriod stateRef dataParams periodStart periodEnd precision method name = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
-    dispersions <- calcDispersions dataParams periodStart periodEnd precision method name False (progressUpdate stateRef) (appendLog stateRef)
+    tEnv <- taskEnv stateRef
+    dispersions <- calcDispersions dataParams periodStart periodEnd precision method name False tEnv
     let 
         graphTabParms = (graphTabs state) !! currentGraphTab
         selectedGraph = graphTabSelection graphTabParms
-    if length dispersions > 0 
-        then
-            do
-                mapM_ (\(corrLen, dp) -> do
-                    modifyState stateRef $ addDataParams dp (Just (currentGraphTab, selectedGraph))
-                    let 
-                        sdp = head $ dataSet dp
-                        (Left d) = subData sdp
-                        vals = D.xys1 d
-                        yMin = D.yMin d
-                        yMax = D.yMax d
-                        yRange = yMax - yMin
-                        toStr (x, y) = show corrLen ++ " " ++ show x ++ " " ++ show ((y - yMin) / yRange) ++ "\n"
-                        --toStr (x, y) = show corrLen ++ " " ++ show x ++ " " ++ show y ++ "\n"
-                        str = concatMap (toStr) (V.toList vals)
-                    handle <- openFile ("phasedisp.csv") AppendMode
-                    hPutStr handle (str ++ "\n")
-                    hClose handle
-                    ) dispersions
-        else 
-            return ()
-    progressUpdate stateRef 0
+    modifyState stateRef $ addDataParams dispersions (Just (currentGraphTab, selectedGraph))

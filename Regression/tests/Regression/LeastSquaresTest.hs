@@ -6,9 +6,9 @@ import Regression.LeastSquares as LSQ
 import Regression.CUDALeastSquares as CLSQ
 import Math.Vector as V
 import Math.Matrix as M
-import Utils.Misc
 import Data.Array.Accelerate as A
 import Test.Framework
+import Data.List
 
 
 --------------------------------------------------------------------------------
@@ -64,14 +64,13 @@ bExpected1 = [-3482258.634595804,
             -1.0332268671735911, 
             -5.110410565358403e-2,
             1829.1514646135445]
-bExpected2 = [-3482258.6345960894, 
-            15.061872271361835, 
-            -3.581917929261321e-2,
-            -2.0202298038171467, 
-            -1.0332268671733356, 
-            -5.110410565332957e-2,
-            1829.1514646136807]
-
+bExpected2 = [-3482258.6345964866,
+            15.061872271428058,
+            -3.581917929262539e-2,
+            -2.020229803817295,
+            -1.0332268671735234,
+            -5.1104105653362264e-2,
+            1829.1514646138853]
 
 --------------------------------------------------------------------------------
 
@@ -101,7 +100,7 @@ gentleman =
         xMatrix = M.matrix x
         yVect = V.vector y
     in 
-        for__ 0 (length y - 1) (LSQ.initialize (getNumColumns xMatrix)) (\i state -> LSQ.addMeasurement (V.vector (getRow i xMatrix)) (V.get i yVect) 1 state)
+        foldl' (\state i -> LSQ.addMeasurement (V.vector (getRow i xMatrix)) (V.get i yVect) 1 state) (LSQ.initialize (getNumColumns xMatrix)) [0 .. length y - 1]
 
 cudaGentleman :: CLSQ.LSQState
 cudaGentleman =
