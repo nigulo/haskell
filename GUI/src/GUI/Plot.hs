@@ -27,20 +27,22 @@ module GUI.Plot (
     plot
     ) where
 
-import Graphics.UI.Gtk as Gtk hiding (addWidget, Plus, Cross, Circle, Font)
+import Graphics.UI.Gtk as Gtk hiding (addWidget, Plus, Cross, Circle, Font, rectangle)
 import Graphics.Rendering.Cairo hiding (Pattern, FontSlant, FontWeight)
 import Graphics.Rendering.Cairo.Matrix as M hiding (rotate)
 import Graphics.UI.Gtk.Gdk.Events hiding (Rectangle)
 
 import Debug.Trace
 
-import Utils.Misc
 import Utils.Math
+import Utils.Misc
 
 import Data.List
 import Data.Char
 import Data.Maybe
+import Data.Tuple
 import qualified Data.Vector.Unboxed as V
+import Control.Monad
 
 data PlotPointType = Point | Plus | Cross | PlusCross | Square | FilledSquare | Circle | FilledCircle | 
     Triangle | FilledTriangle | DownTriangle  | FilledDownTriangle | Diamond | FilledDiamond |
@@ -303,11 +305,56 @@ drawData plotSettings plotData =
             ySpace = (top - bottom) / 20 -- Note that ySpace is negative
             zSpace = (front - back) / 20
             
+            leftPlusSpace = left + xSpace
+            rightMinusSpace = right - xSpace
+            topMinusSpace = top - ySpace
+            bottomPlusSpace = bottom + ySpace
+            backPlusSpace = back + zSpace
+            frontMinusSpace = front - zSpace
+            
+            calcIntersections i points = 
+                if (i == 0) then points V.! i `V.cons` calcIntersections (i + 1) points
+                else if (i >= V.length points) 
+                    then V.empty
+                    else
+                        let
+                            p1@((x, _), (y, _)) = points V.! i 
+                            ((x1, wx1), (y1, wy1)) = points V.! (i - 1)
+                            calcIntersection (coords1@(_, _), coords2@(_, _), boundaryCoord) =
+                                let
+                                    (coord11, coord12) = maximumBy (\(coord1, _) (coord2, _) -> compare coord1 coord2) [coords1, coords2]
+                                    (coord21, coord22) = minimumBy (\(coord1, _) (coord2, _) -> compare coord1 coord2) [coords1, coords2]
+                                in
+                                    if coord11 > boundaryCoord && coord21 < boundaryCoord
+                                        then Just (boundaryCoord, coord22 + (coord12 - coord22) * (boundaryCoord - coord21) / (coord11 - coord21))
+                                        else Nothing
+                            xIntersections = catMaybes $ map (calcIntersection) [
+                                ((x, y), (x1, y1), leftPlusSpace), 
+                                ((x, y), (x1, y1), rightMinusSpace)]
+                            yIntersections = map swap $ catMaybes $ map (calcIntersection) [
+                                ((y, x), (y1, x1), topMinusSpace), 
+                                ((y, x), (y1, x1), bottomPlusSpace)]
+                            -- TODO: correct interpolation of errors
+                            intersections = map (\(x, y) -> ((x, wx1), (y, wy1))) $ sortBy (\(x1, _) (x2, _) -> compare x1 x2) $ xIntersections ++ yIntersections
+                        in
+                            if x < leftPlusSpace && x1 < leftPlusSpace || x > rightMinusSpace && x1 > rightMinusSpace 
+                                then 
+                                    calcIntersections (i + 1) points
+                                else if intersections /= [] then 
+                                    ((V.fromList intersections) `V.snoc` p1) V.++ calcIntersections (i + 1) points 
+                                else
+                                    p1 `V.cons` calcIntersections (i + 1) points
+            
             dataToScreen d@(PlotData _ _ _) =
-                V.filter (\((x, _), (y, _)) -> x >= left + xSpace && x < right - xSpace && y >= top - ySpace && y < bottom + ySpace) $
+                V.filter (\((x, _), (y, _)) -> x >= leftPlusSpace && x < rightMinusSpace && y >= topMinusSpace && y < bottomPlusSpace) $
+                    toScreenCoordss_ formattedArea (plotArea plotSettings) (plotDataValues d)
+            dataLinesToScreen d@(PlotData _ _ _) =
+                -- Additional terms xSpace / 1000 and ySpace / 1000 are workaround for rounding errors
+                fst $ Utils.Misc.segmentVector (\((x, _), (y, _)) -> x >= leftPlusSpace - xSpace / 1000 && x < rightMinusSpace + xSpace / 1000 && y >= topMinusSpace + ySpace / 1000 && y < bottomPlusSpace - ySpace / 1000) $
+                    calcIntersections 0 $
                     toScreenCoordss_ formattedArea (plotArea plotSettings) (plotDataValues d)
             dataToScreen3d d@(PlotData3d _) =
-                V.filter (\(x1, x2, z) -> x1 >= left + xSpace && x1 < right - xSpace && x2 >= top - ySpace && x2 < bottom + ySpace  && z >= back + zSpace && z < front - zSpace) $
+                V.filter (\(x1, x2, z) -> x1 >= leftPlusSpace && x1 < rightMinusSpace && x2 >= topMinusSpace && x2 < bottomPlusSpace  && z >= backPlusSpace && z < frontMinusSpace) $
                     V.map (\(x1, x2, z) -> 
                         let
                             ((screenX1, _) , (screenX2, _), screenZ) = toScreenCoords1 formattedArea (plotArea plotSettings) ((x1, 0), (x2, 0), z)
@@ -320,7 +367,8 @@ drawData plotSettings plotData =
                     let
                         maybePointAttributes = plotDataPointAttributes plotData
                         maybeLineAttributes = plotDataLineAttributes plotData
-                        d = dataToScreen plotData
+                        dataPoints :: V.Vector ((Double, Double), (Double, Double)) = dataToScreen plotData
+                        dataLines :: [V.Vector ((Double, Double), (Double, Double))] = dataLinesToScreen plotData
                     case maybePointAttributes of
                         Just pointAttributes ->
                             do
@@ -336,13 +384,13 @@ drawData plotSettings plotData =
                                     otherwise -> setLineWidth 1 
                                 setLineJoin LineJoinMiter
                                 
-                                V.mapM_ (\(x, y) -> drawDataSymbol (left, top, right, bottom) (x, y) ptSize (plotPointType pointAttributes)) d
+                                V.mapM_ (\(x, y) -> drawDataSymbol (left, top, right, bottom) (x, y) ptSize (plotPointType pointAttributes)) dataPoints
                                 stroke
                         otherwise ->
                             return ()
                     case maybeLineAttributes of
                         Just lineAttributes ->
-                            if all (== 0) (plotLineDash lineAttributes)
+                            if all (== 0) (plotLineDash lineAttributes) || plotLineWidth lineAttributes == 0
                             then return ()
                             else
                                 do
@@ -351,7 +399,8 @@ drawData plotSettings plotData =
                                     setLineWidth $ plotLineWidth lineAttributes
                                     setLineJoin LineJoinRound
                                     setDash (plotLineDash lineAttributes) 0
-                                    drawDataLines' d (r, g, b, a)
+                                    --drawDataLines' (trace ("dataLines: " ++ show dataLines) dataLines) (r, g, b, a)
+                                    drawDataLines' dataLines (r, g, b, a)
                         otherwise ->
                             return ()
             PlotData3d _ ->
@@ -725,55 +774,58 @@ drawDataSymbol (left, top, right, bottom) ((x, xErr), (y, yErr)) size symbol =
                 return ()
         --stroke
 
-drawDataLines' :: V.Vector ((Double, Double), (Double, Double)) -> (Double, Double, Double, Double) -> Render ()
+-- | Data points are grouped by gaps to avoid horizontal connection lines
+drawDataLines' :: [V.Vector ((Double, Double), (Double, Double))] -> (Double, Double, Double, Double) -> Render ()
 drawDataLines' points (r, g, b, a) =
-    drawDataLines points (V.replicate (V.length points) (r, g, b, a))
+    drawDataLines points $ map (\points -> V.replicate (V.length points) (r, g, b, a)) points
 
-drawDataLines :: V.Vector ((Double, Double), (Double, Double)) -> V.Vector (Double, Double, Double, Double) -> Render ()
+drawDataLines :: [V.Vector ((Double, Double), (Double, Double))] -> [V.Vector (Double, Double, Double, Double)] -> Render ()
 drawDataLines points colors = 
     do
-        let
-            drawDataLine (((x, _), (y, _)), (r, g, b, a)) =
-                do 
-                    (prevX, prevY) <- getCurrentPoint
-                    if (abs (prevX - x) >= 0.5 || abs (prevY - y) >= 0.5)
-                        then
-                            do
-                                let 
-                                    setColors = if (V.length colors > 1)
-                                        then
-                                            setSourceRGBA r g b a
-                                        else
-                                            return ()
-                                setColors
-                                lineTo x y
-                        else
-                            return ()
-        if (V.length points > 0) 
-            then 
-                do
-                    let ((x, _), (y, _)) = V.head points
-                    moveTo x y
-            else return ()
-        if V.length colors == 1
-            then
-                do
-                    let
-                        (r, g, b, a) = colors V.! 0
-                    setSourceRGBA r g b a
-            else
-                return ()
-        V.mapM_ drawDataLine $ V.zip points colors
-        if not (V.null ((V.filter (\((_, _), (_, yErr)) -> yErr > 0) points)))
-            then
-                do
-                    let ((x, _), (y, yErr)) = V.head points
-                    moveTo x (y - yErr)
-                    V.mapM_ drawDataLine $ V.zip (V.map (\((x, _), (y, yErr)) -> ((x, 0 :: Double), (y - yErr, 0 :: Double))) points) colors
-                    moveTo x (y + yErr)
-                    V.mapM_ drawDataLine $ V.zip (V.map (\((x, _), (y, yErr)) -> ((x, 0 :: Double), (y + yErr, 0 :: Double))) points) colors
-            else
-                return ()
+        zipWithM_ (\points colors -> do
+                let
+                    drawDataLine (((x, _), (y, _)), (r, g, b, a)) =
+                        do 
+                            (prevX, prevY) <- getCurrentPoint
+                            if (abs (prevX - x) >= 0.5 || abs (prevY - y) >= 0.5)
+                                then
+                                    do
+                                        let 
+                                            setColors = if (V.length colors > 1)
+                                                then
+                                                    setSourceRGBA r g b a
+                                                else
+                                                    return ()
+                                        setColors
+                                        lineTo x y
+                                else
+                                    return ()
+                if (V.length points > 0) 
+                    then 
+                        do
+                            let ((x, _), (y, _)) = V.head points
+                            moveTo x y
+                    else return ()
+                if V.length colors == 1
+                    then
+                        do
+                            let
+                                (r, g, b, a) = colors V.! 0
+                            setSourceRGBA r g b a
+                    else
+                        return ()
+                V.mapM_ drawDataLine $ V.zip points colors
+                if not (V.null ((V.filter (\((_, _), (_, yErr)) -> yErr > 0) points)))
+                    then
+                        do
+                            let ((x, _), (y, yErr)) = V.head points
+                            moveTo x (y - yErr)
+                            V.mapM_ drawDataLine $ V.zip (V.map (\((x, _), (y, yErr)) -> ((x, 0 :: Double), (y - yErr, 0 :: Double))) points) colors
+                            moveTo x (y + yErr)
+                            V.mapM_ drawDataLine $ V.zip (V.map (\((x, _), (y, yErr)) -> ((x, 0 :: Double), (y + yErr, 0 :: Double))) points) colors
+                    else
+                        return ()
+            ) points colors
         stroke
 
 setLineSettings :: (Double, Double, Double) -> Double -> Render ()
@@ -928,60 +980,6 @@ drawColorBox (left, top) (right, bottom) minUnits maxUnits lineWidth (width, hei
     else
         return ()
 
-filterGraph :: ScreenArea -> [(Double, Double)] -> [(Double, Double)]
-filterGraph screenArea coords =
-    forl_ [0 .. length coords - 1] [] fori where
-        formattedArea = formatScreenArea screenArea
-        left = screenAreaLeft formattedArea
-        top = screenAreaTop formattedArea
-        right = screenAreaRight formattedArea
-        bottom = screenAreaBottom formattedArea
-        fori i retVal = 
-            let
-                (x0, y0) = if i == 0 then coords !! i else coords !! (i - 1)
-                (x1, y1) = coords !! i
-                inside0 = x0 >= left && x0 < right && y0 >= top && y0 < bottom
-                inside1 = x1 >= left && x1 < right && y1 >= top && y1 < bottom
-            in
-                if (inside0 && inside1) 
-                then retVal ++ [(x1, y1)]
-                else
-                    let
-                        xIntersect y = 
-                            if (y1 - y0) == 0
-                            then Nothing
-                            else 
-                                let x = x0 + (y - y0) * (x1 - x0) / (y1 - y0)
-                                in 
-                                    if x >= left && x < right && x >= min x0 x1 && x < max x0 x1
-                                    then Just (x, y) 
-                                    else Nothing
-                        yIntersect x = 
-                            if (x1 - x0) == 0 
-                            then Nothing
-                            else 
-                                let y = y0 + (y1 - y0) * (x - x0) / (x1 - x0)
-                                in 
-                                    if y >= top && y < bottom && y >= min y0 y1 && y < max y0 y1
-                                    then Just (x, y) 
-                                    else Nothing
-                        intersections = 
-                            sortBy (\(x0, _) (x1, _)-> compare x0 x1) $
-                            catMaybes
-                                [xIntersect top, 
-                                xIntersect bottom, 
-                                yIntersect left, 
-                                yIntersect right]
-                    in
-                        if (not inside0) then
-                            if (not inside1) then
-                                retVal ++ intersections
-                            else
-                                retVal ++ intersections ++ [(x1, y1)]
-                        else
-                            retVal ++ [(x0, y0)] ++ intersections
-            
-            
 getUnits :: PlotSettings ->
             (
                 (Bool, Bool), -- ^ draw x and y minor units  
