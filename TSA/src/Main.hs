@@ -278,7 +278,7 @@ main = do
     ----------------------------------------------------------------------------
     standardGroup <- actionGroupNew "standard"
     mapM_ (actionGroupAddAction standardGroup) [fileAct, dataAct, analyzeAct, searchAct,  graphAct, windowAct]
-    mapM_ (\act -> actionGroupAddAction standardGroup act)
+    mapM_ (actionGroupAddAction standardGroup)
       [newAct,
        loadAct,
        saveAct,

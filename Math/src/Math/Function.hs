@@ -308,6 +308,6 @@ setVarValue (varName, varValue) f =
         f {
             initialExpr = show newExpr,
             expr = newExpr, 
-            unknownVarNames = L.filter (\v -> v /= varName) (unknownVarNames f)
+            unknownVarNames = L.filter (/= varName) (unknownVarNames f)
         }
  

@@ -71,4 +71,4 @@ calcConcurrently_ :: (a -> IO b) -> [a] -> IO [b]
 calcConcurrently_ f = calcConcurrently (\x _ -> f x) (\_ -> return ()) (\_ -> return ()) (return ())
 
 calcConcurrently__ :: (a -> b) -> [a] -> IO [b]
-calcConcurrently__ f = calcConcurrently_ (\x -> return (f x))
+calcConcurrently__ f = calcConcurrently_ (return . f)

@@ -67,7 +67,7 @@ main =
         putStrLn "-------------"
         
         let
-            rows@(r0:_) = Prelude.map (\x -> replicate 10 x) [0 .. 9]
+            rows@(r0:_) = Prelude.map (replicate 10) [0 .. 9]
             lastRow = length rows - 1
             lastCol = length r0 - 1
         --array :: IOArray (Int, Int) Int <- newListArray ((0, 0), (lastRow, lastCol)) [((rows !! i) !! j) | i <- [0 .. lastRow], j <- [0 .. lastCol]]

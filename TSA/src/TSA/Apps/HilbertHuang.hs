@@ -280,7 +280,7 @@ collect = do
                             (r, lat, read freq, read freqStd, read amp, read ampStd)
                     ) $ lines $ str
             return modes
-        ) $ filter (isSuffixOf ".log") $ map (\name -> map (toLower) (F.encodeString (filename name))) fileNames
+        ) $ filter (isSuffixOf ".log") $ map (map (toLower) . F.encodeString . filename) fileNames
     let
         allModes = List.transpose allModes'
     zipWithM_ (\mode modeNo -> do

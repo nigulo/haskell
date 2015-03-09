@@ -43,11 +43,11 @@ intersection (x1:x1s) x2s =
 
 
 maxIndex :: (Ord a, Show a) => [a] -> Maybe Int
-maxIndex xs = List.findIndex (\x -> x == xMax) xs where
+maxIndex xs = List.findIndex (== xMax) xs where
     xMax = (List.maximum  xs)
 
 minIndex :: Ord a => [a] -> Maybe Int
-minIndex xs = List.findIndex (\x -> x == xMin) xs where
+minIndex xs = List.findIndex (== xMin) xs where
     xMin = minimum xs
 
 removeAt :: Int -> [a] -> [a]

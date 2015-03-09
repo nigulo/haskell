@@ -75,7 +75,7 @@ getSubSplines s@(AnalyticData ps) =
         in 
             --trace ("subPols1: " ++ show (length (subPolynoms  !! 0))) $
             --map (\ps -> AnalyticData ps) (forl_ [0 .. (length polynoms - 1)] (replicate (length (subPolynoms !! 0)) []) fori)
-            map (\ps -> AnalyticData ps) (foldl' (fori) (replicate (length (subPolynoms !! 0)) []) [0 .. (length polynoms - 1)])
+            map (AnalyticData) (foldl' (fori) (replicate (length (subPolynoms !! 0)) []) [0 .. (length polynoms - 1)])
     else []
 
 -- | Returns modulating functions from underlaying polynoms

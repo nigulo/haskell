@@ -487,8 +487,7 @@ dataDialog stateRef = do
                 pages <- readIORef pagesRef
                 let dataPage@(page, name, _, _, _, _, _) = pages !! pageIndex
                 notebookRemovePage notebook pageIndex
-                modifyIORef pagesRef (\pages -> 
-                    deleteBy (\(_, name1, _, _, _, _, _) (_, name2, _, _, _, _, _) -> name1 == name2) dataPage pages)
+                modifyIORef pagesRef (deleteBy (\(_, name1, _, _, _, _, _) (_, name2, _, _, _, _, _) -> name1 == name2) dataPage)
                 modifyMVar_ stateRef $ \state -> return $ removeDataByNameFromTab currentTabIndex name state
 
     let

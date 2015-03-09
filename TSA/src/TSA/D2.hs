@@ -68,7 +68,7 @@ calcDispersions dataParams periodStart' periodEnd' minCorrLen' maxCorrLen' metho
                 norm = maximum dispersions
                 normalizedDispersions =  
                     if False -- norm > 0 
-                        then map (\d -> d / norm) dispersions 
+                        then map (/ norm) dispersions 
                         else dispersions
                 freqSpec = D.Spectrum2 ((freqStart, step), V.zip (V.fromList normalizedDispersions) (V.replicate (length normalizedDispersions) 1))
             return (Left freqSpec, info)
@@ -90,7 +90,7 @@ calcDispersions dataParams periodStart' periodEnd' minCorrLen' maxCorrLen' metho
                 ) (zip (dataSet dataParams) prevInfos)
             let
                 (subDispersions, infos) = unzip subDispersionsAndInfo
-                dispersions = createDataParams_ name (map (\sd -> createSubDataParams__ sd) subDispersions)
+                dispersions = createDataParams_ name (map (createSubDataParams__ ) subDispersions)
                     
             bestPeriods <- mapM (\(i, SubDataParams _ (Left periodSpec) _) -> do
                     let

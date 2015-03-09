@@ -84,10 +84,10 @@ transformArray fftFunc inputValues phaseShift =
 vectorToCArray :: V.Vector (Complex Double) -> IO (CArray Int (Complex Double))
 vectorToCArray v =
     createCArray (0, V.length v - 1) $ \ptrToVals -> 
-        V.zipWithM_ (\i val -> pokeElemOff ptrToVals i val) (V.generate (V.length v) (\i -> i)) v
+        V.zipWithM_ (pokeElemOff ptrToVals) (V.generate (V.length v) (\i -> i)) v
 
 cArrayToVector :: CArray Int (Complex Double) -> IO (V.Vector (Complex Double))
 cArrayToVector a =
     withCArray a $ \ptrToVals -> 
-        V.mapM (\i -> peekElemOff ptrToVals i) (V.generate (size a) (\i -> i))
+        V.mapM (peekElemOff ptrToVals) (V.generate (size a) (\i -> i))
  
