@@ -547,10 +547,10 @@ getPlanetColor planet =
         (r / 255, g / 255, b / 255, 1)  
 
 getPlanetsRiseSet :: State -> [Date] -> Bool -> [(Planet, OrbitalElements)] -> [(Planet, [[(Date, ((Hours, Angle) {- rise -}, (Hours, Angle) {- set -}))]])]
-getPlanetsRiseSet state dates leapYear planets =
+getPlanetsRiseSet state dates leapYear =
     map (\(planetName, planet) ->
             (planetName, groupRiseSets $ convertToLT state $ map (\date -> (date, calcPlanetRiseSet date planet earth2000 (latitude state) (longitude state))) dates)
-        ) planets
+        )
 
 filterPlanetData :: State 
     -> M.Map Date ((Hours, Angle) {- sun rise -}, (Hours, Angle) {- sun set -})

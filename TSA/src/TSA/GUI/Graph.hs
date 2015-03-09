@@ -898,7 +898,7 @@ getPlotData graphArea graphDataParams dataParams period (w, h) granularity rando
     let
             get2dData d =
                 V.map (\(x, y, weight) -> ((toPhase x period, 0), (y, if graphDataParamsErrorBars graphDataParams && weight > 0 then sqrt (1 / weight) else 0))) $ values1 d
-            get3dData d = xys2 d
+            get3dData = xys2
             sample2dData d = 
                 let
                     xs = [xLeft, xLeft + xStep .. xRight] where

@@ -96,12 +96,10 @@ subtr :: Spline -> Spline -> Spline
 subtr = F.binaryOp (F.subtr)
 
 mult :: Spline -> Double -> Spline
-mult s k = 
-    F.constantOp (F.mult) s k 
+mult = F.constantOp (F.mult)
 
 divide :: Spline -> Double -> Spline
-divide s k = 
-    F.constantOp (F.divide) s k
+divide = F.constantOp (F.divide)
 
 splineProduct :: Spline -> Spline -> Spline
 splineProduct (AnalyticData s1) (AnalyticData s2) = 

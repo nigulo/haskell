@@ -76,23 +76,23 @@ xMax1 = head.xMaxs
 
 -- | Returns y-values for given array of x-values
 getValues :: RandomGen g => (F.Fn d) => [[Double]] -> g -> AnalyticData d -> [Double]
-getValues xs g d = 
-    op (\xs g d -> F.getValue xs [] g d) xs g d
+getValues = 
+    op (\xs g d -> F.getValue xs [] g d)
 
 getValues_ :: (F.Fn d) => [[Double]] -> AnalyticData d -> [Double]
 getValues_ xs = getValues xs (mkStdGen 1) 
 
 getValue :: RandomGen g => (F.Fn d) => [Double] -> g -> AnalyticData d -> Double
-getValue x g d = op' (\xs g d -> F.getValue xs [] g d) x g d
+getValue = op' (\xs g d -> F.getValue xs [] g d)
 
 getValue_ :: (F.Fn d) => [Double] -> AnalyticData d -> Double
-getValue_ x d = getValue x (mkStdGen 1) d
+getValue_ x = getValue x (mkStdGen 1)
 
 getValue' :: RandomGen g => (F.Fn d) => Double -> g -> AnalyticData d -> Double
-getValue' x g d = op'' (\xs g d -> F.getValue xs [] g d) x g d
+getValue' = op'' (\xs g d -> F.getValue xs [] g d)
 
 getValue'_ :: (F.Fn d) => Double -> AnalyticData d -> Double
-getValue'_ x d = getValue' x (mkStdGen 1) d
+getValue'_ x = getValue' x (mkStdGen 1)
 
 -- | Calculates the value of the analytic data at the given coordinate
 op :: (F.Fn d, RandomGen g) => ([Double] -> g -> d -> Double) -> [[Double]] -> g -> AnalyticData d -> [Double]

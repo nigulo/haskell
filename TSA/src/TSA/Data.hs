@@ -166,7 +166,7 @@ createDataParams name desc dat =
     }
 
 createDataParams_ :: String -> [SubDataParams] -> DataParams
-createDataParams_ name dat = createDataParams name name dat
+createDataParams_ = createDataParams name 
 
 createSubDataParams :: ([Double], [Double]) 
     -> Either D.Data (Either S.Spline FS.Functions) 
@@ -182,7 +182,7 @@ createSubDataParams range dat bootstrapSet =
 createSubDataParams_ :: Either D.Data (Either S.Spline FS.Functions) 
     -> [Either D.Data (Either S.Spline FS.Functions)]
     -> SubDataParams
-createSubDataParams_ dat bootstrapSet = createSubDataParams (U.dataRange dat) dat bootstrapSet
+createSubDataParams_ = createSubDataParams (U.dataRange dat)
 
 createSubDataParams__ :: Either D.Data (Either S.Spline FS.Functions) 
     -> SubDataParams
