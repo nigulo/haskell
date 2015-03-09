@@ -30,14 +30,13 @@ import qualified Data.Vector.Unboxed as V
 import Utils.Concurrent
 
 -- The results are sent to both DataUpdateFunc and returned from the method (with the exception of conjugated signal)
-analyticSignal :: (Eq id) => AnalyticSignalParams 
+analyticSignal :: (Eq id, Show id, Read id) => AnalyticSignalParams 
     -> Int 
     -> (id, id, id, id) 
-    -> ProgressUpdateFunc 
-    -> LogFunc 
+    -> TaskEnv
     -> DataUpdateFunc id 
     -> IO [(id, Either D.Data (Either S.Spline FS.Functions))]
-analyticSignal asParms precision (amplitudeId, phaseId, frequencyId, conjId) puFunc logFunc duf@(DataUpdateFunc dataUpdateFunc) = 
+analyticSignal asParms precision (amplitudeId, phaseId, frequencyId, conjId) taskEnv duf@(DataUpdateFunc dataUpdateFunc) = 
     do
         g <- getStdGen 
         let
@@ -52,7 +51,7 @@ analyticSignal asParms precision (amplitudeId, phaseId, frequencyId, conjId) puF
             Nothing -> 
                 case rd of 
                     Left _ -> do
-                        fft puFunc duf dataParams conjId
+                        fft taskEnv duf dataParams conjId
                     Right s ->
                         conjugatedCarrierFit duf dataParams precision conjId
                         
@@ -107,8 +106,8 @@ analyticSignal asParms precision (amplitudeId, phaseId, frequencyId, conjId) puF
             (frequencyId, Left frequency) 
             ]
 
-fft :: (Eq id) => ProgressUpdateFunc -> DataUpdateFunc id -> DataParams -> id -> IO Data
-fft puFunc (DataUpdateFunc dataUpdateFunc) dataParams id = 
+fft :: (Eq id, Show id, Read id) => TaskEnv -> DataUpdateFunc id -> DataParams -> id -> IO Data
+fft taskEnv (DataUpdateFunc dataUpdateFunc) dataParams id = 
     do
         let
             Left s = subData $ head $ dataSet dataParams
@@ -141,7 +140,7 @@ fft puFunc (DataUpdateFunc dataUpdateFunc) dataParams id =
         dataUpdateFunc (Left realSpec) id False
         return realSpec
 
-conjugatedCarrierFit :: (Eq id) => DataUpdateFunc id -> DataParams -> Int -> id -> IO Data
+conjugatedCarrierFit :: (Eq id, Show id, Read id) => DataUpdateFunc id -> DataParams -> Int -> id -> IO Data
 conjugatedCarrierFit (DataUpdateFunc dataUpdateFunc) dataParams precision id = do
     g <- getStdGen 
     let 

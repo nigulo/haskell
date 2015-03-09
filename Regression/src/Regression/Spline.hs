@@ -75,7 +75,7 @@ getSubSplines s@(AnalyticData ps) =
         in 
             --trace ("subPols1: " ++ show (length (subPolynoms  !! 0))) $
             --map (\ps -> AnalyticData ps) (forl_ [0 .. (length polynoms - 1)] (replicate (length (subPolynoms !! 0)) []) fori)
-            map (\ps -> AnalyticData ps) (foldl' (fori) (replicate (length (subPolynoms !! 0)) []) [0 .. (length polynoms - 1)])
+            map (AnalyticData) (foldl' (fori) (replicate (length (subPolynoms !! 0)) []) [0 .. (length polynoms - 1)])
     else []
 
 -- | Returns modulating functions from underlaying polynoms
@@ -96,12 +96,10 @@ subtr :: Spline -> Spline -> Spline
 subtr = F.binaryOp (F.subtr)
 
 mult :: Spline -> Double -> Spline
-mult s k = 
-    F.constantOp (F.mult) s k 
+mult = F.constantOp (F.mult)
 
 divide :: Spline -> Double -> Spline
-divide s k = 
-    F.constantOp (F.divide) s k
+divide = F.constantOp (F.divide)
 
 splineProduct :: Spline -> Spline -> Spline
 splineProduct (AnalyticData s1) (AnalyticData s2) = 

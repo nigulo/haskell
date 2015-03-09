@@ -129,7 +129,7 @@ fft stateRef name =
             --reals = D.ys realSpec
             
             
-            numSamples dat defVal = maybe defVal (\d -> V.length $ D.xs1 d) $ dat
+            numSamples dat defVal = maybe defVal (V.length $ D.xs1) $ dat
             
             n1 = numSamples (fftRealData parms) (numSamples (fftImagData parms) 0)
             n2 = numSamples (fftImagData parms) (numSamples (fftRealData parms) 0)
@@ -145,7 +145,7 @@ fft stateRef name =
             fftFunc = if fftDirection parms then fromTimeToFrequency else fromFrequencyToTime
             phaseShift = fftPhaseShift parms
             numToUse = 2 ^ (floor (logBase 2 (fromIntegral n)))
-            ys1 = V.take numToUse $ V.zipWith (\r i -> (:+) r i) reals imags
+            ys1 = V.take numToUse $ V.zipWith (:+) reals imags
         
         spec1 <- fftFunc ys1 phaseShift
         let

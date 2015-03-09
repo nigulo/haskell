@@ -67,7 +67,7 @@ addMeasurement x w (IOLSQState (b, d, e)) =
                                 --------------------------------------------------------
                                 let
                                     f k = M.get (i, k)
-                                    g k = V.get k 
+                                    g = V.get
     
                                 mapM_ (\k -> do 
                                     fkb <- f k b

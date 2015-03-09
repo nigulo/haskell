@@ -126,7 +126,7 @@ sampleAnalyticData s minxs maxxs nums g =
         data2 (zip3 xss (AD.getValues xss g s) (replicate (length xss) 1))
 
 sampleAnalyticData_ :: (F.Fn d, RandomGen g) => AD.AnalyticData d -> [Int] -> g -> Data
-sampleAnalyticData_ s nums g = sampleAnalyticData s (AD.xMins s) (AD.xMaxs s) nums g  
+sampleAnalyticData_ s = sampleAnalyticData s (AD.xMins s) (AD.xMaxs s) 
  
 -- more detailed 2d analytic data sampling
 sample2dAnalyticData :: (F.Fn d, RandomGen g) => 
@@ -163,7 +163,7 @@ getValues xs (Right (Right fns)) =
     in
         zip filteredXs (map (\x -> F.getValue_ x fns) filteredXs)
 
-filterXs ad xs = filter (\xs1 -> all (\(x1, xMin, xMax) -> x1 >= xMin && x1 <= xMax) (zip3 xs1 (AD.xMins ad) (AD.xMaxs ad))) xs
+filterXs ad = filter (\xs1 -> all (\(x1, xMin, xMax) -> x1 >= xMin && x1 <= xMax) (zip3 xs1 (AD.xMins ad) (AD.xMaxs ad)))
 
 getValues1 :: V.Vector Double -> Either D.Data (Either S.Spline FS.Functions) -> V.Vector (Double, Double)
 getValues1 xs (Left dat) = V.zip xs (D.interpolatedValues1 xs dat)
@@ -178,7 +178,7 @@ getValues1 xs (Right (Right fns)) =
     in
         V.zip filteredXs (V.map (\x -> F.getValue_ [x] fns) filteredXs)
 
-filterXs1 ad xs = V.filter (\x -> x >= AD.xMin1 ad && x <= AD.xMax1 ad) xs
+filterXs1 ad = V.filter (\x -> x >= AD.xMin1 ad && x <= AD.xMax1 ad)
 
 -- | returns a bootstrap version of the data based on statistical model given as analytical data
 bootstrap :: (Either S.Spline FS.Functions) -> Data -> Data -> IO Data

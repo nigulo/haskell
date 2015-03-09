@@ -487,8 +487,7 @@ dataDialog stateRef = do
                 pages <- readIORef pagesRef
                 let dataPage@(page, name, _, _, _, _, _) = pages !! pageIndex
                 notebookRemovePage notebook pageIndex
-                modifyIORef pagesRef (\pages -> 
-                    deleteBy (\(_, name1, _, _, _, _, _) (_, name2, _, _, _, _, _) -> name1 == name2) dataPage pages)
+                modifyIORef pagesRef (deleteBy (\(_, name1, _, _, _, _, _) (_, name2, _, _, _, _, _) -> name1 == name2) dataPage)
                 modifyMVar_ stateRef $ \state -> return $ removeDataByNameFromTab currentTabIndex name state
 
     let
@@ -898,7 +897,7 @@ getPlotData graphArea graphDataParams dataParams period (w, h) granularity rando
     let
             get2dData d =
                 V.map (\(x, y, weight) -> ((toPhase x period, 0), (y, if graphDataParamsErrorBars graphDataParams && weight > 0 then sqrt (1 / weight) else 0))) $ values1 d
-            get3dData d = xys2 d
+            get3dData = xys2
             sample2dData d = 
                 let
                     xs = [xLeft, xLeft + xStep .. xRight] where

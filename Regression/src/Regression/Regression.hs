@@ -183,7 +183,7 @@ fitWithSpline_ :: Int       -- ^ Polynom rank
                -> Int -- ^ Smoothness up to i'th derivative (0, 1 or 2)
                -> (Double -> IO ()) -- ^ progressUpdate func
                -> IO Spline    -- ^ Result
-fitWithSpline_ rank numPolynoms dat strict smoothUpTo puFunc = fitWithSpline (unitPolynom rank) numPolynoms dat strict smoothUpTo puFunc
+fitWithSpline_ rank = fitWithSpline (unitPolynom rank)
 
 -- | Interpolates with cubic splines
 interpolateWithSpline :: Data -> IO Spline

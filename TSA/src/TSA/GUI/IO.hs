@@ -96,7 +96,7 @@ dataFormatDialog stateRef callback lines = do
     assistantSetPageType assistant page1 AssistantPageConfirm
     headerLabel <- labelNew $ Just "First rows of data:"
     addWidgetToBox Nothing headerLabel PackNatural page1
-    dataLabel <- labelNew $ Just $ concatMap (\line -> line ++ "\n") (take 5 lines)
+    dataLabel <- labelNew $ Just $ concatMap (++ "\n") (take 5 lines)
     addWidgetToBox Nothing dataLabel PackNatural page1
     separator1 <- hSeparatorNew
     addWidgetToBox Nothing separator1 PackNatural page1

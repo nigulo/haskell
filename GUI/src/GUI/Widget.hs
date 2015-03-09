@@ -196,7 +196,7 @@ createComboBox options =
     do
         comboBox <- comboBoxNew --WithEntry
         comboBoxSetModelText comboBox
-        mapM_ (\str -> comboBoxAppendText comboBox (stringToGlib str)) options
+        mapM_ (comboBoxAppendText comboBox . stringToGlib) options
         return comboBox
         
 comboBoxGetActiveString :: ComboBox -> IO (Maybe String)
