@@ -59,6 +59,6 @@ main = do
             outFileName = if length args > 3 then (args !! 3) else "output.dat"
         inStr <- B.readFile inFileName
         let
-            dates = map (convertDate toType . readDate . fromType) $ filter (\line -> words line /= []) (lines $ UTF8.decode $ B.unpack inStr)
+            dates = map (convertDate toType . readDate fromType) $ filter (\line -> words line /= []) (lines $ UTF8.decode $ B.unpack inStr)
             outStr = B.pack (UTF8.encode (concatMap (\d -> showDate d ++ "\n") dates))
         B.writeFile outFileName outStr

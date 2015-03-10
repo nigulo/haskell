@@ -129,7 +129,7 @@ fft stateRef name =
             --reals = D.ys realSpec
             
             
-            numSamples dat defVal = maybe defVal (V.length $ D.xs1) $ dat
+            numSamples dat defVal = maybe defVal (V.length . D.xs1) $ dat
             
             n1 = numSamples (fftRealData parms) (numSamples (fftImagData parms) 0)
             n2 = numSamples (fftImagData parms) (numSamples (fftRealData parms) 0)
