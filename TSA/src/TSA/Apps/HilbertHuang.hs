@@ -7,7 +7,6 @@ import Regression.Utils as U
 import Regression.Bootstrap as B
 import TSA.LeastSquares
 import TSA.SpecificPoints
-import TSA.Envelopes
 import TSA.AnalyticSignal
 import TSA.Params
 import TSA.Data
@@ -23,6 +22,7 @@ import Filesystem
 import Control.Concurrent.MVar
 import Control.Monad
 import Control.Monad.Reader
+import qualified Control.Monad.Parallel as MP
 
 import qualified Utils.Xml as Xml
 import Filesystem.Path.CurrentOS as F
@@ -122,7 +122,7 @@ calc args = do
                 imfSums
                 
     zipWithM_ (\modeNo (freq, dat) -> do
-            storeData dat ("imf" ++ show modeNo)
+            --storeData dat ("imf" ++ show modeNo)
             runReaderT (calcAnalyticSignal dat modeNo freq) env
         ) [1 ..] imfMeans
         
@@ -161,8 +161,8 @@ calcAnalyticSignal imfDat modeNo freq = do
         logText = show modeNo ++ ": " ++ show (Sample.mean freqVals / 2 / pi) ++ " " {- ++ "(" ++ show freq  ++ ") "-} ++  show (Sample.stdDev freqVals / 2 / pi) ++
              " " ++ show (Sample.mean amplitudeVals) ++ " " ++  show (Sample.stdDev amplitudeVals)
     liftIO $ putStrLn logText 
-    liftIO $ storeData frequency ("frequency" ++ show modeNo)
-    liftIO $ storeData amplitude ("amplitude" ++ show modeNo)
+    --liftIO $ storeData frequency ("frequency" ++ show modeNo)
+    --liftIO $ storeData amplitude ("amplitude" ++ show modeNo)
     liftIO $ appendToFile (logFilePrefix env ++ ".log") (logText ++ "\n")
 
 imf :: Int -> Data 
@@ -202,8 +202,9 @@ imf modeNo dat = do
                                         fitNumHarmonics = 0
                                     }
                 
-                        upperEnv <- fitData fitParams maxima defaultTaskEnv
-                        lowerEnv <- fitData fitParams minima defaultTaskEnv
+                        [upperEnv, lowerEnv] <- MP.sequence [
+                            fitData fitParams maxima defaultTaskEnv,
+                            fitData fitParams minima defaultTaskEnv]
                         let 
                             envMean = (upperEnv `S.add` lowerEnv) `S.divide` 2
                             Left dat2 = U.binaryOp (F.subtr) (Left dat) (Right (Left envMean)) True g
