@@ -159,10 +159,10 @@ calcAnalyticSignal imfDat modeNo freq = do
         Just (Left frequency) = lookup "frequency" asData
         Just (Left amplitude) = lookup "amplitude" asData
     let
-        freqVals = D.ys frequency
-        amplitudeVals = D.ys amplitude
-        logText = show modeNo ++ ": " ++ show (Sample.mean freqVals / 2 / pi) ++ " " {- ++ "(" ++ show freq  ++ ") "-} ++  show (Sample.stdDev freqVals / 2 / pi) ++
-             " " ++ show (Sample.mean amplitudeVals) ++ " " ++  show (Sample.stdDev amplitudeVals)
+        (freqMean, freqVar) = Sample.meanVarianceUnb $ D.ys frequency
+        (ampMean, ampVar) = Sample.meanVarianceUnb $ D.ys amplitude
+        logText = show modeNo ++ ": " ++ show (freqMean / 2 / pi) ++ " " {- ++ "(" ++ show freq  ++ ") "-} ++  show (sqrt freqVar / 2 / pi) ++
+             " " ++ show ampMean ++ " " ++  show (sqrt ampVar)
     liftIO $ putStrLn logText 
     --liftIO $ storeData frequency ("frequency" ++ show modeNo)
     --liftIO $ storeData amplitude ("amplitude" ++ show modeNo)
