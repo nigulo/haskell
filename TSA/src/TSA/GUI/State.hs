@@ -156,7 +156,6 @@ instance Xml.XmlElement GraphParams where
     toElement params = Xml.element "graphparams" 
         [("version", "1"),
          ("name", graphName params),
-         ("granularity", show (graphGranularity params)),
          ("automatic", show (graphAreaAutomatic params)),
          ("period", show (graphPeriod params)),
          ("offset", show (graphOffset params)),
@@ -182,9 +181,6 @@ instance Xml.XmlElement GraphParams where
         in
             GraphParams {
                 graphName = Xml.attrValue e "name",
-                graphGranularity = case Xml.maybeAttrValue e "granularity" of
-                    Just precision -> read precision
-                    Nothing -> 1, 
                 graphSegments = case Xml.maybeAttrValue e "segments" of
                     Just segments -> read segments
                     Nothing -> [], 

@@ -95,11 +95,6 @@ settingsDialog stateRef = do
     nameEntry `entrySetText` (graphTabName graphTabParms)
     addWidgetToBox (Just "Name: ") nameEntry PackNatural vBox
 
-    granularityAdjustment <- adjustmentNew (fromIntegral (graphGranularity graphParms)) 1 100 1 1 10
-    granularityScale <- hScaleNew granularityAdjustment
-    scaleSetDigits granularityScale 0
-    addWidgetToBox (Just "Granularity: ") granularityScale PackNatural vBox
-
     separator1 <- hSeparatorNew
     addWidgetToBox Nothing separator1 PackNatural vBox
     
@@ -153,7 +148,6 @@ settingsDialog stateRef = do
                         do
 
                             name <- entryGetString nameEntry
-                            granularity <- rangeGetValue granularityScale
                             automatic <- toggleButtonGetActive automaticCheck
                             left <- spinButtonGetValue leftSpin
                             right <- spinButtonGetValue rightSpin
@@ -177,7 +171,6 @@ settingsDialog stateRef = do
                                             graphTabName = name,
                                             graphTabGraphs = updateAt selectedGraph (
                                             graphParms {
-                                            graphGranularity = round granularity,
                                                 graphAreaAutomatic = automatic,
                                                 graphArea = PlotArea {
                                                     plotAreaLeft = left,
@@ -834,7 +827,6 @@ drawGraph stateRef maybeFileName = do
                         let 
                             grphArea = getGraphArea state currentTab currentGraph randomGen
                             scrArea = getScreenArea graphTabParms currentGraph (w, h)
-                            granularity = graphGranularity graphParms
                             
                             plotSettings = getPlotSettings state currentTab currentGraph selectedGraph (w, h) randomGen
                             period = graphPeriod graphParms
@@ -844,7 +836,7 @@ drawGraph stateRef maybeFileName = do
                                 do
                                     let
                                         dp = getDataByName (graphDataParamsName gdp) state
-                                        ds = getPlotData (toPhaseView grphArea period) gdp dp period (fromIntegral w, fromIntegral h) granularity randomGen
+                                        ds = getPlotData (toPhaseView grphArea period) gdp dp period (fromIntegral w, fromIntegral h) randomGen
         
                                     return ds
                             ) $ graphData graphParms
@@ -892,8 +884,8 @@ printGraph stateRef = do
         else 
             widgetDestroy dialog
 
-getPlotData :: (RandomGen g) => PlotArea -> GraphDataParams -> DataParams -> Double -> (Double, Double) -> Int -> g -> [PlotData]
-getPlotData graphArea graphDataParams dataParams period (w, h) granularity randomGen =
+getPlotData :: (RandomGen g) => PlotArea -> GraphDataParams -> DataParams -> Double -> (Double, Double) -> g -> [PlotData]
+getPlotData graphArea graphDataParams dataParams period (w, h) randomGen =
     let
             get2dData d =
                 V.map (\(x, y, weight) -> ((toPhase x period, 0), (y, if graphDataParamsErrorBars graphDataParams && weight > 0 then sqrt (1 / weight) else 0))) $ values1 d
@@ -902,15 +894,15 @@ getPlotData graphArea graphDataParams dataParams period (w, h) granularity rando
                 let
                     xs = [xLeft, xLeft + xStep .. xRight] where
                         (xLeft, xRight) = (plotAreaLeft graphArea, plotAreaRight graphArea)
-                        xStep = (xRight - xLeft) * (fromIntegral granularity) / w
+                        xStep = (xRight - xLeft) / w
                     --errors = foldr1 (\ys1 ys2 -> zipWith (\y1 y2 -> y1 + y1) ys1 ys2) $ map (AD.getValues (map (\x -> [x]) xs) randomGen) bsData
                 in
                     V.fromList $ zipWith (\x y -> ((x, 0), (y, 0))) xs (AD.getValues (map (\x -> [x]) xs) randomGen d)
             sample3dData d = 
                 let
                     (xLeft, xRight) = (plotAreaLeft graphArea, plotAreaRight graphArea)
-                    xStep = (xRight - xLeft) * (fromIntegral granularity) / w / 10 
-                    yStep = (plotAreaTop graphArea - plotAreaBottom graphArea) * (fromIntegral granularity) / h / 10 
+                    xStep = (xRight - xLeft) / w / 10 
+                    yStep = (plotAreaTop graphArea - plotAreaBottom graphArea) / h / 10 
                     xs = [[x1, x2] | x1 <- [xLeft, xLeft + xStep .. xRight], x2 <- [plotAreaBottom graphArea, plotAreaBottom graphArea + yStep .. plotAreaTop graphArea]]
                 in
                     D.xys2 (U.sampleAnalyticData d [xLeft, plotAreaBottom graphArea] [xRight, plotAreaTop graphArea] [100, 75] randomGen)
