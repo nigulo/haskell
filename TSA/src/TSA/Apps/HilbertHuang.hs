@@ -18,6 +18,7 @@ import System.Random
 import System.Environment
 import System.IO
 import System.CPUTime
+import System.Directory
 import Filesystem
 import Control.Concurrent.MVar
 import Control.Monad
@@ -71,71 +72,73 @@ calc args = do
             Just i -> (take i fileName)
             Nothing -> fileName
         env = Env modesToSkip logFilePrefix
-    str <- Utils.IO.readFromFile fileName
-    let
-        xys :: [(Double, Double)] = map (\line -> let [xStr, yStr] = words line in (read xStr, read yStr)) $ drop numLinesToSkip $ lines $ str
-        xysList = V.fromList xys
-
-        dat = D.data1' $ V.generate (V.length xysList `div` downSample) (\i -> xysList V.! (i * downSample))
-        sdev = Sample.stdDev (D.ys dat)
-        noiseSdev = sdev * noisePercent
+    exists <- doesFileExist (logFilePrefix ++ ".log")
+    if exists then return () else do
+        str <- Utils.IO.readFromFile fileName
+        let
+            xys :: [(Double, Double)] = map (\line -> let [xStr, yStr] = words line in (read xStr, read yStr)) $ drop numLinesToSkip $ lines $ str
+            xysList = V.fromList xys
     
-    g <- getStdGen 
-    gen <- createSystemRandom
-
-    
-    imfSums <- foldM (\res _ -> do
-        datWithNoise <- if noisePercent > 0 
-            then do
-                valsWithNoise <-
-                    V.mapM (\(x, y, w) -> do
-                            r :: Double <- asGenIO (normal 0 noiseSdev) gen
-                            return (x, y + r, w)
-                        ) (D.values1 dat)
-                return $ D.data1 valsWithNoise
-            else 
-                return dat
-
-        imfs <- runReaderT (imf 1 datWithNoise) env
-        if length res == 0 
-            then
-                return imfs
-            else
-                return $ zipWith (\(freq1, dat1) (freq2, dat2) -> 
-                        let 
-                            Left datSum = U.binaryOp (F.add) (Left dat) (Left dat2) True g
-                        in 
-                            (freq1 + freq2, datSum)
-                    ) res imfs 
-        ) [] [1 .. count]
-    
-    let
-        imfMeans = if count > 1 
-            then
-                map (\(freq, dat) ->
-                        let 
-                            Left datMean = U.constantOp (F.mult) (Left dat) (1 / count) True
-                        in 
-                            (freq / count, datMean)
-                    ) imfSums
-            else
-                imfSums
-                
-    zipWithM_ (\modeNo (freq, dat) -> do
-            --storeData dat ("imf" ++ show modeNo)
-            runReaderT (calcAnalyticSignal dat modeNo freq) env
-        ) [1 ..] imfMeans
+            dat = D.data1' $ V.generate (V.length xysList `div` downSample) (\i -> xysList V.! (i * downSample))
+            sdev = Sample.stdDev (D.ys dat)
+            noiseSdev = sdev * noisePercent
         
-    let 
-        recDat = foldl1 (\res dat -> 
-                let 
-                    Left datSum = U.binaryOp (F.add) (Left res) (Left dat) True g
-                in 
-                    datSum
-            ) (map (snd) imfMeans)
-        diff = D.subtr dat recDat
-        sdev2 = Sample.stdDev (D.ys diff)
-    putStrLn $ "Reconstruction error: " ++ show (sdev2 / sdev)
+        g <- getStdGen 
+        gen <- createSystemRandom
+    
+        
+        imfSums <- foldM (\res _ -> do
+            datWithNoise <- if noisePercent > 0 
+                then do
+                    valsWithNoise <-
+                        V.mapM (\(x, y, w) -> do
+                                r :: Double <- asGenIO (normal 0 noiseSdev) gen
+                                return (x, y + r, w)
+                            ) (D.values1 dat)
+                    return $ D.data1 valsWithNoise
+                else 
+                    return dat
+    
+            imfs <- runReaderT (imf 1 datWithNoise) env
+            if length res == 0 
+                then
+                    return imfs
+                else
+                    return $ zipWith (\(freq1, dat1) (freq2, dat2) -> 
+                            let 
+                                Left datSum = U.binaryOp (F.add) (Left dat) (Left dat2) True g
+                            in 
+                                (freq1 + freq2, datSum)
+                        ) res imfs 
+            ) [] [1 .. count]
+    
+        let
+            imfMeans = if count > 1 
+                then
+                    map (\(freq, dat) ->
+                            let 
+                                Left datMean = U.constantOp (F.mult) (Left dat) (1 / count) True
+                            in 
+                                (freq / count, datMean)
+                        ) imfSums
+                else
+                    imfSums
+                    
+        zipWithM_ (\modeNo (freq, dat) -> do
+                --storeData dat ("imf" ++ show modeNo)
+                runReaderT (calcAnalyticSignal dat modeNo freq) env
+            ) [1 ..] imfMeans
+            
+        let 
+            recDat = foldl1 (\res dat -> 
+                    let 
+                        Left datSum = U.binaryOp (F.add) (Left res) (Left dat) True g
+                    in 
+                        datSum
+                ) (map (snd) imfMeans)
+            diff = D.subtr dat recDat
+            sdev2 = Sample.stdDev (D.ys diff)
+        putStrLn $ "Reconstruction error: " ++ show (sdev2 / sdev)
 
 storeData :: Data -> String -> IO ()
 storeData dat fileName = do
@@ -186,7 +189,9 @@ imf modeNo dat = do
     let
         Left minima = subData $ head $ dataSet minimaDpOfOrder
         Left maxima = subData $ head $ dataSet maximaDpOfOrder
-        numExtrema = min (D.dataLength minima) (D.dataLength maxima)
+        numMinima = D.dataLength minima 
+        numMaxima = D.dataLength maxima
+        numExtrema = min numMinima numMaxima 
     if numExtrema > 1
         then do
             let
@@ -194,17 +199,24 @@ imf modeNo dat = do
                 imfStep dat minima maxima sdev i =
                     do
                         let
-                            fitParams = FitParams {
+                            fitUpperParams = FitParams {
                                         fitPolynomRank = 3,
                                         fitType = FitTypeSpline,
-                                        fitSplineParams = SplineParams {splineNumNodes = numExtrema - 1},
+                                        fitSplineParams = SplineParams {splineNumNodes = numMaxima - 1},
+                                        fitPeriod = 0,
+                                        fitNumHarmonics = 0
+                                    }
+                            fitLowerParams = FitParams {
+                                        fitPolynomRank = 3,
+                                        fitType = FitTypeSpline,
+                                        fitSplineParams = SplineParams {splineNumNodes = numMinima - 1},
                                         fitPeriod = 0,
                                         fitNumHarmonics = 0
                                     }
                 
                         [upperEnv, lowerEnv] <- MP.sequence [
-                            fitData fitParams maxima defaultTaskEnv,
-                            fitData fitParams minima defaultTaskEnv]
+                            fitData fitUpperParams maxima defaultTaskEnv,
+                            fitData fitLowerParams minima defaultTaskEnv]
                         let 
                             envMean = (upperEnv `S.add` lowerEnv) `S.divide` 2
                             Left dat2 = U.binaryOp (F.subtr) (Left dat) (Right (Left envMean)) True g
@@ -212,8 +224,8 @@ imf modeNo dat = do
                             Left minima2 = U.binaryOp (F.subtr) (Left minima) (Right (Left envMean)) True g
                             sdev2 = U.stdev dat (Left dat2)
                         
-                        --putStrLn $ "sdev: " ++ show sdev2
-                        --if numNodes == 1 then storeData dat ("last_imf" ++ show i) else return ()
+                        --putStrLn $ "sdev: " ++ show sdev2 ++ ", needed" ++ show sdev
+                        --if modeNo == 3 then storeData dat ("last_imf" ++ show i) else return ()
                         if sdev2 < sdev
                             then 
                                     return dat2
