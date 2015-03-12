@@ -202,14 +202,14 @@ imf modeNo dat = do
                             fitUpperParams = FitParams {
                                         fitPolynomRank = 3,
                                         fitType = FitTypeSpline,
-                                        fitSplineParams = SplineParams {splineNumNodes = numMaxima - 1},
+                                        fitSplineParams = SplineParams {splineNumNodes = numMaxima},
                                         fitPeriod = 0,
                                         fitNumHarmonics = 0
                                     }
                             fitLowerParams = FitParams {
                                         fitPolynomRank = 3,
                                         fitType = FitTypeSpline,
-                                        fitSplineParams = SplineParams {splineNumNodes = numMinima - 1},
+                                        fitSplineParams = SplineParams {splineNumNodes = numMinima},
                                         fitPeriod = 0,
                                         fitNumHarmonics = 0
                                     }
