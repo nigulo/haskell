@@ -38,7 +38,7 @@ import System.Random
 import System.Random.MWC
 import System.Random.MWC.Distributions
 
-precision = 0.1
+precision = 0.05
 numLinesToSkip = 1
 
 data Env = Env {
@@ -122,7 +122,7 @@ calc args = do
                 imfSums
                 
     zipWithM_ (\modeNo (freq, dat) -> do
-            --storeData dat ("imf" ++ show modeNo)
+            storeData dat ("imf" ++ show modeNo)
             runReaderT (calcAnalyticSignal dat modeNo freq) env
         ) [1 ..] imfMeans
         
@@ -161,8 +161,8 @@ calcAnalyticSignal imfDat modeNo freq = do
         logText = show modeNo ++ ": " ++ show (Sample.mean freqVals / 2 / pi) ++ " " {- ++ "(" ++ show freq  ++ ") "-} ++  show (Sample.stdDev freqVals / 2 / pi) ++
              " " ++ show (Sample.mean amplitudeVals) ++ " " ++  show (Sample.stdDev amplitudeVals)
     liftIO $ putStrLn logText 
-    --liftIO $ storeData frequency ("frequency" ++ show modeNo)
-    --liftIO $ storeData amplitude ("amplitude" ++ show modeNo)
+    liftIO $ storeData frequency ("frequency" ++ show modeNo)
+    liftIO $ storeData amplitude ("amplitude" ++ show modeNo)
     liftIO $ appendToFile (logFilePrefix env ++ ".log") (logText ++ "\n")
 
 imf :: Int -> Data 
@@ -172,64 +172,43 @@ imf modeNo dat = do
     g <- liftIO $ getStdGen
     env <- ask
     let
-        dataParams = createDataParams_ "data" [createSubDataParams__ (Left dat)]
-
-    (minimaDp, maximaDp) <- liftIO $ findExtrema dataParams 0 "extrema" defaultTaskEnv
-    let
-        Left minima = subData $ head $ dataSet minimaDp 
-        Left maxima = subData $ head $ dataSet maximaDp
-        numExtrema = min (D.dataLength minima) (D.dataLength maxima)
-        
-        findNumNodes minimaDp maximaDp numExtrema modesSkipped = do
+        findExtremaOfOrder minimaDp maximaDp modesSkipped = do
             if modeNo == 1 && modesSkipped < (modesToSkip env)
                 then do
                     (minimaDp, _) <- findExtrema minimaDp 0 "extrema" defaultTaskEnv
                     (_, maximaDp) <- findExtrema maximaDp 0 "extrema" defaultTaskEnv
-                    let
-                        Left minima = subData $ head $ dataSet minimaDp 
-                        Left maxima = subData $ head $ dataSet maximaDp
-                    findNumNodes minimaDp maximaDp (min (D.dataLength minima) (D.dataLength maxima)) (modesSkipped + 1)
-                else return (numExtrema - 1)
+                    findExtremaOfOrder minimaDp maximaDp  (modesSkipped + 1)
+                else return (minimaDp, maximaDp)
+        sdev = (Sample.stdDev (D.ys dat)) * precision
+        dataParams = createDataParams_ "data" [createSubDataParams__ (Left dat)]
+    (minimaDp, maximaDp) <- liftIO $ findExtrema dataParams 0 "extrema" defaultTaskEnv
+    (minimaDpOfOrder, maximaDpOfOrder) <- liftIO $ findExtremaOfOrder minimaDp maximaDp 0
+    let
+        Left minima = subData $ head $ dataSet minimaDpOfOrder
+        Left maxima = subData $ head $ dataSet maximaDpOfOrder
+        numExtrema = min (D.dataLength minima) (D.dataLength maxima)
     if numExtrema > 1
         then do
-            numNodes <- liftIO $ findNumNodes minimaDp maximaDp numExtrema 0
             let
-                sdev = (Sample.stdDev (D.ys dat)) * precision
-                imfStep :: Data -> Double -> Int -> IO Data
-                imfStep dat sdev i =
+                imfStep :: Data -> Data -> Data -> Double -> Int -> IO Data
+                imfStep dat minima maxima sdev i =
                     do
-                
                         let
-                            envParams = EnvParams {
-                                    envUpperParams = FitParams {
+                            fitParams = FitParams {
                                         fitPolynomRank = 3,
                                         fitType = FitTypeSpline,
-                                        fitSplineParams = SplineParams {splineNumNodes = numNodes}
-                                    },
-                                    envLowerParams = FitParams {
-                                        fitPolynomRank = 3,
-                                        fitType = FitTypeSpline,
-                                        fitSplineParams = SplineParams {splineNumNodes = numNodes}
-                                    },
-                                    envPrecision = 1 / precision,
-                                    envExtrema = EnvExtremaStatistical,
-                                    envData = Just (DataParams {
-                                        dataName = "data",
-                                        dataSet = [createSubDataParams__ (Left dat)]
-                                    })
-                                } 
+                                        fitSplineParams = SplineParams {splineNumNodes = numExtrema - 1},
+                                        fitPeriod = 0,
+                                        fitNumHarmonics = 0
+                                    }
                 
-                
-                        Left dat2 <- envelopes envParams ("upper", "lower", "mean") defaultTaskEnv (DataUpdateFunc (\dat id _ -> do
-                                -- _ <- forkIO (do
-                                --        let
-                                --            ([xMin], [xMax]) = dataRange dat
-                                --            step = (xMax - xMin) / 1000
-                                --        if numNodes == 1 then storeData (D.data1' (U.getValues1 (V.fromList [xMin, xMin + step .. xMax]) dat)) ("last_imf" ++ id ++ show i) else return ()
-                                --    )
-                                return ()
-                            ))
+                        upperEnv <- fitData fitParams maxima defaultTaskEnv
+                        lowerEnv <- fitData fitParams minima defaultTaskEnv
                         let 
+                            envMean = (upperEnv `S.add` lowerEnv) `S.divide` 2
+                            Left dat2 = U.binaryOp (F.subtr) (Left dat) (Right (Left envMean)) True g
+                            Left maxima2 = U.binaryOp (F.subtr) (Left maxima) (Right (Left envMean)) True g
+                            Left minima2 = U.binaryOp (F.subtr) (Left minima) (Right (Left envMean)) True g
                             sdev2 = U.stdev dat (Left dat2)
                         
                         --putStrLn $ "sdev: " ++ show sdev2
@@ -239,21 +218,20 @@ imf modeNo dat = do
                                     return dat2
                             else
                                 do
-                                    imfStep dat2 sdev (i + 1)
-        
+                                    imfStep dat2 minima2 maxima2 sdev (i + 1)
+    
             imfDat <- liftIO $ do
-                putStr $ "Calculating (number of nodes = " ++ show numNodes ++ ") ... "
+                putStr $ "Extracting mode " ++ show modeNo ++ " (" ++ show numExtrema ++ ") ... "
                 hFlush stdout
                 time1 <- getCPUTime
-                imfDat <- imfStep dat sdev 0
+                imfDat <- imfStep dat minima maxima sdev 0
                 time2 <- getCPUTime
                 putStrLn $ "done in " ++ show (fromIntegral (time2 - time1) / 1e12) ++ " CPU secs"
                 return imfDat
-            
-            
+                
             let 
                 diff = D.subtr dat imfDat
-            imf (modeNo + 1) diff >>= \otherImfs -> return ((fromIntegral numNodes / (D.xMax1 imfDat - D.xMin1 imfDat) , imfDat):otherImfs)
+            imf (modeNo + 1) diff >>= \otherImfs -> return ((fromIntegral numExtrema / (D.xMax1 imfDat - D.xMin1 imfDat) , imfDat):otherImfs)
         else
             return [(0, dat)]
 
