@@ -192,25 +192,27 @@ imf modeNo dat = do
         Left maxima = subData $ head $ dataSet maximaDpOfOrder
         numMinima = D.dataLength minima 
         numMaxima = D.dataLength maxima
-        numExtrema = min numMinima numMaxima 
+        numExtrema = min numMinima numMaxima
+        numLowerNodes = ceiling ((fromIntegral numMaxima) / 3)
+        numUpperNodes = ceiling ((fromIntegral numMinima) / 3)
     if numExtrema > 1
         then do
             let
-                imfStep :: Data -> Data -> Data -> Double -> Int -> IO Data
-                imfStep dat minima maxima sdev i =
+                imfStep :: Data -> Data -> Data -> Double -> Int -> Int -> Int -> IO Data
+                imfStep dat minima maxima prevSdev numUpperNodes numLowerNodes i =
                     do
                         let
                             fitUpperParams = FitParams {
                                         fitPolynomRank = 3,
                                         fitType = FitTypeSpline,
-                                        fitSplineParams = SplineParams {splineNumNodes = ceiling ((fromIntegral numMaxima) / 3)},
+                                        fitSplineParams = SplineParams {splineNumNodes = numUpperNodes},
                                         fitPeriod = 0,
                                         fitNumHarmonics = 0
                                     }
                             fitLowerParams = FitParams {
                                         fitPolynomRank = 3,
                                         fitType = FitTypeSpline,
-                                        fitSplineParams = SplineParams {splineNumNodes = ceiling ((fromIntegral numMinima) / 3)},
+                                        fitSplineParams = SplineParams {splineNumNodes = numLowerNodes},
                                         fitPeriod = 0,
                                         fitNumHarmonics = 0
                                     }
@@ -232,14 +234,18 @@ imf modeNo dat = do
                             then 
                                     return dat2
                             else
-                                do
-                                    imfStep dat2 minima2 maxima2 sdev (i + 1)
+                                if i > 0 && sdev2 > prevSdev
+                                    then
+                                        -- diverging? increase number of nodes
+                                        imfStep dat minima2 maxima2 prevSdev (numUpperNodes + 1) (numLowerNodes + 1) i
+                                    else
+                                        imfStep dat2 minima2 maxima2 sdev2 numUpperNodes numLowerNodes (i + 1)
     
             imfDat <- liftIO $ do
                 putStr $ "Extracting mode " ++ show modeNo ++ " (" ++ show numExtrema ++ ") ... "
                 hFlush stdout
                 time1 <- getCPUTime
-                imfDat <- imfStep dat minima maxima sdev 0
+                imfDat <- imfStep dat minima maxima 0 numUpperNodes numLowerNodes 0
                 time2 <- getCPUTime
                 putStrLn $ "done in " ++ show (fromIntegral (time2 - time1) / 1e12) ++ " CPU secs"
                 return imfDat
