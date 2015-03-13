@@ -12,8 +12,6 @@ import Regression.AnalyticData as AD
 import Regression.Functions as FS
 import Regression.Utils as U
 
---import Isda.InOut
-
 import TSA.Params
 import TSA.GUI.State
 import TSA.GUI.Data

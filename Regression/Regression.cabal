@@ -31,7 +31,6 @@ library
                    Regression.Data,
                    Regression.FFT,
                    Regression.Functions,
-                   Regression.IMF,
                    Regression.IOLeastSquares,
                    Regression.LeastSquares,
                    Regression.Polynom,

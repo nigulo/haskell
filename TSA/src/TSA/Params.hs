@@ -10,7 +10,6 @@ module TSA.Params (
     EnvParams (..), 
     SubDataParams (..),
     DataParams (..),
-    ImfParams (..),
     FftParams (..),
     LocalPhaseParams (..),
     FindPeriodParams (..),
@@ -223,41 +222,6 @@ instance Xml.XmlElement EnvParams where
                         [Left envDataElem] -> Just $ Xml.fromElement envDataElem
                         otherwise -> Nothing
             }
-
--- | deprecated
-data ImfParams = ImfParams {
-    imfUpperParams :: FitParams,
-    imfLowerParams :: FitParams,
-    imfPrecision :: Double,
-    imfData :: Maybe D.Data,
-    imfCommonParams :: CommonParams
-} deriving (Show, Read)
-
-instance Xml.XmlElement ImfParams where
-    toElement params = Xml.element "imfparams" 
-        [("precision", show (imfPrecision params))]
-        (
-            [Left (Xml.element "upper" [] [Left (Xml.toElement (imfUpperParams params))]), 
-            Left (Xml.element "lower" [] [Left (Xml.toElement (imfLowerParams params))])] ++
-            [Left (Xml.element "data" [] (
-                case imfData params of
-                    Just d -> [Left (Xml.toElement d)]
-                    otherwise -> []
-            ))] ++
-            [Left (Xml.toElement (imfCommonParams params))]
-        )
-    
-    fromElement e =
-        ImfParams {
-            imfUpperParams = Xml.fromElement $ Xml.contentElement (Xml.contentElement e "upper") "fitparams",
-            imfLowerParams = Xml.fromElement $ Xml.contentElement (Xml.contentElement e "lower") "fitparams",
-            imfPrecision = read $ Xml.attrValue e "precision",
-            imfCommonParams = Xml.fromElement (Xml.contentElement e commonParamsXmlElementName),
-            imfData =
-                case Xml.contents $ Xml.contentElement e "data" of
-                    [Left imfDataElem] -> Just $ Xml.fromElement imfDataElem
-                    otherwise -> Nothing
-        }
 
 data FftParams = FftParams {
     fftDirection :: Bool,
@@ -838,7 +802,6 @@ data Params = Params {
     dataParams :: [DataParams],
     lsqParams :: LsqParams,
     envParams :: EnvParams,
-    imfParams :: ImfParams,
     fftParams :: FftParams,
     asParams :: AnalyticSignalParams,
     localPhaseParams :: LocalPhaseParams,
@@ -861,7 +824,6 @@ instance Xml.XmlElement Params where
         ((map (\dp -> Left (Xml.toElement dp)) (dataParams state)) ++ 
         [Left (Xml.toElement (lsqParams state)),
          Left (Xml.toElement (envParams state)),
-         Left (Xml.toElement (imfParams state)),
          Left (Xml.toElement (fftParams state)),
          Left (Xml.toElement (asParams state)),
          Left (Xml.toElement (localPhaseParams state)),
@@ -887,7 +849,6 @@ instance Xml.XmlElement Params where
                 dataParams = map Xml.fromElement $ Xml.contentElements e "dataparams",
                 lsqParams = Xml.fromElement $ Xml.contentElement e "lsqparams",
                 envParams = Xml.fromElement $ Xml.contentElement e "envparams",
-                imfParams = Xml.fromElement $ Xml.contentElement e "imfparams",
                 fftParams = Xml.fromElement $ Xml.contentElement e "fftparams",
                 asParams = Xml.fromElement $ Xml.contentElement e "analyticsignalparams",
                 localPhaseParams = 
@@ -980,7 +941,6 @@ instance Show Params where
         (show (dataParams s)) ++ "\n" ++
         (show (lsqParams s)) ++ "\n" ++
         (show (envParams s)) ++ "\n" ++
-        (show (imfParams s)) ++ "\n" ++
         (show (fftParams s)) ++ "\n" ++
         (show (asParams s)) ++ "\n" ++
         (show (localPhaseParams s)) ++ "\n" ++
@@ -1053,16 +1013,6 @@ newParams =
                 lsqBootstrapCount = 0
                 },
             envParams = newEnv,
-            imfParams = ImfParams {
-                imfUpperParams = newFitParams "" 3 3 0,
-                imfLowerParams = newFitParams "" 3 3 0,
-                imfPrecision = 10,
-                imfData = Nothing,
-                imfCommonParams = CommonParams {
-                    commonName = "IMF",
-                    commonNo = 1
-                }
-            },
             fftParams = FftParams {
                 fftDirection = True,
                 fftPhaseShift = 0,

@@ -232,6 +232,7 @@ interpolateWithSpline dat = do
 --------------------------------------------------------------------------------
 
 -- | Returns upper or lower envelope estimation for given data set
+--   Algorithm is based on iterative smooth and clip operations
 envelope :: Bool      -- ^ Upper (True) or lower (False)
          -> Int       -- ^ Polynom rank
          -> Int       -- ^ Number of knots
