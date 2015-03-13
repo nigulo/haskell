@@ -27,7 +27,6 @@ module TSA.Params (
     BuildParams(..),
     InterpolateParams(..),
     ParamsRef,
-    EnvExtrema (..),
     
     getStatisticByName,
     removeStatisticByName,
@@ -184,49 +183,46 @@ instance Xml.XmlElement LsqParams where
                 Nothing -> 0
         }
 
-data EnvExtrema = EnvExtremaStrict | EnvExtremaStatistical deriving (Show, Read)
-
-instance Xml.XmlElement EnvExtrema where
-    toElement envExtrema = Xml.element "envextrema" [("type", show envExtrema)] []
-    fromElement e = read $ Xml.attrValue e "type"
-
 data EnvParams = EnvParams {
-    envUpperParams :: FitParams,
-    envLowerParams :: FitParams,
-    envPrecision :: Double,
-    envExtrema :: EnvExtrema,
+    envUpperParams :: CommonParams,
+    envLowerParams :: CommonParams,
     envMeanParams :: CommonParams,
+    envMethod :: Bool,
+    envStartExtrema :: Int,
     envData :: Maybe DataParams
 } deriving (Show, Read)
 
 instance Xml.XmlElement EnvParams where
     toElement params = Xml.element "envparams" 
-        [("precision", show (envPrecision params)), 
-         ("extrema", show (envExtrema params))
+        [("version", "1"),
+         ("method", show (envMethod params)),
+         ("startextrema", show (envStartExtrema params)) 
         ]
         (
             [Left (Xml.element "upper" [] [Left (Xml.toElement (envUpperParams params))]), 
             Left (Xml.element "lower" [] [Left (Xml.toElement (envLowerParams params))])] ++
+            [Left (Xml.element "meanparams" [] [Left (Xml.toElement (envMeanParams params))])] ++
             [Left (Xml.element "data" [] (
                 case envData params of
                     Just dataParams -> [Left (Xml.toElement dataParams)]
                     otherwise -> []
-            ))] ++
-            [Left (Xml.element "meanparams" [] [Left (Xml.toElement (envMeanParams params))])]
+            ))]
         )
     
-    fromElement e =
-        EnvParams {
-            envUpperParams = Xml.fromElement $ Xml.contentElement (Xml.contentElement e "upper") "fitparams",
-            envLowerParams = Xml.fromElement $ Xml.contentElement (Xml.contentElement e "lower") "fitparams",
-            envPrecision = read $ Xml.attrValue e "precision",
-            envExtrema = read $ Xml.attrValue e "extrema",
-            envMeanParams = Xml.fromElement (Xml.contentElement (Xml.contentElement e "meanparams") commonParamsXmlElementName),
-            envData =
-                case Xml.contents $ Xml.contentElement e "data" of
-                    [Left envDataElem] -> Just $ Xml.fromElement envDataElem
-                    otherwise -> Nothing
-        }
+    fromElement e = case Xml.maybeAttrValue e "version" of
+        Nothing -> newEnv
+        Just _ -> 
+            EnvParams {
+                envUpperParams = Xml.fromElement $ Xml.contentElement (Xml.contentElement e "upper") commonParamsXmlElementName,
+                envLowerParams = Xml.fromElement $ Xml.contentElement (Xml.contentElement e "lower") commonParamsXmlElementName,
+                envMeanParams = Xml.fromElement (Xml.contentElement (Xml.contentElement e "meanparams") commonParamsXmlElementName),
+                envMethod = read $ Xml.attrValue e "method",
+                envStartExtrema = read $ Xml.attrValue e "startextrema",
+                envData =
+                    case Xml.contents $ Xml.contentElement e "data" of
+                        [Left envDataElem] -> Just $ Xml.fromElement envDataElem
+                        otherwise -> Nothing
+            }
 
 -- | deprecated
 data ImfParams = ImfParams {
@@ -1056,17 +1052,7 @@ newParams =
                 lsqFitParams = newFitParams "LsqFit" 3 3 0, 
                 lsqBootstrapCount = 0
                 },
-            envParams = EnvParams {
-                envUpperParams = newFitParams "UpperEnv" 3 3 0,
-                envLowerParams = newFitParams "LowerEnv" 3 3 0,
-                envPrecision = 10,
-                envExtrema = EnvExtremaStrict,
-                envData = Nothing,
-                envMeanParams = CommonParams {
-                    commonName = "EnvMean",
-                    commonNo = 1
-                }
-            },
+            envParams = newEnv,
             imfParams = ImfParams {
                 imfUpperParams = newFitParams "" 3 3 0,
                 imfLowerParams = newFitParams "" 3 3 0,
@@ -1117,6 +1103,25 @@ newParams =
             interpolateParams = newInterpolate,
             statisticParams = [newStatistic Nothing Nothing]
     }
+
+newEnv :: EnvParams
+newEnv = EnvParams {
+    envUpperParams = CommonParams {
+        commonName = "UpperEnv",
+        commonNo = 1
+    },
+    envLowerParams = CommonParams {
+        commonName = "LowerEnv",
+        commonNo = 1
+    }, 
+    envMethod = False,
+    envStartExtrema = 1,
+    envData = Nothing,
+    envMeanParams = CommonParams {
+        commonName = "EnvMean",
+        commonNo = 1
+    }
+}
 
 newFindPeriod :: FindPeriodParams
 newFindPeriod = FindPeriodParams {

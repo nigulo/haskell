@@ -98,7 +98,6 @@ settingsDialog stateRef = do
     separator1 <- hSeparatorNew
     addWidgetToBox Nothing separator1 PackNatural vBox
     
-    addLabel "Area" dialog
     automaticCheck <- checkButtonNew >>= \button -> toggleButtonSetActive button (graphAreaAutomatic graphParms) >> return button
     addWidgetToBox (Just "Automatic") automaticCheck PackNatural vBox 
 

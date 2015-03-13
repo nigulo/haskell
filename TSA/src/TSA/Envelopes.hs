@@ -11,6 +11,8 @@ import qualified Math.Function as F
 
 import TSA.Params
 import TSA.Data
+import TSA.LeastSquares
+import TSA.SpecificPoints
 
 import Utils.Misc
 import Utils.Concurrent
@@ -18,73 +20,67 @@ import Utils.Concurrent
 import Data.IORef
 import Control.Concurrent.MVar
 import Control.Concurrent
+import Control.Monad.Parallel as MP
 import System.Random
 
 import Control.Applicative
 
 
-envelopes :: EnvParams -> (String, String, String) -> TaskEnv -> DataUpdateFunc String -> IO (Either D.Data (Either S.Spline FS.Functions))
-envelopes parms (upperName, lowerName, meanName) taskEnv (DataUpdateFunc dataUpdateFunc) =
+envelopes :: EnvParams -> (String, String, String) -> TaskEnv -> DataUpdateFunc String -> IO ()
+envelopes params (upperName, lowerName, meanName) taskEnv (DataUpdateFunc dataUpdateFunc) =
     do
         g <- getStdGen 
         let
-            upperParams = envUpperParams parms
-            lowerParams = envLowerParams parms
-            Just dataParms = envData parms
-            sdp = head $ dataSet $ dataParms
-            Left dat = subData sdp
+            Just dataParams = envData params
+            Left dat = subData $ head $ dataSet $ dataParams
             puFunc = progressUpdateFunc taskEnv
-            
-        upperSpline <- fitWithSpline_ 
-            (fitPolynomRank upperParams) 
-            (splineNumNodes (fitSplineParams upperParams)) 
-            dat
-            2
-            puFunc
+        
+            findExtremaOfOrder minimaDp maximaDp extremaSkipped = do
+                if extremaSkipped < (envStartExtrema params - 1)
+                    then do
+                        (minimaDp, _) <- findExtrema minimaDp 0 "extrema" defaultTaskEnv
+                        (_, maximaDp) <- findExtrema maximaDp 0 "extrema" defaultTaskEnv
+                        findExtremaOfOrder minimaDp maximaDp  (extremaSkipped + 1)
+                    else return (minimaDp, maximaDp)
+        (minimaDp, maximaDp) <- findExtrema dataParams 0 "extrema" defaultTaskEnv
+        (minimaDpOfOrder, maximaDpOfOrder) <- findExtremaOfOrder minimaDp maximaDp 0
         let
-            upperSdev = U.stdev dat (Right (Left upperSpline))
-
-            --lowerSpline = fitWithSpline3_ 
-            --    (fitPolynomRank upperParms) 
-            --    (fitNumKnots upperParms) 
-            --    dat;
-            --lowerSdev = R.stdev dat lowerSpline;
-
-            strictExtremaDetection = case envExtrema parms of
-                EnvExtremaStrict -> True
-                _ -> False
-        
-        let
-            env 0 = envelope 
-                True 
-                (fitPolynomRank upperParams) 
-                (splineNumNodes (fitSplineParams upperParams))
-                (upperSdev / envPrecision parms) 
-                strictExtremaDetection
-                dat
-                (\_ -> return ())
-                (\spline -> dataUpdateFunc (Right (Left spline)) upperName True)
-                (\dat -> dataUpdateFunc (Left dat) (upperName ++ "_") True)
-            env 1 = envelope 
-                False 
-                (fitPolynomRank lowerParams) 
-                (splineNumNodes (fitSplineParams lowerParams)) 
-                (upperSdev / envPrecision parms) 
-                strictExtremaDetection
-                dat
-                (\_ -> return ())
-                (\spline -> dataUpdateFunc (Right (Left spline)) lowerName True)
-                (\dat -> dataUpdateFunc (Left dat) (lowerName ++ "_") True)
-        
-        [upperEnv, lowerEnv] <- calcConcurrently_ env [0, 1]
-            
-        let 
-            envMean = (upperEnv `S.add` lowerEnv) `S.divide` 2
-            dataOrSpline = U.binaryOp (F.subtr) (Left dat) (Right (Left envMean)) True g
-        dataUpdateFunc (Right (Left envMean)) meanName False
-        dataUpdateFunc dataOrSpline ((dataName dataParms) ++ "_r") False
-        return dataOrSpline
-        
-
-        
+            Left minima = subData $ head $ dataSet minimaDpOfOrder
+            Left maxima = subData $ head $ dataSet maximaDpOfOrder
+            numMinima = D.dataLength minima 
+            numMaxima = D.dataLength maxima
+            numExtrema = min numMinima numMaxima
+            fitUpperParams = FitParams {
+                        fitPolynomRank = 3,
+                        fitType = FitTypeSpline,
+                        fitSplineParams = SplineParams {splineNumNodes = ceiling ((fromIntegral numMinima) / 3)},
+                        fitPeriod = 0,
+                        fitNumHarmonics = 0
+                    }
+            fitLowerParams = FitParams {
+                        fitPolynomRank = 3,
+                        fitType = FitTypeSpline,
+                        fitSplineParams = SplineParams {splineNumNodes = ceiling ((fromIntegral numMaxima) / 3)},
+                        fitPeriod = 0,
+                        fitNumHarmonics = 0
+                    }
+        if numExtrema > 1
+            then do
+                [upperEnv, lowerEnv] <- case envMethod params of
+                    False -> MP.sequence [
+                        fitData fitUpperParams maxima defaultTaskEnv,
+                        fitData fitLowerParams minima defaultTaskEnv]
+                    True -> MP.sequence [
+                        R.interpolateWithSpline maxima,
+                        R.interpolateWithSpline minima]
+                let 
+                    envMean = (upperEnv `S.add` lowerEnv) `S.divide` 2
+                    residue = U.binaryOp (F.subtr) (Left dat) (Right (Left envMean)) True g
+                            
+                dataUpdateFunc (Right (Left upperEnv)) upperName False
+                dataUpdateFunc (Right (Left lowerEnv)) lowerName False
+                dataUpdateFunc (Right (Left envMean)) meanName False
+                dataUpdateFunc residue ((dataName dataParams) ++ "_r") False
+        else        
+            return ()
         

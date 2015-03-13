@@ -48,32 +48,30 @@ paramsDialog stateRef = do
     vBox <- vBoxNew False 2
     boxPackStart contentBox vBox PackGrow 2
     
-    label <- labelNew $ Just "Upper envelope"
-    addWidget Nothing label dialog
-    upperFitWidgets@(FitWidgets upperNameEntry upperRankSpin upperPeriod upperHarmonics _ _ _ _) <- addFitWidgets upperParams state dialog
-    upperPeriod `widgetSetSensitivity` False
+    upperNameEntry <- entryNew
+    upperNameEntry `entrySetText` (getNameWithNo upperParams)
+    addWidget (Just "Upper envelope name: ") upperNameEntry dialog
 
-    label <- labelNew $ Just "Lower envelope"
-    addWidget Nothing label dialog
-    lowerFitWidgets@(FitWidgets lowerNameEntry lowerRankSpin lowerPeriod lowerHarmonics _ _ _ _) <- addFitWidgets lowerParams state dialog
-    lowerPeriod `widgetSetSensitivity` False
-
-
-    sep <- hSeparatorNew
-    addWidget Nothing sep dialog
-    precisionAdjustment <- adjustmentNew (envPrecision parms) 1 100000 1 1 1
-    precisionSpin <- spinButtonNew precisionAdjustment 1 0
-    addWidget (Just "Precision: ") precisionSpin dialog
-
-    extremaCombo <- createComboBox ["Strict", "Statistical"]
-    case envExtrema parms of
-        EnvExtremaStrict -> comboBoxSetActive extremaCombo 0 
-        EnvExtremaStatistical -> comboBoxSetActive extremaCombo 1
-    addWidget (Just "Extrema detection: ") extremaCombo dialog
+    lowerNameEntry <- entryNew
+    lowerNameEntry `entrySetText` (getNameWithNo lowerParams)
+    addWidget (Just "Lower envelope name: ") lowerNameEntry dialog
 
     meanNameEntry <- entryNew
     meanNameEntry `entrySetText` (getNameWithNo meanParams)
     addWidget (Just "Mean envelope name: ") meanNameEntry dialog
+
+    sep <- hSeparatorNew
+    addWidget Nothing sep dialog
+
+    methodCombo <- createComboBox ["Least squares fit", "Interpolate"]
+    case envMethod parms of
+        False -> comboBoxSetActive methodCombo 0 
+        True -> comboBoxSetActive methodCombo 1
+    addWidget (Just "Method: ") methodCombo dialog
+
+    startExtremaAdjustment <- adjustmentNew (fromIntegral (envStartExtrema parms)) 1 100 1 1 1
+    startExtremaSpin <- spinButtonNew startExtremaAdjustment 1 0
+    addWidget (Just "Start from extrema: ") startExtremaSpin dialog
     
     dataSetCombo <- dataSetComboNew dataAndSpectrum state
     addWidget (Just "Data set: ") (getComboBox dataSetCombo) dialog
@@ -97,14 +95,9 @@ paramsDialog stateRef = do
                 fitButton `widgetSetSensitivity` sensitivity
                         
     on (getComboBox dataSetCombo) changed toggleFitButton
-    --nameEntry `onButtonRelease` (\e -> toggleFitButton >> return False)
-    --nameEntry `onKeyRelease` (\e -> toggleFitButton >> return False)
     on (castToEditable upperNameEntry) editableChanged toggleFitButton
     on (castToEditable lowerNameEntry) editableChanged toggleFitButton
     on (castToEditable meanNameEntry) editableChanged toggleFitButton
---    nameEntry `afterInsertAtCursor` (\s -> toggleFitButton)
---    nameEntry `afterPasteClipboard` (toggleFitButton)
---    nameEntry `afterCutClipboard` (toggleFitButton)
     
     
     widgetShowAll dialog
@@ -113,26 +106,23 @@ paramsDialog stateRef = do
     if response == ResponseOk 
         then
             do
-                newUpperParms <- getFitParams upperFitWidgets upperParams
-                newLowerParms <- getFitParams lowerFitWidgets lowerParams
-
-                precision <- spinButtonGetValue precisionSpin
-                Just extrema <- comboBoxGetActiveString extremaCombo
-                
                 upperName <- entryGetString upperNameEntry
                 lowerName <- entryGetString lowerNameEntry
                 meanName <- entryGetString meanNameEntry
+
+                method <- comboBoxGetActive methodCombo
+                startExtrema <- spinButtonGetValue startExtremaSpin
                 
                 Just selectedData <- getSelectedData dataSetCombo
                 widgetDestroy dialog
 
                 let
                     newEnvParams = EnvParams {
-                            envUpperParams = newUpperParms,
-                            envLowerParams = newLowerParms,
-                            envPrecision = precision,
-                            envExtrema = (if extrema == "Strict" then EnvExtremaStrict else EnvExtremaStatistical),
+                            envUpperParams = updateCommonParams upperName upperParams,
+                            envLowerParams = updateCommonParams lowerName lowerParams,
                             envMeanParams = updateCommonParams meanName meanParams,
+                            envStartExtrema = round startExtrema,
+                            envMethod = (if method == 0 then False else True),
                             envData = Just selectedData
                         } 
 
