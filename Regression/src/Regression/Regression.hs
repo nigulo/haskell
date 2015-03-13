@@ -35,12 +35,10 @@ import qualified Data.Vector.Unboxed as V
 fitWithSpline :: Polynom   -- ^ Set of unit polynoms
                -> Int       -- ^ Number of knots
                -> Data      -- ^ Data to be fitted
-               -> Bool
                -> Int -- ^ Smoothness up to i'th derivative (0, 1 or 2)
                -> (Double -> IO ()) -- ^ progressUpdate func
                -> IO Spline    -- ^ Result
-fitWithSpline _ _ dat True _ _ = interpolateWithSpline dat
-fitWithSpline unitPolynoms numNodes dat strict smoothUpTo puFunc = do
+fitWithSpline unitPolynoms numNodes dat smoothUpTo puFunc = do
     let 
         x1 = D.xMin1 dat
         x2 = D.xMax1 dat
@@ -179,7 +177,6 @@ fitWithSpline unitPolynoms numNodes dat strict smoothUpTo puFunc = do
 fitWithSpline_ :: Int       -- ^ Polynom rank
                -> Int       -- ^ Number of knots
                -> Data      -- ^ Data to be fitted
-               -> Bool
                -> Int -- ^ Smoothness up to i'th derivative (0, 1 or 2)
                -> (Double -> IO ()) -- ^ progressUpdate func
                -> IO Spline    -- ^ Result
@@ -296,7 +293,11 @@ envelope upper rank knots sdev strictExtremaDetection dat puFunc splineFunc weig
                     dat2 = dat --data1 $ vals2
                 
                 weightFunc dat2
-                spline <- fitWithSpline_ rank knots dat2 strictExtremaDetection 2 puFunc
+                spline <- if strictExtremaDetection
+                    then
+                        interpolateWithSpline dat2
+                    else
+                        fitWithSpline_ rank knots dat2 2 puFunc
                 splineFunc spline
                 let 
                     newSdev = stdev dat (Right (Left spline))

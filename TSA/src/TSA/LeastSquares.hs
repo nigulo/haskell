@@ -86,7 +86,7 @@ fitData fitParams dat taskEnv = do
             let
                 numNodes = splineNumNodes (fitSplineParams fitParams)
             case per of 
-                0 -> fitWithSpline_ rank numNodes dat False 2 (progressUpdateFunc taskEnv)
+                0 -> fitWithSpline_ rank numNodes dat 2 (progressUpdateFunc taskEnv)
                 per -> do
                         let
                             templates =
@@ -98,7 +98,7 @@ fitData fitParams dat taskEnv = do
                         --putStrLn ("modulatedUnitPolynoms: " ++ render (toDocument (modulatedUnitPolynoms templates)))
                         --putStrLn ("numNodes: " ++ show numNodes)
                         --putStrLn ("dat: " ++ render (toDocument (dat)))
-                        fitWithSpline (modulatedUnitPolynoms templates) numNodes dat False 2 (progressUpdateFunc taskEnv)
+                        fitWithSpline (modulatedUnitPolynoms templates) numNodes dat 2 (progressUpdateFunc taskEnv)
         FitTypeHarmonic -> do
             let
                 coverageFactor = harmonicCoverageFactor (fitHarmonicParams fitParams)
@@ -130,5 +130,5 @@ fitData fitParams dat taskEnv = do
             putStrLn ("num parameters: " ++ (show (Prelude.length templates)))
             --putStrLn ("modulatedUnitPolynoms: " ++ render (toDocument (modulatedUnitPolynoms templates)))
             --putStrLn ("dat: " ++ render (toDocument (dat)))
-            fitWithSpline (modulatedUnitPolynoms templates) 1 dat False 0 (progressUpdateFunc taskEnv)
+            fitWithSpline (modulatedUnitPolynoms templates) 1 dat 0 (progressUpdateFunc taskEnv)
 

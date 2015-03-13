@@ -4,7 +4,6 @@ import Math.Function as F
 import Regression.Spline as S
 import Regression.Data as D
 import Regression.Utils as U
-import Regression.Bootstrap as B
 import TSA.LeastSquares
 import TSA.SpecificPoints
 import TSA.AnalyticSignal
@@ -124,11 +123,14 @@ calc args = do
                 else
                     imfSums
                     
-        zipWithM_ (\modeNo (freq, dat) -> do
+        logTexts <- MP.mapM (\(modeNo, (freq, dat)) -> do
                 --storeData dat ("imf" ++ show modeNo)
                 runReaderT (calcAnalyticSignal dat modeNo freq) env
-            ) [1 ..] imfMeans
-            
+            ) $ zip [1 ..] imfMeans
+        mapM_ (\logText -> do
+                putStrLn logText 
+                appendToFile (logFilePrefix ++ ".log") (logText ++ "\n")
+            ) logTexts
         let 
             recDat = foldl1 (\res dat -> 
                     let 
@@ -146,7 +148,7 @@ storeData dat fileName = do
         str = (concatMap (\(x, y) -> show x ++ " " ++ show y ++ "\n") (V.toList (D.xys1 dat)))
     Utils.IO.writeToFile (fileName ++ ".csv") str
 
-calcAnalyticSignal :: Data -> Int -> Double -> ReaderT Env (IO) ()
+calcAnalyticSignal :: Data -> Int -> Double -> ReaderT Env (IO) (String {-logText-})
 calcAnalyticSignal imfDat modeNo freq = do
     let
         asParams = AnalyticSignalParams {
@@ -163,10 +165,9 @@ calcAnalyticSignal imfDat modeNo freq = do
         (ampMean, ampVar) = Sample.meanVarianceUnb $ D.ys amplitude
         logText = show modeNo ++ ": " ++ show (freqMean / 2 / pi) ++ " " {- ++ "(" ++ show freq  ++ ") "-} ++  show (sqrt freqVar / 2 / pi) ++
              " " ++ show ampMean ++ " " ++  show (sqrt ampVar)
-    liftIO $ putStrLn logText 
     --liftIO $ storeData frequency ("frequency" ++ show modeNo)
     --liftIO $ storeData amplitude ("amplitude" ++ show modeNo)
-    liftIO $ appendToFile (logFilePrefix env ++ ".log") (logText ++ "\n")
+    return logText
 
 imf :: Int -> Data 
     -> ReaderT Env (IO) [(Double, Data)] -- ^ Mean frequency and data
@@ -202,14 +203,14 @@ imf modeNo dat = do
                             fitUpperParams = FitParams {
                                         fitPolynomRank = 3,
                                         fitType = FitTypeSpline,
-                                        fitSplineParams = SplineParams {splineNumNodes = numMaxima},
+                                        fitSplineParams = SplineParams {splineNumNodes = ceiling ((fromIntegral numMaxima) / 3)},
                                         fitPeriod = 0,
                                         fitNumHarmonics = 0
                                     }
                             fitLowerParams = FitParams {
                                         fitPolynomRank = 3,
                                         fitType = FitTypeSpline,
-                                        fitSplineParams = SplineParams {splineNumNodes = numMinima},
+                                        fitSplineParams = SplineParams {splineNumNodes = ceiling ((fromIntegral numMinima) / 3)},
                                         fitPeriod = 0,
                                         fitNumHarmonics = 0
                                     }
@@ -217,6 +218,7 @@ imf modeNo dat = do
                         [upperEnv, lowerEnv] <- MP.sequence [
                             fitData fitUpperParams maxima defaultTaskEnv,
                             fitData fitLowerParams minima defaultTaskEnv]
+
                         let 
                             envMean = (upperEnv `S.add` lowerEnv) `S.divide` 2
                             Left dat2 = U.binaryOp (F.subtr) (Left dat) (Right (Left envMean)) True g
@@ -224,7 +226,7 @@ imf modeNo dat = do
                             Left minima2 = U.binaryOp (F.subtr) (Left minima) (Right (Left envMean)) True g
                             sdev2 = U.stdev dat (Left dat2)
                         
-                        --putStrLn $ "sdev: " ++ show sdev2 ++ ", needed" ++ show sdev
+                        --putStrLn $ "sdev: " ++ show sdev2 ++ ", needed: " ++ show sdev
                         --if modeNo == 3 then storeData dat ("last_imf" ++ show i) else return ()
                         if sdev2 < sdev
                             then 

@@ -41,7 +41,7 @@ getSpline (params, Left dat@(dataHeader, dataBlocks)) =
             dat = D.data1 $ V.fromList (zip3 (ts dataBlocks) ys weights)
     
         spline <- case period of 
-            0 -> fitWithSpline_ rank knots dat False 2 (\_ -> return ())
+            0 -> fitWithSpline_ rank knots dat 2 (\_ -> return ())
             per -> 
                 let 
                     freq = 2 * pi / period
@@ -50,7 +50,7 @@ getSpline (params, Left dat@(dataHeader, dataBlocks)) =
                         PolynomTemplate (rank, Just (fromExpression (sine freq)), Just (fromExpression (dsin freq))),
                         PolynomTemplate (rank, Just (fromExpression (cosine freq)), Just (fromExpression (dcos freq)))]                         
                 in                    
-                    fitWithSpline (modulatedUnitPolynoms templates) knots dat False 2 (\_ -> return ())
+                    fitWithSpline (modulatedUnitPolynoms templates) knots dat 2 (\_ -> return ())
         let
             xmin = AD.xMin1 spline
             xmax = AD.xMax1 spline

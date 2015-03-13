@@ -17,9 +17,9 @@ test_fitWithSpline11 = do
         modulatedUnitPolynoms = fromDocument (parse "" modulatedUnitPolynomsStr) 
         dat = fromDocument (parse "" datStr)
         spline = fromDocument (parse "" splineStr) 
-    result <- fitWithSpline modulatedUnitPolynoms 3 dat False 2 (\_ -> return ())
+    result <- fitWithSpline modulatedUnitPolynoms 3 dat 2 (\_ -> return ())
     assertEqual result spline
-{-
+
 test_fitWithSpline12 = do
     let
         dataPath = "." ++ [pathSeparator] ++ "tests" ++ [pathSeparator] ++ "Regression" ++ [pathSeparator] ++ "data" ++ [pathSeparator]
@@ -30,7 +30,7 @@ test_fitWithSpline12 = do
         modulatedUnitPolynoms = fromDocument (parse "" modulatedUnitPolynomsStr) 
         dat = fromDocument (parse "" datStr)
         spline = fromDocument (parse "" splineStr) 
-    result <- fitWithSpline modulatedUnitPolynoms 1 dat False 0 (\_ -> return ())
+    result <- fitWithSpline modulatedUnitPolynoms 1 dat 0 (\_ -> return ())
     assertEqual result spline
     
 test_fitWithSpline21 = do
@@ -43,7 +43,7 @@ test_fitWithSpline21 = do
         modulatedUnitPolynoms = fromDocument (parse "" modulatedUnitPolynomsStr) 
         dat = fromDocument (parse "" datStr)
         spline = fromDocument (parse "" splineStr) 
-    result <- fitWithSpline modulatedUnitPolynoms 25 dat False 2 (\_ -> return ())
+    result <- fitWithSpline modulatedUnitPolynoms 25 dat 2 (\_ -> return ())
     assertEqual result spline
     
 test_fitWithSpline22 = do
@@ -56,6 +56,17 @@ test_fitWithSpline22 = do
         modulatedUnitPolynoms = fromDocument (parse "" modulatedUnitPolynomsStr) 
         dat = fromDocument (parse "" datStr)
         spline = fromDocument (parse "" splineStr) 
-    result <- fitWithSpline modulatedUnitPolynoms 1 dat False 0 (\_ -> return ())
+    result <- fitWithSpline modulatedUnitPolynoms 1 dat 0 (\_ -> return ())
     assertEqual result spline
--}    
+
+test_interpolateWithSpline = do
+    let
+        dataPath = "." ++ [pathSeparator] ++ "tests" ++ [pathSeparator] ++ "Regression" ++ [pathSeparator] ++ "data" ++ [pathSeparator]
+    datStr <- readFile (dataPath ++ "dat3.xml")
+    splineStr <- readFile (dataPath ++ "spline3.xml")
+    let
+        dat = fromDocument (parse "" datStr)
+        spline = fromDocument (parse "" splineStr) 
+    result <- interpolateWithSpline dat
+    assertEqual result spline
+    

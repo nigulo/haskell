@@ -103,7 +103,7 @@ fit stateRef method fitName dat = do
     let 
         graphTabParms = (graphTabs state) !! currentGraphTab
         selectedGraph = graphTabSelection graphTabParms
-        func i j (Left dat) _ = fitWithSpline_ 1 1 dat True 0 (progressUpdateFunc tEnv) >>= \spline -> return $ Right $ Left spline
+        func i j (Left dat) _ = interpolateWithSpline dat >>= \spline -> return $ Right $ Left spline
     result <- applyToData1 func dat fitName tEnv
     modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
 

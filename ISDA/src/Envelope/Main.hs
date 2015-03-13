@@ -40,7 +40,7 @@ getSpline (params, Left dat@(dataHeader, dataBlocks)) =
             envPrec = case getParam params "Envelope_Precision" of
                        Just a -> a
             dat = D.data1 $ V.fromList (zip3 (ts dataBlocks) ys weights)
-        spline <- fitWithSpline_ rank knots dat False 2 (\_ -> return ())
+        spline <- fitWithSpline_ rank knots dat 2 (\_ -> return ())
         let
             sdev = U.stdev dat (Right (Left spline))
         env <- envelope envType rank knots (sdev / envPrec) False dat (\_ -> return ()) (\_ -> return ()) (\_ -> return ())

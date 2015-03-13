@@ -39,7 +39,6 @@ envelopes parms (upperName, lowerName, meanName) taskEnv (DataUpdateFunc dataUpd
             (fitPolynomRank upperParams) 
             (splineNumNodes (fitSplineParams upperParams)) 
             dat
-            False
             2
             puFunc
         let

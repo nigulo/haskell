@@ -117,7 +117,7 @@ leastSquares dat period =
                         [PolynomTemplate (1, Just (F.fromExpression(cosine freq)), Just (F.fromExpression (dcos freq)))]                         
                             where
                                 freq = 2 * pi / period
-                fitWithSpline (modulatedUnitPolynoms templates) 1 dat False 2 (\_ -> return ())
+                fitWithSpline (modulatedUnitPolynoms templates) 1 dat 2 (\_ -> return ())
         let
             Left residue = binaryOp (F.subtr) (Left dat) (Right (Left spline)) True g
             vals = values1 residue
