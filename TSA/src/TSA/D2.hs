@@ -31,10 +31,10 @@ import qualified Data.Vector.Unboxed as V
 import Statistics.Sample
 import qualified Math.IODoubleVector as IOV
 
-
 df = 0.1
 ln2 = log 2
 lnp = ln2 / df / df
+numPhaseBins = 50
 
 calcDispersions :: DataParams -> Double -> Double -> Double -> Double -> Int -> Int -> String
     -> Bool 
@@ -52,47 +52,42 @@ calcDispersions dataParams periodStart' periodEnd' minCorrLen' maxCorrLen' metho
         step = (freqEnd - freqStart) / (fromIntegral precision)
         puFunc = progressUpdateFunc taskEnv
         Left dat = subData (head (dataSet dataParams))
-    bins <- phaseBins dat (periodStart / fromIntegral precision / 2)
+    bins <- phaseBins dat (periodStart / numPhaseBins)
     let
         corrLens =
             if minCorrLen == maxCorrLen
                 then 
-                    V.singleton minCorrLen
+                    [minCorrLen]
                 else
-                    V.fromList [minCorrLen, minCorrLen + (maxCorrLen - minCorrLen) / fromIntegral precision .. maxCorrLen]
-
-        mapFunc i _ = 
+                    [minCorrLen, minCorrLen + (maxCorrLen - minCorrLen) / fromIntegral precision .. maxCorrLen]
+        freqs = [freqStart + fromIntegral i * step | i <- [0 .. precision]]
+        dispFunc corrLen _ = 
             do 
                 let
-                    freq = freqStart + fromIntegral i * step
-                    disps = d2 bins freq corrLens method
-                return (freq, disps)
-    freqsDisps <- calcConcurrently mapFunc puFunc (taskInitializer taskEnv) (taskFinalizer taskEnv) [0 .. precision]
-    let
-        dispersions = V.concat $ zipWith (\corrLen i ->
-                let 
-                    dispersions = map (\(freq, disps) -> (corrLen, freq, disps V.! i)) freqsDisps
-                    normalizedDispersions =  
+                    disps = map (d2 method bins corrLen) freqs 
+                    normalizedDisps =  
                         if normalize 
                             then
                                 let 
-                                    (corrLens, freqs, disps) = unzip3 dispersions 
-                                    norm = maximum disps
+                                    maxDisp = maximum disps
+                                    minDisp = minimum disps
+                                    norm = maxDisp - minDisp
                             in
-                                zip3 corrLens freqs $ map (/ norm) disps 
-                            else dispersions
-                in
-                    V.fromList $ normalizedDispersions
-            ) (V.toList corrLens) [0 .. ] 
+                                map (\disp -> (disp - minDisp) / norm) disps 
+                            else disps
+                return (corrLen, zip freqs normalizedDisps)
+    disps <- calcConcurrently dispFunc puFunc (taskInitializer taskEnv) (taskFinalizer taskEnv) corrLens
+    let
+        dispersions = concatMap (\(corrLen, freqsDisps) -> map (\(freq, disp) -> (corrLen, freq, disp)) freqsDisps) disps
     puFunc 1
-    return $ D.data2' dispersions
+    return $ D.data2' $ V.fromList dispersions
 
 
 phaseBins :: Data -> Double -> IO [(Double, Double)]
 phaseBins dat binSize = do
     let
         vals = D.values1 dat
-        numBins = round $ (D.xMax1 dat - D.xMin1 dat) / binSize 
+        numBins = ceiling $ (D.xMax1 dat - D.xMin1 dat) / binSize 
     deltay2s <- IOV.vector (replicate numBins 0) 
     mapM_ (\i1 ->
         mapM_ (\i2 -> do
@@ -104,41 +99,37 @@ phaseBins dat binSize = do
             ) [i1 + 1 .. V.length vals - 1]
         ) [0 .. V.length vals - 2]
     deltay2sList <- IOV.values deltay2s
-    return $ zip [binSize * i | i <- [1 ..]] deltay2sList
+    return $ zip [binSize * fromIntegral i | i <- [1 ..]] deltay2sList
 
-d2 :: [(Double, Double)] -> Double -> V.Vector Double -> Int -> V.Vector Double
-d2 bins freq corrLens method =
+d2 :: Int -> [(Double, Double)] -> Double -> Double -> Double
+d2 method bins corrLen freq  =
     let
-        smoothWins = corrLens
-        threeSigmas = V.map (* 2.54796540086) smoothWins
-        invSmoothWins2 = V.map (\x -> 1 / (x * x)) smoothWins
+        smoothWin = corrLen
+        threeSigma = smoothWin * 2.54796540086
+        invSmoothWin2 = 1 / (smoothWin * smoothWin) 
+        (disp, norm) = foldl' (\(disp, norm) (deltax, deltay2) ->
+                let
+                    ln2deltax2 = -ln2 * deltax ^ 2
+                    (n, deltaf') = properFraction $ deltax * freq
+                    deltaf = min (1 - deltaf') deltaf'
+                    lnpdeltaf2 = lnp * deltaf ^ 2
+                in
+                    case method of
+                        0 -> -- Box
+                            if deltax >= corrLen 
+                                then (disp, norm)
+                                else if deltaf < df then (disp + deltay2, norm + 1) else (disp, norm)
+                        1 -> -- Gauss
+                            let
+                                g = exp (ln2deltax2 * invSmoothWin2 - lnpdeltaf2) 
+                            in
+                                if deltax >= threeSigma
+                                    then (disp, norm)
+                                    else if deltaf < df then (disp + g * deltay2, norm + g) else (disp, norm)
+            
+            ) (0, 0) bins
     in
-        V.zipWith3 (\corrLen threeSigma invSmoothWin2 -> 
-                    let 
-                        (disp, norm) = foldl' (\(disp, norm) (deltax, deltay2) ->
-                                let
-                                    ln2deltax2 = -ln2 * deltax ^ 2
-                                    (n, deltaf') = properFraction $ deltax * freq
-                                    deltaf = min (1 - deltaf') deltaf'
-                                    lnpdeltaf2 = lnp * deltaf ^ 2
-                                in
-                                    case method of
-                                        0 -> -- Box
-                                            if deltax >= corrLen 
-                                                then (disp, norm)
-                                                else if deltaf < df then (disp + deltay2, norm + 1) else (disp, norm)
-                                        1 -> -- Gauss
-                                            let
-                                                g = exp (ln2deltax2 * invSmoothWin2 - lnpdeltaf2) 
-                                            in
-                                                if deltax >= threeSigma
-                                                    then (disp, norm)
-                                                    else if deltaf < df then (disp + g * deltay2, norm + g) else (disp, norm)
-                            
-                            ) (0, 0) bins
-                    in
-                        disp / norm
-                ) corrLens threeSigmas invSmoothWins2
+        disp / norm
 
 {-
 reshuffle :: Data -> Double -> IO Data
