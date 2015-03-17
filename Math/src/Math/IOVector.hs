@@ -7,6 +7,7 @@ module Math.IOVector (
                     set, 
                     setAll,
                     elemOp,
+                    elemOpi,
                     op,
                     op3,
                     getLength,
@@ -52,18 +53,18 @@ setAll :: Num a => [(Int, a)] -> IOVector a -> IO ()
 setAll values (IOVector v) =
     mapM_ (\(i, value) -> writeArray v i value) values
 
-elemOp :: Num a => a -> (a -> a -> a) -> IOVector a -> IO (IOVector a)
-elemOp k f v = 
+elemOp :: Num a => (a -> a) -> IOVector a -> IO (IOVector a)
+elemOp f v = 
     do
         len <- getLength v
-        mapM_ (\i -> elemOpi i k f v) [0 .. len - 1]
+        mapM_ (\i -> elemOpi i f v) [0 .. len - 1]
         return v
 
-elemOpi :: Num a => Int -> a -> (a -> a -> a) -> IOVector a -> IO ()
-elemOpi i value f v = 
+elemOpi :: Num a => Int -> (a -> a) -> IOVector a -> IO ()
+elemOpi i f v = 
     do
         curVal <- get i v
-        set i (curVal `f` value) v
+        set i (f curVal) v
 
 getLength :: Num a => IOVector a -> IO Int
 getLength (IOVector v) = 

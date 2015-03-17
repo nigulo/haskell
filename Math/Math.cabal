@@ -95,7 +95,8 @@ test-suite MathTests
                    IODoubleMatrix,
                    Math.LinearEquationsTest,
                    Math.IOLinearEquationsTest,
-                   Math.IODoubleLinearEquationsTest
+                   Math.IODoubleLinearEquationsTest,
+                   Math.IODoubleVectorTest
   extensions:      
                    FlexibleInstances, 
                    ScopedTypeVariables

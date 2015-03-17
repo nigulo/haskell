@@ -7,6 +7,7 @@ module Math.IODoubleVector (
                     set, 
                     setAll,
                     elemOp,
+                    elemOpi,
                     op,
                     op3,
                     getLength,
@@ -50,18 +51,18 @@ setAll :: [(Int, Double)] -> IODoubleVector -> IO ()
 setAll values (IODoubleVector v) =
     mapM_ (\(i, value) -> writeArray v i value) values
 
-elemOp :: Double -> (Double -> Double -> Double) -> IODoubleVector -> IO IODoubleVector
-elemOp k f v = 
+elemOp :: (Double -> Double) -> IODoubleVector -> IO IODoubleVector
+elemOp f v = 
     do
         len <- getLength v
-        mapM_ (\i -> elemOpi i k f v) [0 .. len - 1]
+        mapM_ (\i -> elemOpi i f v) [0 .. len - 1]
         return v
 
-elemOpi :: Int -> Double -> (Double -> Double -> Double) -> IODoubleVector -> IO ()
-elemOpi i value f v = 
+elemOpi :: Int -> (Double -> Double) -> IODoubleVector -> IO ()
+elemOpi i f v = 
     do
         curVal <- get i v
-        set i (curVal `f` value) v
+        set i (f curVal) v
 
 getLength :: IODoubleVector -> IO Int
 getLength (IODoubleVector v) = 

@@ -37,8 +37,8 @@ set i value (Vector v) = Vector (v // [(i, value)])
 setAll :: Num a => [(Int, a)] -> Vector a -> Vector a
 setAll values (Vector v) = Vector (v // values)
 
-elemOp :: Num a => Int -> a -> (a -> a -> a) -> Vector a -> Vector a
-elemOp i value f v = set i ((get i v) `f` value) v
+elemOp :: Num a => Int -> (a -> a) -> Vector a -> Vector a
+elemOp i f v = set i (f (get i v)) v
 
 getLength :: Num a => Vector a -> Int
 getLength (Vector v) = u - l + 1 where

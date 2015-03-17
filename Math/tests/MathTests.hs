@@ -8,6 +8,7 @@ import {-@ HTF_TESTS @-} Math.FunctionTest
 import {-@ HTF_TESTS @-} Math.LinearEquationsTest
 import {-@ HTF_TESTS @-} Math.IOLinearEquationsTest
 import {-@ HTF_TESTS @-} Math.IODoubleLinearEquationsTest
+import {-@ HTF_TESTS @-} Math.IODoubleVectorTest
 
 main :: IO()
 main = htfMain htf_importedTests
