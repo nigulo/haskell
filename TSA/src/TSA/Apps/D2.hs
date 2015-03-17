@@ -24,10 +24,10 @@ main = do
         taskEnv = defaultTaskEnv {logFunc = \str -> hPutStr handle (str ++ "\n")}
 
     dp <- Xml.parseFromFile "data" "data" >>= \doc -> return (Xml.fromDocument doc)
-    dispersions <- calcDispersions dp periodStart periodEnd corrLenStart corrLenEnd method precision (dataName dp ++ "_period") False taskEnv
+    dispersions <- calcDispersions dp periodStart periodEnd corrLenStart corrLenEnd method precision (dataName dp ++ "_period") True False taskEnv
 
     mapM_ (\i -> do
-        calcDispersions dp periodStart periodEnd corrLenStart corrLenEnd method precision (dataName dp ++ "_period" ++ (show i)) True taskEnv
+        calcDispersions dp periodStart periodEnd corrLenStart corrLenEnd method precision (dataName dp ++ "_period" ++ (show i)) True True taskEnv
         return ()
         ) [1 .. bootstrapCount]
     hClose handle

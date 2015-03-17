@@ -493,6 +493,7 @@ data D2Params = D2Params {
     d2CorrLenStart :: Double,
     d2CorrLenEnd :: Double,
     d2Method :: Int,
+    d2Normalize :: Bool,
     d2Precision :: Int,
     d2CommonParams :: CommonParams
 } deriving (Show, Read)
@@ -505,6 +506,7 @@ instance Xml.XmlElement D2Params where
          ("corrlenstart", show (d2CorrLenStart params)),
          ("corrlenend", show (d2CorrLenEnd params)),
          ("method", show (d2Method params)),
+         ("normalize", show (d2Normalize params)),
          ("precision", show (d2Precision params))
         ]
         (
@@ -526,6 +528,9 @@ instance Xml.XmlElement D2Params where
             d2CorrLenStart = read $ Xml.attrValue e "corrlenstart",
             d2CorrLenEnd = read $ Xml.attrValue e "corrlenend",
             d2Method = read $ Xml.attrValue e "method",
+            d2Normalize = case Xml.maybeAttrValue e "normalize" of
+                Just normalize -> read normalize
+                Nothing -> True,
             d2Precision = read $ Xml.attrValue e "precision",
             d2CommonParams = Xml.fromElement (Xml.contentElement e commonParamsXmlElementName)
         }
@@ -1094,7 +1099,8 @@ newD2 = D2Params {
     d2CorrLenStart = 1, 
     d2CorrLenEnd = 100, 
     d2Method = 0,
-    d2Precision = 10000,
+    d2Normalize = True,
+    d2Precision = 100,
     d2CommonParams = CommonParams {
         commonName = "D2",
         commonNo = 1

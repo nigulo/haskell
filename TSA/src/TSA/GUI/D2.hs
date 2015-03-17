@@ -79,6 +79,9 @@ d2Dialog stateRef = do
     comboBoxSetActive methodCombo (d2Method parms)
     addWidget (Just "Method: ") methodCombo dialog
 
+    normalizeCheck <- checkButtonNew >>= \button -> toggleButtonSetActive button (d2Normalize parms) >> return button
+    addWidget (Just "Normalize") normalizeCheck dialog 
+
     precisionAdjustment <- adjustmentNew (fromIntegral (d2Precision parms)) 1 (2**52) 1 1 1
     precisionSpin <- spinButtonNew precisionAdjustment 1 0
     addWidget (Just "Precision: ") precisionSpin dialog
@@ -96,6 +99,7 @@ d2Dialog stateRef = do
                 corrLenStart <- spinButtonGetValue corrLenStartSpin
                 corrLenEnd <- spinButtonGetValue corrLenEndSpin
                 methodNo <- comboBoxGetActive methodCombo
+                normalize <- toggleButtonGetActive normalizeCheck
                 precision <- spinButtonGetValue precisionSpin
                 widgetDestroy dialog
                 
@@ -106,22 +110,23 @@ d2Dialog stateRef = do
                         d2CorrLenStart = corrLenStart,
                         d2CorrLenEnd = corrLenEnd,
                         d2Method = methodNo,
+                        d2Normalize = normalize,
                         d2Precision = round precision,
                         d2CommonParams = updateCommonParams name commonParams
                     }}
                 
-                runTask stateRef "D2 statistic" $ d2 stateRef selectedData periodStart periodEnd corrLenStart corrLenEnd methodNo (round precision) name
+                runTask stateRef "D2 statistic" $ d2 stateRef selectedData periodStart periodEnd corrLenStart corrLenEnd methodNo (round precision) name normalize
                 return ()
         else
             do
                 widgetDestroy dialog
 
-d2 :: StateRef -> DataParams -> Double -> Double -> Double -> Double -> Int -> Int -> String-> IO ()
-d2 stateRef dataParams periodStart periodEnd minCorrLen maxCorrLen method precision name = do
+d2 :: StateRef -> DataParams -> Double -> Double -> Double -> Double -> Int -> Int -> String -> Bool -> IO ()
+d2 stateRef dataParams periodStart periodEnd minCorrLen maxCorrLen method precision name normalize = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
     tEnv <- taskEnv stateRef
-    dispersions <- calcDispersions dataParams periodStart periodEnd minCorrLen maxCorrLen method precision name False tEnv
+    dispersions <- calcDispersions dataParams periodStart periodEnd minCorrLen maxCorrLen method precision name normalize False tEnv
     let 
         graphTabParms = (graphTabs state) !! currentGraphTab
         selectedGraph = graphTabSelection graphTabParms
