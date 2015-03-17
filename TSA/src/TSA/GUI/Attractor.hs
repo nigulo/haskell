@@ -94,7 +94,7 @@ findAttractor stateRef dataParams dimension =
             attractorData =
                 case dimension of 
                     2 -> D.data1' $ V.zip (V.init vals) (V.tail vals)
-                    3 -> D.data2 $ map (\(x1, x2, y, w ) -> ([x1, x2], y, w)) $ (zip4 (init  (init (V.toList vals))) (init (tail (V.toList vals)))) (tail (tail (V.toList vals))) (repeat 1)
+                    3 -> D.data2' $ V.zip3 (V.init (V.init vals)) (V.init (V.tail vals)) (V.tail (V.tail vals))
             
         modifyState stateRef $ addData (Left attractorData) ((dataName dataParams) ++ "_attractor" ++ show dimension) (Just (currentGraphTab, selectedGraph))
 

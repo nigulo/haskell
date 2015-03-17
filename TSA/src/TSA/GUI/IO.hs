@@ -254,10 +254,10 @@ readAscii stateRef fileName colTypes cols name dataOrSpectrum = do
                                 then (head line, last line, 1) 
                                 else (head line, line !! 1, last line)) dataLines
                     else
-                        D.data2 $ map (\line -> 
+                        D.data2 $ V.fromList $ map (\line -> 
                             if length line == 3 
-                                then ([head line, line !! 1], last line, 1) 
-                                else ([head line, line !! 1], line !! 2, last line)) dataLines
+                                then (head line, line !! 1, last line, 1) 
+                                else (head line, line !! 1, line !! 2, last line)) dataLines
             graphTabParms = (graphTabs state) !! currentGraphTab
             selectedGraph = graphTabSelection graphTabParms
     modifyMVar_ stateRef $ \state -> return $ addDiscreteData dat (if name == "" then fileName else name) (Just (currentGraphTab, selectedGraph)) state

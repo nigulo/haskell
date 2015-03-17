@@ -29,7 +29,7 @@ module Regression.Data (
     setW,
     getY,
     selectData1,
-    sampleData,
+    --sampleData,
     sampleData1,
     data1,
     data1',
@@ -40,7 +40,7 @@ module Regression.Data (
     interpolate,
     interpolatedValues,
     interpolatedValue,
-    interpolatedData,
+    --interpolatedData,
     interpolate1,
     interpolatedValues1,
     interpolatedValue1,
@@ -484,9 +484,9 @@ interpolatedValues xs dat =
 interpolatedValue :: [Double] -> Data -> Double
 interpolatedValue x dat = head $ interpolatedValues [x] dat
 
-interpolatedData :: [[Double]] -> Data -> Data
-interpolatedData xs1 dat = 
-    data2 $ zip3 xs1 (interpolatedValues xs1 dat) (replicate (length xs1) 1)
+--interpolatedData :: [[Double]] -> Data -> Data
+--interpolatedData xs1 dat = 
+--    data2 $ zip3 xs1 (interpolatedValues xs1 dat) (replicate (length xs1) 1)
 
 
 -- | Filters a subrange from data set from x1 (including) to x2 (excluding)
@@ -543,12 +543,15 @@ sampleData1 xs (Data2 d) =
 sampleData1 xs s@(Spectrum2 _) = 
     spectrum1 $ V.filter (\(x, _, _) -> x `V.elem` xs) (values1 s)
 
-sampleData :: [[Double]] -> Data -> Data
-sampleData xs d = 
-    data2 $ filter (\(x, _, _) -> x `elem` xs) (values d)
+--sampleData :: [[Double]] -> Data -> Data
+--sampleData xs d = 
+--    data2 $ filter (\(x, _, _) -> x `elem` xs) (values d)
 
 filterData :: (([Double], Double, Double) -> Bool) -> Data -> Data
-filterData f d = data2 (filter f (values d))
+filterData f s@(Data1 _) = data0 (V.filter (\(y, w) -> f ([], y, w)) (values0 s))
+filterData f s@(Data2 _) = data1 (V.filter (\(x, y, w) -> f ([x], y, w)) (values1 s))
+filterData f s@(Data3 _) = data2 (V.filter (\(x, y, z, w) -> f ([x, y], z, w)) (values2 s))
+filterData f s@(Spectrum2 _) = data1 (V.filter (\(x, y, w) -> f ([x], y, w)) (values1 s))
 
 data0 :: V.Vector (Double, Double) -> Data
 data0 vals = Data1 vals
@@ -562,13 +565,11 @@ data1 vals = Data2 vals
 data1' :: V.Vector (Double, Double) -> Data
 data1' vals = Data2 $ V.map (\(x, y) -> (x, y, 1)) vals
 
-data2 :: [([Double], Double, Double)] -> Data
-data2 vals@(([x], _, _):_) = Data2 $ V.fromList $ map (\([x], y, w) -> (x, y, w)) vals
-data2 vals@(([x1, x2], _, _):_) = Data3 $ V.fromList $ map (\([x1, x2], y, w) -> (x1, x2, y, w)) vals
+data2 :: V.Vector (Double, Double, Double, Double) -> Data
+data2 = Data3
 
-data2' :: [([Double], Double)] -> Data
-data2' vals@(([x], _):_) = Data2 $ V.fromList $ map (\([x], y) -> (x, y, 1)) vals
-data2' vals@(([x1, x2], _):_) = Data3 $ V.fromList $ map (\([x1, x2], y) -> (x1, x2, y, 1)) vals
+data2' :: V.Vector (Double, Double, Double) -> Data
+data2' vals = Data3 $ V.map (\(x, y, z) -> (x, y, z, 1)) vals
 
 spectrum1 :: V.Vector (Double, Double, Double) -> Data
 spectrum1 vals = 

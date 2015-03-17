@@ -78,11 +78,11 @@ getValues ds [varValDef1, varValDef2] g puFunc initializer finalizer statistic =
     vals <- calcConcurrently (\(i, j) puFunc ->
             do
                 y <- return $ getValue ds [xs !! i, ys !! j] (mkStdGen 1) statistic
-                return ([xs !! i, ys !! j], y, 0)
+                return (xs !! i, ys !! j, y, 1)
         )  puFunc initializer finalizer [(i, j) | i <- [0 .. length xs - 1], j <- [0 .. length ys - 1]]
 
     let
-        spec3d = D.data2 vals
+        spec3d = D.data2 $ V.fromList vals
     return spec3d
 
 getFunc :: (RandomGen g) => [Either D.Data AD.AnalyticDataWrapper] -> g -> Int -> String -> ([Double] -> Double)

@@ -125,25 +125,10 @@ d2 stateRef dataParams periodStart periodEnd minCorrLen maxCorrLen method precis
     let 
         graphTabParms = (graphTabs state) !! currentGraphTab
         selectedGraph = graphTabSelection graphTabParms
-    if length dispersions > 0 
-        then
-            do
-                mapM_ (\(corrLen, dp) -> do
-                    modifyState stateRef $ addDataParams dp (Just (currentGraphTab, selectedGraph))
-                    let 
-                        sdp = head $ dataSet dp
-                        (Left d) = subData sdp
-                        vals = D.xys1 d
-                        yMin = D.yMin d
-                        yMax = D.yMax d
-                        yRange = yMax - yMin
-                        toStr (x, y) = show corrLen ++ " " ++ show x ++ " " ++ show ((y - yMin) / yRange) ++ "\n"
-                        --toStr (x, y) = show corrLen ++ " " ++ show x ++ " " ++ show y ++ "\n"
-                        str = concatMap (toStr) (V.toList vals)
-                    handle <- openFile ("phasedisp.csv") AppendMode
-                    hPutStr handle (str ++ "\n")
-                    hClose handle
-                    ) dispersions
-        else 
-            return ()
+    handle <- openFile (name ++ ".csv") WriteMode
+    V.mapM_ (\(corrLen, freq, disp, _) -> do
+        hPutStr handle (show corrLen ++ " " ++ show freq ++ " " ++ show disp ++ "\n")
+        ) $ D.values2 dispersions
+    hClose handle
+    modifyState stateRef $ addDataParams (createDataParams_ name [createSubDataParams__ (Left dispersions)]) (Just (currentGraphTab, selectedGraph))
     (progressUpdateFunc tEnv) 1

@@ -112,7 +112,7 @@ sampleAnalyticData s@(AD.AnalyticData (((_:[]), _, _):_)) [minx] [maxx] [num] g 
             V.zip (V.fromList (AD.getValues (map (\x ->  [x]) [minx, minx + step .. maxx]) g s)) (V.replicate num 1))
 
 -- 3d analytic data sampling
-sampleAnalyticData s minxs maxxs nums g =
+sampleAnalyticData s@(AD.AnalyticData (((_:_:[]), _, _):_)) minxs@[_, _] maxxs@[_, _] nums@[_, _] g =
     let 
         xs =
             zipWith3 (\minx maxx num ->  
@@ -121,9 +121,9 @@ sampleAnalyticData s minxs maxxs nums g =
             ) minxs maxxs nums
         
         xss = sequence xs
-        
+        ys = AD.getValues xss g s
     in 
-        data2 (zip3 xss (AD.getValues xss g s) (replicate (length xss) 1))
+        data2 $ V.fromList $ zipWith (\[x1, x2] y -> (x1, x2, y, 1)) xss ys
 
 sampleAnalyticData_ :: (F.Fn d, RandomGen g) => AD.AnalyticData d -> [Int] -> g -> Data
 sampleAnalyticData_ s = sampleAnalyticData s (AD.xMins s) (AD.xMaxs s) 
