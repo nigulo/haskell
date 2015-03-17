@@ -34,139 +34,6 @@ df = 0.1
 ln2 = log 2
 lnp = ln2 / df / df
 
-{-
-calcDispersions :: DataParams -> Double -> Double -> Double -> Double -> Int -> Int -> String -> Bool 
-    -> TaskEnv
-    -> IO [(Double, DataParams)]
-calcDispersions dataParams periodStart' periodEnd' minCorrLen' maxCorrLen' method precision name bootstrap taskEnv = do
-    let 
-        periodStart = min periodStart' periodEnd'
-        periodEnd = max periodStart' periodEnd'
-        minCorrLen = min minCorrLen' maxCorrLen'
-        maxCorrLen = max minCorrLen' maxCorrLen'
-        freqStart = 1 / periodEnd
-        freqEnd = 1 / periodStart
-        step = (freqEnd - freqStart) / (fromIntegral precision)
-        puFunc = progressUpdateFunc taskEnv
-
-        findDispersions :: Double -> (Double, [(Double, Double)]) -> Either D.Data (Either S.Spline FS.Functions) -> (Double -> IO ()) -> IO (Either D.Data (Either S.Spline FS.Functions), [(Double, Double)]) 
-        findDispersions corrLen (prevCorrLen, info) (Left dat) puFunc = do
-            let
-                mapFunc i puFunc = 
-                    do
-                        dispersionAndInfo <-
-                            do 
-                                let
-                                    (prevDisp, prevNorm) = info !! i
-                                    freq = freqStart + fromIntegral i * step
-                                --dat1 <- if bootstrap then reshuffle dat freq else return dat
-                                (disp, norm) <- d2' dat freq corrLen prevCorrLen method
-                                putStrLn $ "corrLen freq disp norm: " ++ show corrLen ++ " " ++ show freq ++ " " ++ show (disp + prevDisp) ++ " " ++ show (norm + prevNorm) 
-                                return ((disp + prevDisp) / (norm + prevNorm) / 2 / (variance (D.ys dat)), (disp + prevDisp, norm + prevNorm))
-                                --disp <- d2 dat period corrLen 0
-                                --return (disp, (0, 0))
-                        --puFunc $ (fromIntegral i) / (fromIntegral precision)
-                        return dispersionAndInfo
-            dispersionAndInfo <- calcConcurrently mapFunc puFunc (taskInitializer taskEnv) (taskFinalizer taskEnv) [0 .. precision]
-            let
-                (dispersions, info) = unzip dispersionAndInfo
-                norm = maximum dispersions
-                normalizedDispersions =  
-                    if False -- norm > 0 
-                        then map (/ norm) dispersions 
-                        else dispersions
-                freqSpec = D.Spectrum2 ((freqStart, step), V.zip (V.fromList normalizedDispersions) (V.replicate (length normalizedDispersions) 1))
-            return (Left freqSpec, info)
-    let
-        namesCorrLenghts =
-            if minCorrLen == maxCorrLen
-                then 
-                    [(name, minCorrLen)]
-                else
-                    zipWith (\i corrLen -> (name ++ (show i), corrLen)) [1 ..] [minCorrLen, minCorrLen + (maxCorrLen - minCorrLen) / fromIntegral precision .. maxCorrLen]
-        corrLenFunc :: [(String, Double)] -> Double -> [[(Double, Double)]] -> IO [(Double, DataParams)]
-        corrLenFunc [] _ _ = return []
-        corrLenFunc ((name, corrLen):namesCorrLenghts) prevCorrLen prevInfos = do
-            subDispersionsAndInfo <- mapM (\(sdp, prevInfo) -> do
-                    let
-                        Left dat = subData sdp
-                    dat1 <- if bootstrap then reshuffleData dat else return dat
-                    findDispersions corrLen (prevCorrLen, prevInfo) (Left dat1) puFunc
-                ) (zip (dataSet dataParams) prevInfos)
-            let
-                (subDispersions, infos) = unzip subDispersionsAndInfo
-                dispersions = createDataParams_ name (map (createSubDataParams__ ) subDispersions)
-                    
-            bestPeriods <- mapM (\(i, SubDataParams _ (Left periodSpec) _) -> do
-                    let
-                        freqDisps = sortBy (\(_, disp1) (_, disp2) -> compare disp1 disp2) $ V.toList $ D.getMinima periodSpec
-                        freqs = map fst freqDisps
-                    --logFunc ("Possible freqs for " ++ name ++ "[" ++ show i ++ "] = " ++ (show freqs))
-                    case freqDisps of 
-                         [] -> return Nothing
-                         ((freq, disp):_) -> return $ Just (1 / freq, (1 - disp) ^ 2)  
-                ) (zip [1, 2 ..] (dataSet dispersions))
-            let
-                periodMean = meanWeighted $ V.fromList $ catMaybes bestPeriods
-                periodVar = varianceWeighted $ V.fromList $ catMaybes bestPeriods
-                periodDisp = mean $ V.map (\(p, d) -> 1 - sqrt d) $ V.fromList $ catMaybes bestPeriods
-                
-            (logFunc taskEnv) ("Period mean stdev disp: " ++ show periodMean ++ " " ++ show periodVar ++ " " ++ show periodDisp)
-            next <- corrLenFunc namesCorrLenghts corrLen infos
-            return $ (corrLen, dispersions):next
-    dispersions <- corrLenFunc namesCorrLenghts 0 (repeat (repeat (0, 0)))
-    puFunc 0
-    return dispersions
-
-d2 :: Data -> Double -> Double -> Int -> IO Double
-d2 dat freq corrLen method =  
-    do 
-        (disp, norm) <- d2' dat freq corrLen 0 method
-        putStrLn $ "corrLen freq disp norm: " ++ show corrLen ++ " " ++ show freq ++ " " ++ show disp ++ " " ++ show norm 
-        return $ disp / norm / 2 / (variance (D.ys dat))
-
-d2' :: Data -> Double -> Double -> Double -> Int -> IO (Double, Double)
-d2' dat freq corrLen prevCorrLen method =
-    do 
-        let
-            smoothWin = corrLen
-            threeSigma = 2.54796540086 * smoothWin
-            invSmoothWin = 1 / smoothWin
-            vals = D.values1 dat
-            calcDisp i1 i2 = 
-                if i1 >= V.length vals - 1
-                    then (0, 0)
-                    else if i2 >= V.length vals then calcDisp (i1 + 1) (i1 + 2)
-                    else
-                        let
-                            (x1, y1, _) = vals V.! i1
-                            (x2, y2, _) = vals V.! i2
-                            deltax = x2 - x1
-                        in  
-                         if deltax < prevCorrLen
-                             then calcDisp i1 (i2 + 1)
-                             else
-                                let
-                                    (n, deltaf') = properFraction $ deltax * freq
-                                    (disp, norm) = calcDisp i1 (i2 + 1)
-                                    deltaf = min (1 - deltaf') deltaf'
-                                in
-                                    case method of
-                                        0 -> -- Box
-                                            if deltax >= corrLen 
-                                                then calcDisp (i1 + 1) (i1 + 2)
-                                                else if deltaf < df then (disp + ((y2 - y1) ^ 2), norm + 1) else (disp, norm)
-                                        1 -> -- Gauss
-                                            let
-                                                g = exp (-ln2 * (deltax * invSmoothWin) ^ 2 - lnp * deltaf ^ 2) 
-                                            in
-                                                if deltax >= threeSigma
-                                                    then calcDisp (i1 + 1) (i1 + 2)
-                                                    else if deltaf < df then (disp + g * ((y2 - y1) ^ 2), norm + g) else (disp, norm)
-            (disp, norm) = calcDisp 0 1
-        return $ (disp, norm)
--}
-
 calcDispersions :: DataParams -> Double -> Double -> Double -> Double -> Int -> Int -> String -> Bool 
     -> TaskEnv
     -> IO Data
@@ -188,7 +55,7 @@ calcDispersions dataParams periodStart' periodEnd' minCorrLen' maxCorrLen' metho
                     do 
                         let
                             freq = freqStart + fromIntegral i * step
-                        disps <- d2'' dat freq corrLens method
+                        disps <- d2 dat freq corrLens method
                         putStrLn $ "freq corrLen disp: " ++ show freq ++ " " ++ show (V.zip corrLens disps) 
                         return (freq, disps)
             freqsDisps <- calcConcurrently mapFunc puFunc (taskInitializer taskEnv) (taskFinalizer taskEnv) [0 .. precision]
@@ -219,42 +86,44 @@ calcDispersions dataParams periodStart' periodEnd' minCorrLen' maxCorrLen' metho
     puFunc 1
     return $ D.data2' dispersions
 
-d2'' :: Data -> Double -> V.Vector Double -> Int -> IO (V.Vector Double)
-d2'' dat freq corrLens method =
+d2 :: Data -> Double -> V.Vector Double -> Int -> IO (V.Vector Double)
+d2 dat freq corrLens method =
     do 
         let
             smoothWins = corrLens
             threeSigmas = V.map (* 2.54796540086) smoothWins
-            invSmoothWins = V.map (1 /) smoothWins
+            invSmoothWins2 = V.map (\x -> 1 / (x * x)) smoothWins
             vals = D.values1 dat
             calcDisp i1 i2 dispsNorms = 
                 if i1 >= V.length vals - 1
                     then dispsNorms
-                    else if i2 >= V.length vals then calcDisp (i1 + 1) (i1 + 2) dispsNorms
-                    else
-                        let
-                            (x1, y1, _) = vals V.! i1
-                            (x2, y2, _) = vals V.! i2
-                            deltax = x2 - x1
-                        in  
+                    else if i2 >= V.length vals 
+                        then calcDisp (i1 + 1) (i1 + 2) dispsNorms
+                        else
                             let
+                                (x1, y1, _) = vals V.! i1
+                                (x2, y2, _) = vals V.! i2
+                                deltax = x2 - x1
+                                ln2deltax2 = -ln2 * deltax ^ 2
+                                deltay2 = (y2 - y1) ^ 2
                                 (n, deltaf') = properFraction $ deltax * freq
                                 deltaf = min (1 - deltaf') deltaf'
+                                lnpdeltaf2 = lnp * deltaf ^ 2
                             in
-                                calcDisp i1 (i2 + 1) $ V.zipWith4 (\corrLen threeSigma invSmoothWin (disp, norm) -> 
+                                calcDisp i1 (i2 + 1) $ V.zipWith4 (\corrLen threeSigma invSmoothWin2 (disp, norm) -> 
                                         case method of
                                             0 -> -- Box
                                                 if deltax >= corrLen 
                                                     then (disp, norm)
-                                                    else if deltaf < df then (disp + ((y2 - y1) ^ 2), norm + 1) else (disp, norm)
+                                                    else if deltaf < df then (disp + deltay2, norm + 1) else (disp, norm)
                                             1 -> -- Gauss
                                                 let
-                                                    g = exp (-ln2 * (deltax * invSmoothWin) ^ 2 - lnp * deltaf ^ 2) 
+                                                    g = exp (ln2deltax2 * invSmoothWin2 - lnpdeltaf2) 
                                                 in
                                                     if deltax >= threeSigma
                                                         then (disp, norm)
-                                                        else if deltaf < df then (disp + g * ((y2 - y1) ^ 2), norm + g) else (disp, norm)
-                                    ) corrLens threeSigmas invSmoothWins dispsNorms
+                                                        else if deltaf < df then (disp + g * deltay2, norm + g) else (disp, norm)
+                                    ) corrLens threeSigmas invSmoothWins2 dispsNorms
             dispsNorms = calcDisp 0 1 (V.replicate (V.length corrLens) (0, 0))
         return $ V.map (\(disp, norm) -> disp / norm) dispsNorms
 

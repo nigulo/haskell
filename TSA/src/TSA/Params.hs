@@ -499,7 +499,7 @@ data D2Params = D2Params {
 
 instance Xml.XmlElement D2Params where
 
-    toElement params = Xml.element "findperiodparams" 
+    toElement params = Xml.element "d2params" 
         [("periodstart", show (d2PeriodStart params)),
          ("periodend", show (d2PeriodEnd params)),  
          ("corrlenstart", show (d2CorrLenStart params)),
