@@ -402,7 +402,8 @@ doPlot state grphTabParams plotFunc =
                                     if isData d
                                         then
                                             case pointType of
-                                                Impulse -> (Plot2D.list Graph2D.impulses (V.toList (V.map (\(x, y) -> (x + offset, y)) (D.xys1 d))))
+                                                Impulse -> (fmap (Graph2D.lineSpec (((LineSpec.lineWidth lineWidth) . 
+                                                    (LineSpec.lineColor color) . (LineSpec.lineType 1) . (LineSpec.title title)) LineSpec.deflt)) (Plot2D.list Graph2D.impulses (V.toList (V.map (\(x, y) -> (x + offset, y)) (D.xys1 d)))))
                                                 otherwise ->
                                                     let
                                                         pt = case elemIndex pointType gnuPointTypes of 
