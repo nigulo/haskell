@@ -36,11 +36,13 @@ taskManagerDialog stateRef = do
         ) 5000
     on okButton buttonReleaseEvent $ liftIO $
         do
+            widgetDestroy dialog
+            return True
+    on dialog unrealize $ 
+        do
             timeoutRemove handlerId
             modifyMVar_ destroyedRef $ \_ -> do
-                widgetDestroy dialog
                 return True
-            return True
     return ()    
 
 refresh :: StateRef -> Dialog -> MVar Bool -> IO ()
@@ -51,6 +53,7 @@ refresh stateRef dialog destroyedRef =
                 then
                     return ()
                 else do
+                    --putStrLn "Tere"
                     state <- readMVar stateRef
                     contentBox <- castToBox <$> dialogGetContentArea dialog
                     containerForeach contentBox (\widget -> 
