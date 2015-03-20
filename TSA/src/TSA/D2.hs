@@ -85,14 +85,18 @@ calcDispersions' bins freqStart freqEnd minCorrLen maxCorrLen method precision n
                 let
                     disps = map (d2 method bins corrLen) freqs 
                     normalizedDisps =  
-                        if normalize 
+                        if normalize
                             then
                                 let 
                                     maxDisp = maximum disps
                                     minDisp = minimum disps
                                     norm = maxDisp - minDisp
                             in
-                                map (\disp -> (disp - minDisp) / norm) disps 
+                                if maxDisp == minDisp
+                                    then
+                                        disps
+                                    else
+                                        map (\disp -> (disp - minDisp) / norm) disps 
                             else disps
                 return (corrLen, zip freqs normalizedDisps)
     disps <- calcConcurrently dispFunc puFunc (taskInitializer taskEnv) (taskFinalizer taskEnv) corrLens

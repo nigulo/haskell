@@ -52,10 +52,9 @@ main = do
     minDisps <- calcConcurrently (\i _ -> do
             disps <- mapM (\freq ->  
                     mapM (\corrLen -> do 
-                            putStrLn "bootstrapping..."
                             bsBins <- bootstrapBins method bins corrLen freq
-                            putStrLn "done"
                             dispDat <- calcDispersions' bsBins freq freq corrLen corrLen method 1 (dataName dp ++ "_d2" ++ (show i)) True taskEnv
+                            --putStrLn $ show freq ++ " " ++ show (V.head (D.ys dispDat))
                             return (corrLen, freq, V.head (D.ys dispDat))
                         ) corrLens 
                 ) freqs
