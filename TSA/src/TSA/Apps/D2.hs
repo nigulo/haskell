@@ -31,7 +31,8 @@ main = do
     let
         Left dat = subData (head (dataSet dp))
         taskEnv = defaultTaskEnv {logFunc = \str -> hPutStr handle (str ++ "\n")}
-    dispersions <- calcDispersions dat freqStart freqEnd corrLenStart corrLenEnd method precision (dataName dp ++ "_d2") True taskEnv
+    bins <- phaseBins dat (getBinSize freqEnd)
+    dispersions <- calcDispersions' bins freqStart freqEnd corrLenStart corrLenEnd method precision (dataName dp ++ "_d2") True taskEnv
 
     -- Bootstrap stuff
     let
@@ -51,9 +52,11 @@ main = do
     minDisps <- calcConcurrently (\i _ -> do
             disps <- mapM (\freq ->  
                     mapM (\corrLen -> do 
-                            bsDat <- bootstrapData method dat corrLen freq
-                            dispDat <- calcDispersions bsDat freq freq corrLen corrLen method 1 (dataName dp ++ "_d2" ++ (show i)) True taskEnv
-                            return (corrLen, freq, D.ys dispDat)
+                            putStrLn "bootstrapping..."
+                            bsBins <- bootstrapBins method bins corrLen freq
+                            putStrLn "done"
+                            dispDat <- calcDispersions' bsBins freq freq corrLen corrLen method 1 (dataName dp ++ "_d2" ++ (show i)) True taskEnv
+                            return (corrLen, freq, V.head (D.ys dispDat))
                         ) corrLens 
                 ) freqs
             return $ minimumBy (\(_, _, disp1) (_, _, disp2) -> compare disp1 disp2) $ concat disps
