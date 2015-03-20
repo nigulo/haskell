@@ -122,11 +122,13 @@ d2Dialog stateRef = do
                 widgetDestroy dialog
 
 d2 :: StateRef -> DataParams -> Double -> Double -> Double -> Double -> Int -> Int -> String -> Bool -> IO ()
-d2 stateRef dataParams periodStart periodEnd minCorrLen maxCorrLen method precision name normalize = do
+d2 stateRef dataParams periodStart periodEnd minCorrLen maxCorrLen methodNo precision name normalize = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
     tEnv <- taskEnv stateRef
-    dispersions <- calcDispersions dataParams periodStart periodEnd minCorrLen maxCorrLen method precision name normalize False tEnv
+    let
+        Left dat = subData (head (dataSet dataParams))
+    dispersions <- calcDispersions dat (1 / periodEnd) (1 / periodStart)  minCorrLen maxCorrLen (if methodNo == 0 then Box else Gauss) precision name normalize tEnv
     let 
         graphTabParms = (graphTabs state) !! currentGraphTab
         selectedGraph = graphTabSelection graphTabParms

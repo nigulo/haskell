@@ -3,9 +3,14 @@ module Main (main) where
 import TSA.D2
 import TSA.Params
 import qualified Utils.Xml as Xml
+import Regression.Data as D
+import Utils.Concurrent
+
 import System.Environment
 import System.IO
-
+import Statistics.Sample as Sample
+import qualified Data.Vector.Unboxed as V
+import Data.List
 
 main :: IO ()
 main = do
@@ -18,18 +23,48 @@ main = do
         method = read methodS
         precision = read precisionS
         bootstrapCount = read bootstrapCountS
+        freqStart = 1 / periodEnd
+        freqEnd = 1 / periodStart
         
+    dp <- Xml.parseFromFile "data" "data" >>= \doc -> return (Xml.fromDocument doc)
     handle <- openFile ("result") AppendMode
     let
+        Left dat = subData (head (dataSet dp))
         taskEnv = defaultTaskEnv {logFunc = \str -> hPutStr handle (str ++ "\n")}
+    dispersions <- calcDispersions dat freqStart freqEnd corrLenStart corrLenEnd method precision (dataName dp ++ "_d2") True taskEnv
 
-    dp <- Xml.parseFromFile "data" "data" >>= \doc -> return (Xml.fromDocument doc)
-    dispersions <- calcDispersions dp periodStart periodEnd corrLenStart corrLenEnd method precision (dataName dp ++ "_period") True False taskEnv
-
-    mapM_ (\i -> do
-        calcDispersions dp periodStart periodEnd corrLenStart corrLenEnd method precision (dataName dp ++ "_period" ++ (show i)) True True taskEnv
-        return ()
-        ) [1 .. bootstrapCount]
+    -- Bootstrap stuff
+    let
+        corrLens =
+            if corrLenStart == corrLenEnd
+                then 
+                    [corrLenStart]
+                else
+                    [corrLenStart, corrLenStart + (corrLenEnd - corrLenStart) / fromIntegral precision .. corrLenEnd]
+        freqStep = (freqEnd - freqStart) / (fromIntegral precision)
+        freqs =
+            if periodStart == periodEnd
+                then 
+                    [freqStart]
+                else
+                    [freqStart + fromIntegral i * freqStep | i <- [0 .. precision]]
+    minDisps <- calcConcurrently (\i _ -> do
+            disps <- mapM (\freq ->  
+                    mapM (\corrLen -> do 
+                            bsDat <- bootstrapData method dat corrLen freq
+                            dispDat <- calcDispersions bsDat freq freq corrLen corrLen method 1 (dataName dp ++ "_d2" ++ (show i)) True taskEnv
+                            return (corrLen, freq, D.ys dispDat)
+                        ) corrLens 
+                ) freqs
+            return $ minimumBy (\(_, _, disp1) (_, _, disp2) -> compare disp1 disp2) $ concat disps
+        ) (progressUpdateFunc taskEnv) (taskInitializer taskEnv) (taskFinalizer taskEnv) [1 .. bootstrapCount]
+    if minDisps == []
+        then return ()
+        else do
+            let
+                (freqMean, freqVar) = Sample.meanVarianceUnb $ V.fromList $ map (\(_, freq, disp) -> freq) minDisps
+            
+            putStrLn ("Minimum: " ++ show freqMean ++ ", " ++ show freqVar)
     hClose handle
     
     

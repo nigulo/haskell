@@ -1,6 +1,8 @@
 
 module TSA.D2 (
-    calcDispersions) where
+    calcDispersions,
+    Method (..),
+    bootstrapData) where
 
 import Debug.Trace
 
@@ -26,33 +28,31 @@ import System.IO
 import Math.Expression
 import qualified Math.Function as F
 
-import System.Random
 import qualified Data.Vector.Unboxed as V
 import Statistics.Sample
 import qualified Math.IODoubleVector as IOV
+import System.Random.MWC
 
 df = 0.1
 ln2 = log 2
 lnp = ln2 / df / df
 numPhaseBins = 50
 
-calcDispersions :: DataParams -> Double -> Double -> Double -> Double -> Int -> Int -> String
-    -> Bool 
+data Method = Box | Gauss deriving (Show, Read)
+
+calcDispersions :: Data -> Double -> Double -> Double -> Double -> Method -> Int -> String
     -> Bool 
     -> TaskEnv
     -> IO Data
-calcDispersions dataParams periodStart' periodEnd' minCorrLen' maxCorrLen' method precision name normalize bootstrap taskEnv = do
+calcDispersions dat freqStart' freqEnd' minCorrLen' maxCorrLen' method precision name normalize taskEnv = do
     let 
-        periodStart = min periodStart' periodEnd'
-        periodEnd = max periodStart' periodEnd'
+        freqStart = min freqStart' freqEnd'
+        freqEnd = max freqStart' freqEnd'
         minCorrLen = min minCorrLen' maxCorrLen'
         maxCorrLen = max minCorrLen' maxCorrLen'
-        freqStart = 1 / periodEnd
-        freqEnd = 1 / periodStart
-        step = (freqEnd - freqStart) / (fromIntegral precision)
+        freqStep = (freqEnd - freqStart) / (fromIntegral precision)
         puFunc = progressUpdateFunc taskEnv
-        Left dat = subData (head (dataSet dataParams))
-    bins <- phaseBins dat (periodStart / numPhaseBins)
+    bins <- phaseBins dat (freqEnd / numPhaseBins)
     let
         corrLens =
             if minCorrLen == maxCorrLen
@@ -60,7 +60,12 @@ calcDispersions dataParams periodStart' periodEnd' minCorrLen' maxCorrLen' metho
                     [minCorrLen]
                 else
                     [minCorrLen, minCorrLen + (maxCorrLen - minCorrLen) / fromIntegral precision .. maxCorrLen]
-        freqs = [freqStart + fromIntegral i * step | i <- [0 .. precision]]
+        freqs =
+            if freqStart == freqEnd
+                then 
+                    [freqStart]
+                else
+                    [freqStart + fromIntegral i * freqStep | i <- [0 .. precision]]
         dispFunc corrLen _ = 
             do 
                 let
@@ -80,7 +85,11 @@ calcDispersions dataParams periodStart' periodEnd' minCorrLen' maxCorrLen' metho
     let
         dispersions = concatMap (\(corrLen, freqsDisps) -> map (\(freq, disp) -> (corrLen, freq, disp)) freqsDisps) disps
     puFunc 1
-    return $ D.data2' $ V.fromList dispersions
+    case corrLens of
+        [_] -> 
+            return $ D.data1' $ V.fromList $ map (\(_, freq, disp) -> (freq, disp)) dispersions
+        otherwise ->
+            return $ D.data2' $ V.fromList dispersions
 
 
 phaseBins :: Data -> Double -> IO [(Double, Double)]
@@ -101,12 +110,17 @@ phaseBins dat binSize = do
     deltay2sList <- IOV.values deltay2s
     return $ zip [binSize * fromIntegral i | i <- [1 ..]] deltay2sList
 
-d2 :: Int -> [(Double, Double)] -> Double -> Double -> Double
-d2 method bins corrLen freq  =
+
+data MethodParams = BoxParams Double | GaussParams Double Double
+
+getMethodParams :: Method -> Double -> MethodParams
+getMethodParams Box corrLen = BoxParams corrLen
+getMethodParams Gauss corrLen = GaussParams (corrLen * 2.54796540086) (1 / (corrLen * corrLen))
+
+d2 :: Method -> [(Double, Double)] -> Double -> Double -> Double
+d2 method bins corrLen freq =
     let
-        smoothWin = corrLen
-        threeSigma = smoothWin * 2.54796540086
-        invSmoothWin2 = 1 / (smoothWin * smoothWin) 
+        methodParams = getMethodParams method corrLen
         (disp, norm) = foldl' (\(disp, norm) (deltax, deltay2) ->
                 let
                     ln2deltax2 = -ln2 * deltax ^ 2
@@ -114,12 +128,12 @@ d2 method bins corrLen freq  =
                     deltaf = min (1 - deltaf') deltaf'
                     lnpdeltaf2 = lnp * deltaf ^ 2
                 in
-                    case method of
-                        0 -> -- Box
+                    case methodParams of
+                        BoxParams corrLen ->
                             if deltax >= corrLen 
                                 then (disp, norm)
                                 else if deltaf < df then (disp + deltay2, norm + 1) else (disp, norm)
-                        1 -> -- Gauss
+                        GaussParams threeSigma invSmoothWin2 ->
                             let
                                 g = exp (ln2deltax2 * invSmoothWin2 - lnpdeltaf2) 
                             in
@@ -131,32 +145,48 @@ d2 method bins corrLen freq  =
     in
         disp / norm
 
-{-
-reshuffle :: Data -> Double -> IO Data
-reshuffle dat period = 
+bootstrapData :: Method -> Data -> Double -> Double -> IO Data
+bootstrapData method dat corrLen freq = 
     do 
         gen <- createSystemRandom
         let
-            df = 0.1
+            methodParams = getMethodParams method corrLen
             vals = D.values1 dat
             calcDisp i1 i2 = 
                 if i2 >= V.length vals 
-                    then []
-                    else
+                    then return V.empty
+                    else do
                         let
                             (x1, y1, w1) = vals V.! i1
                             (x2, y2, w2) = vals V.! i2
                             deltax = x2 - x1
-
-                            (n, deltaf) = properFraction $ deltax / period
-                            vs = calcDisp i1 (i2 + 1)
-                        in
-                            if 0.5 - abs (0.5 - deltaf) > df then vs else (x1, y1 + (y2 - y1) * w1 / w2, w1):vs
+                            ln2deltax2 = -ln2 * deltax ^ 2
+                            (n, deltaf') = properFraction $ deltax * freq
+                            deltaf = min (1 - deltaf') deltaf'
+                            lnpdeltaf2 = lnp * deltaf ^ 2
+                        vs <- calcDisp i1 (i2 + 1)
+                        case methodParams of
+                            BoxParams corrLen -> 
+                                if deltax >= corrLen 
+                                    then return vs
+                                    else if deltaf < df 
+                                        then return $ V.cons (x1, y2, w1) vs 
+                                        else return vs
+                            GaussParams threeSigma invSmoothWin2 -> do
+                                let
+                                    g = exp (ln2deltax2 * invSmoothWin2 - lnpdeltaf2) 
+                                if deltax >= threeSigma
+                                    then return vs
+                                    else do 
+                                        r :: Double <- asGenIO (uniform) gen
+                                        if deltaf < df && r < g 
+                                            then return $ V.cons (x1, y2, w1) vs 
+                                            else return vs
         reshuffled <- V.mapM (\i -> do
-                let ys = calcDisp i 0
+                ys <- calcDisp i 0
                 r :: Int <- asGenIO (uniform) gen
-                return $ ys !! (r `mod` length ys)
+                return $ ys V.! (r `mod` V.length ys)
             ) (V.fromList [0 .. V.length vals - 1]) 
         
         return $ D.data1 reshuffled
--}
+
