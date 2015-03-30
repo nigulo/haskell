@@ -264,19 +264,19 @@ collect = do
             str <- Utils.IO.readFromFile fileName
             putStrLn str
             let
-                r_lat = if isPrefixOf "btor" fileName 
+                lat_r = if isPrefixOf "btor" fileName 
                     then 
                         drop 4 $ take (length fileName - 4) fileName
                     else 
                         drop 2 $ take (length fileName - 4) fileName
-                Just i = elemIndex '_' r_lat
-                r :: Double = read $ take i r_lat
-                lat :: Double = read $ drop (i + 1) r_lat
+                Just i = elemIndex '_' lat_r
+                lat :: Double = read $ take i lat_r
+                r :: Double = read $ drop (i + 1) lat_r
                 modes :: [(Double, Double, Double, Double, Double, Double)] = map (\line -> 
                         let 
                             [_, freq, freqStd, amp, ampStd] = words line 
                         in 
-                            (r, lat, read freq, read freqStd, read amp, read ampStd)
+                            (lat, r, read freq, read freqStd, read amp, read ampStd)
                     ) $ lines $ str
             return modes
         ) $ filter (isSuffixOf ".log") $ map (map (toLower) . F.encodeString . filename) fileNames
@@ -284,9 +284,11 @@ collect = do
         allModes = List.transpose allModes'
     zipWithM_ (\mode modeNo -> do
             let
-                sortedMode = sortBy (\(r1, lat1, _, _, _, _) (r2, lat2, _, _, _, _) -> compare (r1, lat1) (r2, lat2)) mode
-                amps = concatMap (\(r, lat, freq, freqStd, amp, ampStd) -> show r ++ " " ++ show lat ++ " " ++ show amp ++ "\n") sortedMode
-                freqs = concatMap (\(r, lat, freq, freqStd, amp, ampStd) -> show r ++ " " ++ show lat ++ " " ++ show freq ++ "\n") sortedMode
+                sortedMode = sortBy (\(lat1, r1, _, _, _, _) (lat2, r2, _, _, _, _) -> compare (lat1, r1) (lat2, r2)) mode
+                sortedModeWithPrev = zip sortedMode (tail sortedMode ++ [last sortedMode])
+                blankLine ((lat, _, _, _, _, _), (prevLat, _, _, _, _, _)) = if lat /= prevLat then "\n" else "" 
+                amps = concatMap (\line@((lat, r, freq, freqStd, amp, ampStd), _) -> show lat ++ " " ++ show r ++ " " ++ show amp ++ "\n" ++ (blankLine line)) sortedModeWithPrev
+                freqs = concatMap (\line@((lat, r, freq, freqStd, amp, ampStd), _) -> show lat ++ " " ++ show r ++ " " ++ show freq ++ "\n" ++ (blankLine line)) sortedModeWithPrev
             Utils.IO.writeToFile ("amps" ++ show modeNo ++ ".csv") amps
             Utils.IO.writeToFile ("freqs" ++ show modeNo ++ ".csv") freqs
         ) allModes [1 ..]
