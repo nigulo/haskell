@@ -264,11 +264,7 @@ collect = do
             str <- Utils.IO.readFromFile fileName
             putStrLn str
             let
-                lat_r = if isPrefixOf "btor" fileName 
-                    then 
-                        drop 4 $ take (length fileName - 4) fileName
-                    else 
-                        drop 2 $ take (length fileName - 4) fileName
+                lat_r = dropWhile isLetter $ take (length fileName - 4) fileName
                 Just i = elemIndex '_' lat_r
                 lat :: Double = read $ take i lat_r
                 r :: Double = read $ drop (i + 1) lat_r
