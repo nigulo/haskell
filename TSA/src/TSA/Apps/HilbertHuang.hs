@@ -124,7 +124,6 @@ calc args = do
                     imfSums
                     
         logTexts <- MP.mapM (\(modeNo, (freq, dat)) -> do
-                --storeData dat ("imf" ++ show modeNo)
                 runReaderT (calcAnalyticSignal dat modeNo freq) env
             ) $ zip [1 ..] imfMeans
         mapM_ (\logText -> do
@@ -165,8 +164,13 @@ calcAnalyticSignal imfDat modeNo freq = do
         (ampMean, ampVar) = Sample.meanVarianceUnb $ D.ys amplitude
         logText = show modeNo ++ ": " ++ show (freqMean / 2 / pi) ++ " " {- ++ "(" ++ show freq  ++ ") "-} ++  show (sqrt freqVar / 2 / pi) ++
              " " ++ show ampMean ++ " " ++  show (sqrt ampVar)
-    --liftIO $ storeData frequency ("frequency" ++ show modeNo)
-    --liftIO $ storeData amplitude ("amplitude" ++ show modeNo)
+    if freqMean < 0 
+        then do
+            liftIO $ storeData imfDat (logFilePrefix env ++ "_imf_" ++ show modeNo)
+            liftIO $ storeData frequency (logFilePrefix env ++ "_freq_" ++ show modeNo)
+            liftIO $ storeData amplitude (logFilePrefix env ++ "_amp_" ++ show modeNo)
+        else
+            return ()
     return logText
 
 imf :: Int -> Data 
@@ -277,7 +281,9 @@ collect = do
             return modes
         ) $ filter (isSuffixOf ".log") $ map (map (toLower) . F.encodeString . filename) fileNames
     let
-        allModes = List.transpose allModes'
+        maxModes = maximum $ map length allModes'
+        allModes = List.transpose $ map (\modes@((lat, r, _, _, _, _):_) -> modes ++ replicate (maxModes - length modes) (lat, r, 0, 0, 0, 0)) allModes'
+    print maxModes
     zipWithM_ (\mode modeNo -> do
             let
                 sortedMode = sortBy (\(lat1, r1, _, _, _, _) (lat2, r2, _, _, _, _) -> compare (lat1, r1) (lat2, r2)) mode
