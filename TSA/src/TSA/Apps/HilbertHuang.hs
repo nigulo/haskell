@@ -161,10 +161,10 @@ calcAnalyticSignal imfDat modeNo freq = do
         Just (Left amplitude) = lookup "amplitude" asData
     let
         (freqMean, freqVar) = Sample.meanVarianceUnb $ D.ys frequency
-        (ampMean, ampVar) = Sample.meanVarianceUnb $ D.ys amplitude
-        logText = show modeNo ++ ": " ++ show (freqMean / 2 / pi) ++ " " {- ++ "(" ++ show freq  ++ ") "-} ++  show (sqrt freqVar / 2 / pi) ++
-             " " ++ show ampMean ++ " " ++  show (sqrt ampVar)
-    if freqMean < 0 
+        (enMean, enVar) = Sample.meanVarianceUnb $ V.map (^2) $ D.ys amplitude
+        logText = show modeNo ++ ": " ++ show (freqMean / 2 / pi) ++ " " ++  show (sqrt freqVar / 2 / pi) ++
+             " " ++ show enMean ++ " " ++  show (sqrt enVar)
+    if freqMean < 0
         then do
             liftIO $ storeData imfDat (logFilePrefix env ++ "_imf_" ++ show modeNo)
             liftIO $ storeData frequency (logFilePrefix env ++ "_freq_" ++ show modeNo)
@@ -187,7 +187,8 @@ imf modeNo dat = do
                     (_, maximaDp) <- findExtrema maximaDp 0 "extrema" defaultTaskEnv
                     findExtremaOfOrder minimaDp maximaDp  (modesSkipped + 1)
                 else return (minimaDp, maximaDp)
-        sdev = (Sample.stdDev (D.ys dat)) * precision
+        datSDev = Sample.stdDev (D.ys dat)
+        sdev = datSDev * precision
         dataParams = createDataParams_ "data" [createSubDataParams__ (Left dat)]
     (minimaDp, maximaDp) <- liftIO $ findExtrema dataParams 0 "extrema" defaultTaskEnv
     (minimaDpOfOrder, maximaDpOfOrder) <- liftIO $ findExtremaOfOrder minimaDp maximaDp 0
@@ -203,7 +204,7 @@ imf modeNo dat = do
         then do
             let
                 imfStep :: Data -> Data -> Data -> Double -> Int -> Int -> Int -> IO Data
-                imfStep dat minima maxima prevSdev numUpperNodes numLowerNodes i =
+                imfStep stepDat stepMinima stepMaxima prevSdev numUpperNodes numLowerNodes i =
                     do
                         let
                             fitUpperParams = FitParams {
@@ -222,26 +223,26 @@ imf modeNo dat = do
                                     }
                 
                         [upperEnv, lowerEnv] <- MP.sequence [
-                            fitData fitUpperParams maxima defaultTaskEnv,
-                            fitData fitLowerParams minima defaultTaskEnv]
+                            fitData fitUpperParams stepMaxima defaultTaskEnv,
+                            fitData fitLowerParams stepMinima defaultTaskEnv]
 
                         let 
                             envMean = (upperEnv `S.add` lowerEnv) `S.divide` 2
-                            Left dat2 = U.binaryOp (F.subtr) (Left dat) (Right (Left envMean)) True g
-                            Left maxima2 = U.binaryOp (F.subtr) (Left maxima) (Right (Left envMean)) True g
-                            Left minima2 = U.binaryOp (F.subtr) (Left minima) (Right (Left envMean)) True g
-                            sdev2 = U.stdev dat (Left dat2)
+                            Left dat2 = U.binaryOp (F.subtr) (Left stepDat) (Right (Left envMean)) True g
+                            Left maxima2 = U.binaryOp (F.subtr) (Left stepMaxima) (Right (Left envMean)) True g
+                            Left minima2 = U.binaryOp (F.subtr) (Left stepMinima) (Right (Left envMean)) True g
+                            sdev2 = U.stdev stepDat (Left dat2)
                         
                         --putStrLn $ "sdev: " ++ show sdev2 ++ ", needed: " ++ show sdev
-                        --if modeNo == 3 then storeData dat ("last_imf" ++ show i) else return ()
+                        --if modeNo == 3 then storeData stepDat ("last_imf" ++ show i) else return ()
                         if sdev2 < sdev
                             then 
                                     return dat2
                             else
-                                if i > 0 && sdev2 > prevSdev
+                                if i > 0 && (sdev2 > prevSdev / 2) -- || sdev2 > datSDev * 2)
                                     then
                                         -- diverging? increase number of nodes
-                                        imfStep dat minima2 maxima2 prevSdev (numUpperNodes + 1) (numLowerNodes + 1) i
+                                        imfStep dat minima maxima 0 (numUpperNodes + 1) (numLowerNodes + 1) 0
                                     else
                                         imfStep dat2 minima2 maxima2 sdev2 numUpperNodes numLowerNodes (i + 1)
     
@@ -274,24 +275,24 @@ collect = do
                 r :: Double = read $ drop (i + 1) lat_r
                 modes :: [(Double, Double, Double, Double, Double, Double)] = map (\line -> 
                         let 
-                            [_, freq, freqStd, amp, ampStd] = words line 
+                            [_, freq, freqStd, en, enStd] = words line 
                         in 
-                            (lat, r, read freq, read freqStd, read amp, read ampStd)
+                            (lat, r, read freq, read freqStd, read en, read enStd)
                     ) $ lines $ str
             return modes
         ) $ filter (isSuffixOf ".log") $ map (map (toLower) . F.encodeString . filename) fileNames
     let
-        maxModes = maximum $ map length allModes'
-        allModes = List.transpose $ map (\modes@((lat, r, _, _, _, _):_) -> modes ++ replicate (maxModes - length modes) (lat, r, 0, 0, 0, 0)) allModes'
-    print maxModes
+        --maxModes = maximum $ map length allModes'
+        --allModes = List.transpose $ map (\modes@((lat, r, _, _, _, _):_) -> modes ++ replicate (maxModes - length modes) (lat, r, 0, 0, 0, 0)) allModes'
+        allModes = List.transpose allModes'
     zipWithM_ (\mode modeNo -> do
             let
                 sortedMode = sortBy (\(lat1, r1, _, _, _, _) (lat2, r2, _, _, _, _) -> compare (lat1, r1) (lat2, r2)) mode
                 sortedModeWithPrev = zip sortedMode (tail sortedMode ++ [last sortedMode])
                 blankLine ((lat, _, _, _, _, _), (prevLat, _, _, _, _, _)) = if lat /= prevLat then "\n" else "" 
-                amps = concatMap (\line@((lat, r, freq, freqStd, amp, ampStd), _) -> show lat ++ " " ++ show r ++ " " ++ show amp ++ "\n" ++ (blankLine line)) sortedModeWithPrev
-                freqs = concatMap (\line@((lat, r, freq, freqStd, amp, ampStd), _) -> show lat ++ " " ++ show r ++ " " ++ show freq ++ "\n" ++ (blankLine line)) sortedModeWithPrev
-            Utils.IO.writeToFile ("amps" ++ show modeNo ++ ".csv") amps
+                ens = concatMap (\line@((lat, r, freq, freqStd, en, enStd), _) -> show lat ++ " " ++ show r ++ " " ++ show en ++ "\n" ++ (blankLine line)) sortedModeWithPrev
+                freqs = concatMap (\line@((lat, r, freq, freqStd, en, enStd), _) -> show lat ++ " " ++ show r ++ " " ++ show freq ++ "\n" ++ (blankLine line)) sortedModeWithPrev
+            Utils.IO.writeToFile ("ens" ++ show modeNo ++ ".csv") ens
             Utils.IO.writeToFile ("freqs" ++ show modeNo ++ ".csv") freqs
         ) allModes [1 ..]
         
