@@ -1,6 +1,7 @@
-
 -- | Module for obtaining least squares estimate for given measurements
---   using Gentleman's and Stirling's procedures (see paragraphs 6.6 - 6.10)
+--   using Gentleman's and Stirling's procedures.
+--   Paragraphs 6.6 - 6.10 in Linear Least Squares Computations by R. W. Farebrother (1988)
+
 module Regression.IOLeastSquares (
     IOLSQState (..), 
     initialize, 
