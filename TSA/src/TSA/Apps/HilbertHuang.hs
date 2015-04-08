@@ -160,17 +160,13 @@ calcAnalyticSignal imfDat modeNo freq = do
         Just (Left frequency) = lookup "frequency" asData
         Just (Left amplitude) = lookup "amplitude" asData
     let
-        (freqMean, freqVar) = Sample.meanVarianceUnb $ D.ys frequency
+        --(freqMean, freqVar) = Sample.meanVarianceUnb $ D.ys frequency
         (enMean, enVar) = Sample.meanVarianceUnb $ V.map (^2) $ D.ys amplitude
-        logText = show modeNo ++ ": " ++ show (freqMean / 2 / pi) ++ " " ++  show (sqrt freqVar / 2 / pi) ++
+        logText = show modeNo ++ ": " ++ show freq ++
              " " ++ show enMean ++ " " ++  show (sqrt enVar)
-    if freqMean < 0
-        then do
-            liftIO $ storeData imfDat (logFilePrefix env ++ "_imf_" ++ show modeNo)
-            liftIO $ storeData frequency (logFilePrefix env ++ "_freq_" ++ show modeNo)
-            liftIO $ storeData amplitude (logFilePrefix env ++ "_amp_" ++ show modeNo)
-        else
-            return ()
+    liftIO $ storeData imfDat (logFilePrefix env ++ "_imf_" ++ show modeNo)
+    liftIO $ storeData frequency (logFilePrefix env ++ "_freq_" ++ show modeNo)
+    liftIO $ storeData amplitude (logFilePrefix env ++ "_amp_" ++ show modeNo)
     return logText
 
 imf :: Int -> Data 
@@ -239,7 +235,7 @@ imf modeNo dat = do
                             then 
                                     return dat2
                             else
-                                if i > 0 && (sdev2 > prevSdev / 2) -- || sdev2 > datSDev * 2)
+                                if i > 10 && (sdev2 > prevSdev / 2) -- || sdev2 > datSDev * 2)
                                     then
                                         -- diverging? increase number of nodes
                                         imfStep dat minima maxima 0 (numUpperNodes + 1) (numLowerNodes + 1) 0
@@ -257,7 +253,7 @@ imf modeNo dat = do
                 
             let 
                 diff = D.subtr dat imfDat
-            imf (modeNo + 1) diff >>= \otherImfs -> return ((fromIntegral numExtrema / (D.xMax1 imfDat - D.xMin1 imfDat) , imfDat):otherImfs)
+            imf (modeNo + 1) diff >>= \otherImfs -> return ((fromIntegral numExtrema / (D.xMax1 imfDat - D.xMin1 imfDat), imfDat):otherImfs)
         else
             return [(0, dat)]
 
@@ -273,25 +269,25 @@ collect = do
                 Just i = elemIndex '_' lat_r
                 lat :: Double = read $ take i lat_r
                 r :: Double = read $ drop (i + 1) lat_r
-                modes :: [(Double, Double, Double, Double, Double, Double)] = map (\line -> 
+                modes :: [(Double, Double, Double, Double, Double)] = map (\line -> 
                         let 
-                            [_, freq, freqStd, en, enStd] = words line 
+                            [_, freq, en, enStd] = words line 
                         in 
-                            (lat, r, read freq, read freqStd, read en, read enStd)
+                            (lat, r, read freq, read en, read enStd)
                     ) $ lines $ str
             return modes
         ) $ filter (isSuffixOf ".log") $ map (map (toLower) . F.encodeString . filename) fileNames
     let
         --maxModes = maximum $ map length allModes'
-        --allModes = List.transpose $ map (\modes@((lat, r, _, _, _, _):_) -> modes ++ replicate (maxModes - length modes) (lat, r, 0, 0, 0, 0)) allModes'
+        --allModes = List.transpose $ map (\modes@((lat, r, _, _, _):_) -> modes ++ replicate (maxModes - length modes) (lat, r, 0, 0, 0)) allModes'
         allModes = List.transpose allModes'
     zipWithM_ (\mode modeNo -> do
             let
-                sortedMode = sortBy (\(lat1, r1, _, _, _, _) (lat2, r2, _, _, _, _) -> compare (lat1, r1) (lat2, r2)) mode
+                sortedMode = sortBy (\(lat1, r1, _, _, _) (lat2, r2, _, _, _) -> compare (lat1, r1) (lat2, r2)) mode
                 sortedModeWithPrev = zip sortedMode (tail sortedMode ++ [last sortedMode])
-                blankLine ((lat, _, _, _, _, _), (prevLat, _, _, _, _, _)) = if lat /= prevLat then "\n" else "" 
-                ens = concatMap (\line@((lat, r, freq, freqStd, en, enStd), _) -> show lat ++ " " ++ show r ++ " " ++ show en ++ "\n" ++ (blankLine line)) sortedModeWithPrev
-                freqs = concatMap (\line@((lat, r, freq, freqStd, en, enStd), _) -> show lat ++ " " ++ show r ++ " " ++ show freq ++ "\n" ++ (blankLine line)) sortedModeWithPrev
+                blankLine ((lat, _, _, _, _), (prevLat, _, _, _, _)) = if lat /= prevLat then "\n" else "" 
+                ens = concatMap (\line@((lat, r, freq, en, enStd), _) -> show lat ++ " " ++ show r ++ " " ++ show en ++ "\n" ++ (blankLine line)) sortedModeWithPrev
+                freqs = concatMap (\line@((lat, r, freq, en, enStd), _) -> show lat ++ " " ++ show r ++ " " ++ show freq ++ "\n" ++ (blankLine line)) sortedModeWithPrev
             Utils.IO.writeToFile ("ens" ++ show modeNo ++ ".csv") ens
             Utils.IO.writeToFile ("freqs" ++ show modeNo ++ ".csv") freqs
         ) allModes [1 ..]
