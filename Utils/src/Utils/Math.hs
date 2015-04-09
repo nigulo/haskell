@@ -5,12 +5,10 @@ module Utils.Math (
     epsilonRound
     ) where
 
-factorial :: Integral a => a -> a
-factorial n = product [1 .. n]
+import Numeric.SpecFunctions
 
-
-combination :: (Integral a) => a -> a -> a
-combination k n = (product [k + 1 .. n]) `div` (factorial (n - k))
+combination :: Int -> Int -> Double
+combination k n = fromIntegral (product [k + 1 .. n]) / factorial (n - k)
 
 epsilonRound x = 
     fromIntegral (round (x * 10e10)) / 10e10

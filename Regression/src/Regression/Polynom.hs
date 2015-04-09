@@ -20,8 +20,6 @@ module Regression.Polynom (
     subtr,
     mult,
     divide,
-    getTangentAtIndex,
-    getDerivativeAtIndex,
     getValues,
     getTangents,
     getDerivatives,
@@ -307,7 +305,7 @@ getTangent = getDerivative 1
 getDerivative :: Int -> Double -> Polynom -> Double
 getDerivative _ _ (Polynom [([], _, _)]) = 0
 getDerivative i x pol@(Polynom ((coefs, f, d):[])) = 
-    let dVal = (sum [(fromIntegral (combination j i)) * 
+    let dVal = (sum [combination j i * 
                 (getDerivative1 (i - j)) * (func j) |
                 j <- [0 .. i]]) where
         getDerivative1 :: Int -> Double
@@ -345,77 +343,39 @@ getValues x (Polynom (p:ps)) =
     values:getValues x (Polynom ps) where
         [values] = getValues x (Polynom [p])
 
--- | Returns the polynom coeficient's tangent value at the given coordinate
-getTangentAtIndex :: Double -> Polynom -> Int -> Double
-getTangentAtIndex = getDerivativeAtIndex 1
-
--- | Returns all polynom coeficient tangent values at the given coordinate
-getTangents :: Double -> Polynom -> [[Double]]
-getTangents x p@(Polynom ((coefs, f, d):[]))= [[getTangentAtIndex x p i | i <- fst (unzip coefs)]]
-getTangents x (Polynom (p:ps)) = 
-    let [tangents] = getTangents x (Polynom [p])
-    in
-        tangents:getTangents x (Polynom ps)
-
-
--- | Returns the polynom coeficient's derivative value at the given coordinate
-getDerivativeAtIndex :: 
-                Int -- ^ i'th Derivative
-             -> Double -- ^ x
-             -> Polynom
-             -> Int -- ^ Coef index
-             -> Double
-getDerivativeAtIndex i x pol@(Polynom [(coef:coefs, f, d)]) coefIndex = 
-
---    if (fst coef /= coefIndex) then getDerivativeAtIndex i x (Polynom [(coefs, f, d)]) coefIndex
---    else
-        let
-            coefValue = getCoef coefIndex pol
-            dVal = x ^ coefIndex * coefValue *
-                    (sum [(fromIntegral (combination j i)) * 
-                    (deriv (i - j)) * (func j) |
-                    j <- [0 .. i]]) where
-
-                deriv :: Int -> Double
-                deriv i =
-                    if coefIndex < i then 0
-                    else if i <= 0 then 1 --x ^ coefIndex -- * coefValue
-                    else 
-                    --(signum x) * (abs x) ** (fromIntegral (-i) + logBase (abs x) (fromIntegral (product [coefIndex - i + 1 .. coefIndex])))
-                    fromIntegral (product [coefIndex - i + 1 .. coefIndex]) / x ^ i --x ^ (coefIndex - i) -- * coefValue
-
-                func j = 
-                    if j == 0 then
-                        case f of
-                            Just f -> F.getValue_ [x] f
-                            Nothing -> 1            
-                    else
-                        case d of
-                            Just d ->
-                                case F.varNames d of
-                                    [] -> F.getValue_ [] d
-                                    ["x"] -> F.getValue_ [x] d
-                                    ["x", "i"] -> F.getValue_ [x, fromIntegral j] d
-                                    ["i", "x"] -> F.getValue_ [fromIntegral j, x] d
-                            Nothing -> 0
-            
-    
-    
-        in {-trace (show i ++ 
-                    "'th derivative of " ++ 
-                    show coefIndex ++ 
-                    "'th term at " ++ 
-                    show x ++ 
-                    " = " ++ 
-                    show dVal) -}
-                    dVal
-
 -- | Returns all polynom coeficient derivatives at the given coordinate
 getDerivatives :: Int -> Double -> Polynom -> [[Double]]
-getDerivatives i x p@(Polynom ((coefs, f, d):[]))= [[getDerivativeAtIndex i x p coefIndex | coefIndex <- fst (unzip coefs)]]
+getDerivatives i x p@(Polynom ((coefs, f, d):[])) =
+    let
+        precalculated = map (\j -> (j, funcDeriv j, combination j i)) [0 .. i] where
+            funcDeriv j = 
+                if j == 0 then
+                    case f of
+                        Just f -> F.getValue_ [x] f
+                        Nothing -> 1            
+                else
+                    case d of
+                        Just d ->
+                            case F.varNames d of
+                                [] -> F.getValue_ [] d
+                                ["x"] -> F.getValue_ [x] d
+                                ["x", "i"] -> F.getValue_ [x, fromIntegral j] d
+                                ["i", "x"] -> F.getValue_ [fromIntegral j, x] d
+                        Nothing -> 0
+        
+        deriv j coefIndex =
+            if coefIndex < j then 0
+            else if j <= 0 then 1
+            else fromIntegral (product [coefIndex - j + 1 .. coefIndex]) / x ^ j
+    in
+        [[x ^ coefIndex * coefValue * (sum [comb * (deriv (i - j) coefIndex) * funcDeriv | (j, funcDeriv, comb) <- precalculated]) | (coefIndex, coefValue) <- coefs]]
 getDerivatives i x (Polynom (p:ps)) = 
     let [derivatives] = getDerivatives i x (Polynom [p])
     in derivatives:getDerivatives i x (Polynom ps)
+
+-- | Returns all polynom coeficient tangent values at the given coordinate
+getTangents :: Double -> Polynom -> [[Double]]
+getTangents x p = getDerivatives 1 x p
 
 
 add :: Polynom -> Polynom -> Polynom

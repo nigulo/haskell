@@ -378,7 +378,7 @@ calcDouble :: (Floating a, RealFrac a, Random a, Enum a, RandomGen g) =>
     -> g 
     -> a
 calcDouble (Variable "e") _ _ _ = exp 1
-calcDouble (UnaryExpression (Fact, expr)) m1 m2 g = fromIntegral $ factorial $ round $ calcDouble expr m1 m2 g
+calcDouble (UnaryExpression (Fact, expr)) m1 m2 g = realToFrac $ factorial $ round $ calcDouble expr m1 m2 g
 calcDouble (UnaryExpression (Round, expr)) m1 m2 g = fromIntegral $ round $ calcDouble expr m1 m2 g
 calcDouble (UnaryExpression (Trunc, expr)) m1 m2 g = fromIntegral $ truncate $ calcDouble expr m1 m2 g
 calcDouble (UnaryExpression (Floor, expr)) m1 m2 g = fromIntegral $ floor $ calcDouble expr m1 m2 g
