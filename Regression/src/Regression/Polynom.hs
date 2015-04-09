@@ -20,7 +20,6 @@ module Regression.Polynom (
     subtr,
     mult,
     divide,
-    getValueAtIndex,
     getTangentAtIndex,
     getDerivativeAtIndex,
     getValues,
@@ -335,17 +334,13 @@ getDerivative i x pol@(Polynom ((coefs, f, d):[])) =
     in {-trace ("dVal=" ++ show dVal)-} dVal
 getDerivative i x (Polynom (p:ps)) = (getDerivative i x (Polynom [p])) + (getDerivative i x (Polynom ps))
 
--- | Returns the polynom coeficient's value at the given coordinate
-getValueAtIndex :: Double -> Polynom -> Int -> Double
-getValueAtIndex x p@(Polynom [pol@(coef:coefs, f, d)]) coefIndex = 
-    x ^ coefIndex * (getCoef coefIndex p) * func where
-        func = case f of
-            Just f -> F.getValue_ [x] f
-            Nothing -> 1
-
 -- | Returns all polynom coeficient values at the given coordinate
 getValues :: Double -> Polynom -> [[Double]]
-getValues x p@(Polynom ((coefs, f, d):[])) = [[getValueAtIndex x p i | i <- fst (unzip coefs)]]
+getValues x p@(Polynom ((coefs, f, d):[])) = 
+    [map (\(coefIndex, coef) -> x ^ coefIndex * (getCoef coefIndex p) * funcVal) coefs] where
+        funcVal = case f of
+            Just f -> F.getValue_ [x] f
+            Nothing -> 1
 getValues x (Polynom (p:ps)) = 
     values:getValues x (Polynom ps) where
         [values] = getValues x (Polynom [p])
@@ -398,8 +393,10 @@ getDerivativeAtIndex i x pol@(Polynom [(coef:coefs, f, d)]) coefIndex =
                         case d of
                             Just d ->
                                 case F.varNames d of
+                                    [] -> F.getValue_ [] d
+                                    ["x"] -> F.getValue_ [x] d
                                     ["x", "i"] -> F.getValue_ [x, fromIntegral j] d
-                                    otherwise -> F.getValue_ [fromIntegral j, x] d
+                                    ["i", "x"] -> F.getValue_ [fromIntegral j, x] d
                             Nothing -> 0
             
     

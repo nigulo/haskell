@@ -5,6 +5,7 @@ module Regression.PolynomTest where
 import Regression.Polynom
 import Math.Function as Fn
 import Test.Framework
+import Utils.Test
 
 test_constantOp = do
     let
@@ -20,13 +21,13 @@ test_constantOp = do
             ([(0, 7), (3, 1)], Just f3, Just d3)
             ]
 
-        polMulConst = Polynom [
+        expectedResult = Polynom [
             ([(0, -2), (1, -0.7), (2, -1.5)], Just f1, Just d1), 
             ([(1, -4.5)], Just f2, Just d2),
             ([(0, -7), (3, -1)], Just f3, Just d3)
             ]
         result = constantOp Fn.mult pol (-1)
-    assertEqual result polMulConst
+    assertEqual expectedResult result
 
 test_binaryOp = do
     let
@@ -48,13 +49,13 @@ test_binaryOp = do
             ([(1, 0.6), (2, -2.8), (3, 4.2)], Just f2, Just d2)
             ]
 
-        polSum = Polynom [
+        expectedResult = Polynom [
             ([(0, 2), (1, 0.7), (2, 1.5), (4, 3.3)], Just f1, Just d1), 
             ([(1, 4.5 - 3), (2, 1.1)], Just f2, Just d2),
             ([(0, 7), (1, 0.6), (2, -2.8), (3, 1 + 4.2)], Just f3, Just d3)
             ]
         result = binaryOp Fn.add pol1 pol2
-    assertEqual result polSum
+    assertEqual expectedResult result
     
 test_polynomProduct = do
     let
@@ -93,7 +94,7 @@ test_polynomProduct = do
         d1321 = binaryOp Fn.add (binaryOp Fn.mult d13 f21) (binaryOp Fn.mult f13 d21)
         d1322 = binaryOp Fn.add (binaryOp Fn.mult d13 f22) (binaryOp Fn.mult f13 d22)
         
-        polProduct = Polynom [
+        expectedResult = Polynom [
             ([(4, 2 * 3.3), (5, 0.7 * 3.3), (6, 1.5 * 3.3)], Just f1121, Just d1121), 
             ([(1, 2 * 3), (2, 2 * 1.1 + 0.7 * 3), (3, 0.7 * 1.1 + 1.5 * 3), (4, 1.5 * 1.1)], Just f1122, Just d1122), 
             ([(5, 4.5 * 3.3)], Just f1221, Just d1221), 
@@ -102,7 +103,7 @@ test_polynomProduct = do
             ([(1, 7 * 3), (2, 7 * 1.1), (4, 1 * 3), (5, 1 * 1.1)], Just f1322, Just d1322) 
             ]
         result = polynomProduct pol1 pol2
-    assertEqual result polProduct
+    assertEqual expectedResult result
     
 test_polynomSum = do
     let
@@ -127,12 +128,44 @@ test_polynomSum = do
             ([(1, 3), (2, 1.1)], Just f22, Just d22)
             ]
         
-        polSum = Polynom [
+        expectedResult = Polynom [
             ([(0, 2), (1, 0.7), (2, 1.5)], Just f11, Just d11), 
             ([(4, 3.3)], Just f21, Just d21), 
             ([(1, 4.5 + 3), (2, 1.1)], Just f12, Just d12),
             ([(0, 7), (3, 1)], Just f13, Just d13)
             ]
         result = polynomSum pol1 pol2
-    assertEqual result polSum
-    
+    assertEqual expectedResult result 
+
+test_getValues = do
+    let
+        f = function "sin(x)"
+        d = function "cos(x)"
+        pol = Polynom [([(0, 2), (1, 0.7), (3, 1.5)], Just f, Just d)]
+        x = 5
+        result = getValues x pol
+        expectedResult = [[2 * sin x, 0.7 * sin x * x, 1.5 * sin x * x ^ 3]]
+    assertEqual expectedResult result
+        
+test_getTangents = do
+    let
+        f = function "sin(x)"
+        d = function "cos(x)"
+        pol = Polynom [([(0, 2), (1, 0.7), (3, 1.5)], Just f, Just d)]
+        x = 5
+        result = getTangents x pol
+        expectedResult = [2 * cos x, 0.7 * (sin x + x * cos x), 1.5 * (3 * x ^ 2 * sin x + x ^ 3 * cos x)]
+    assertEqual 1 (length result) 
+    assertEqualDoubleList expectedResult (head result)
+        
+test_getDerivatives = do
+    let
+        f = function "sin(x)"
+        d = function "if(i==1,cos(x),-sin(x))"
+        pol = Polynom [([(0, 2), (1, 0.7), (3, 1.5)], Just f, Just d)]
+        x = 5
+        result = getDerivatives 2 x pol
+        expectedResult = [-2 * sin x, 0.7 * (cos x + cos x - x * sin x), 1.5 * (6 * x * sin x + 6 * x ^ 2 * cos x - x ^ 3 * sin x)]
+    assertEqual 1 (length result) 
+    assertEqualDoubleList expectedResult (head result)
+        
