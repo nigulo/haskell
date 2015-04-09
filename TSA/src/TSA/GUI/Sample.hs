@@ -96,7 +96,7 @@ sampleDialog stateRef = do
                         case selectedData2 of
                             Just dat ->
                                 let
-                                    Left d= subData $ head $ dataSet dat
+                                    Left d = subData $ head $ dataSet dat
                                 in
                                     D.xs d
                             Nothing ->
@@ -118,11 +118,13 @@ sampleDialog stateRef = do
                                     sequence $ zipWith (\xMin xMax -> getXs xMin xMax) xMin xMax
                 samples <- calcConcurrently_ (\d -> return (U.getValues xs d)) (map (\sdp -> subData sdp) (dataSet selectedData))
                 let
-                    dataCreateFunc = if dataType == 0 
+                    dataCreateFunc sample = if dataType == 0 
                         then 
-                            D.data2' . V.fromList . map (\((x1:x2:_), y) -> (x1, x2, y)) 
+                            case head sample of
+                                ((x1:x2:_), y) -> D.data2' . V.fromList . map (\((x1:x2:_), y) -> (x1, x2, y)) $ sample 
+                                otherwise -> D.data1' . V.fromList . map (\((x:_), y) -> (x, y)) $ sample 
                         else 
-                            D.spectrum1' . V.fromList . map (\((x:_), y) -> (x, y))
+                            D.spectrum1' . V.fromList . map (\((x:_), y) -> (x, y)) $ sample 
                     subDataParams = map (\sample -> createSubDataParams__ (Left (dataCreateFunc sample))) samples
      
                 modifyState stateRef $ addDataParams (createDataParams_ name subDataParams) (Just (currentGraphTab, selectedGraph))
