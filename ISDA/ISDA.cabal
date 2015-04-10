@@ -23,7 +23,6 @@ extra-tmp-files:
 executable ISDA
   build-depends:   
                    Utils -any,
-                   Regression -any,
                    base -any,
                    containers -any
   hs-source-dirs:  src
