@@ -9,7 +9,6 @@ module Math.IODoubleMatrix (
                 set, get, getNumRows, getNumColumns, 
                 setAll,
                 modifyAll,
-                modifyAll_,
                 getColumn, setColumn, 
                 getRow, setRow, 
                 getValues,
@@ -82,12 +81,8 @@ setAll :: [((Int, Int), Double)] -> IODoubleMatrix -> IO ()
 setAll values (IODoubleMatrix m) = 
     mapM_ (\((i, j), value) -> writeArray m (i, j) value) values
 
-modifyAll :: (Double -> Double -> Double) -> [((Int, Int), Double)] -> IODoubleMatrix -> IO ()
-modifyAll f values (IODoubleMatrix m) = 
-    mapM_ (\((i, j), value) -> do oldVal <- readArray m (i, j); writeArray m (i, j) (oldVal `f` value)) values
-
-modifyAll_ :: (Double -> Double) -> [(Int, Int)] -> IODoubleMatrix -> IO ()
-modifyAll_ f indices (IODoubleMatrix m) = 
+modifyAll :: (Double -> Double) -> [(Int, Int)] -> IODoubleMatrix -> IO ()
+modifyAll f indices (IODoubleMatrix m) = 
     mapM_ (\(i, j) -> do oldVal <- readArray m (i, j); writeArray m (i, j) (f oldVal)) indices
 
 -- gets the matrix element at the given row and column

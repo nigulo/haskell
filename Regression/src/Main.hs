@@ -12,9 +12,12 @@ import Math.Function as F
 import Regression.Polynom
 import Regression.Functions
 import Regression.AnalyticData as AD
+import Regression.Regression
 --import Utils.Misc
 import System.Random
 import System.CPUTime
+import System.FilePath
+import Utils.Xml
 
 import Control.Monad
 import qualified Data.Vector.Unboxed as V
@@ -164,94 +167,12 @@ cudaGentleman x y w =
         CLSQ.addMeasurements x y w $ CLSQ.initialize numColumns
 
 main :: IO ()
---main = putStr (show (calcForward 1 (calcForward 0 m)))
---main = putStr (show (calcBackward m))
-main = 
-    do
-        --putStr (show (solveGauss m1) ++ "\n")
-        --putStr (show (solveCramer m v) ++ "\n")
-        --putStr (show (LSQ.solve x y) ++ "\n")
-        --putStr (show (solve1 x y) ++ "\n")
-        --putStr (show ((transpose x) `mul` x) ++ "\n")
-        --print (LSQ.solve (stirling (invert gentleman)))
-        --print (dsinus 4 1)
-        ---------------------------------------
-        --print (getValue 5 pol - fx)
-        --print (getDerivative 1 5 pol - dfx)
-        --print (getDerivative 2 5 pol - d2fx)
-        --print (getDerivative 3 5 pol)
-        --print d3fx
-        ----------------------------------------
-        --print (getValue 5 pol2 - fx1)
-        --print (getTangent 5 pol2 - dfx1)
-        
-          --let pol@(Polynom _) = read "Polynom [([(0,-0.9320642862898423),(1,4.177629473517001e-3),(2,-6.6775717651294175e-6),(3,3.891358887611803e-9)],Just sin((0.9377888518178487)*(x)),Just 1),([(0,-0.6284696589995866),(1,3.6611938820369262e-3),(2,-5.965147311821722e-6),(3,3.157074417250837e-9)],Just cos((0.9377888518178487)*(x)),Just 1)]"
-          --let pol@(Polynom _) = read "Polynom [([(0,-0.9320642862898423),(1,4.177629473517001e-3),(2,-6.6775717651294175e-6),(3,3.891358887611803e-9)],Nothing,Nothing),([(0,-0.6284696589995866),(1,3.6611938820369262e-3),(2,-5.965147311821722e-6),(3,3.157074417250837e-9)],Nothing,Nothing)]"
-          --let pol@(Polynom _) = read "Polynom [([(0,-0.9320642862898423),(1,4.177629473517001e-3),(2,-6.6775717651294175e-6),(3,3.891358887611803e-9)],Just sin((0.9377888518178487)*(x)),Just ((0.9377888518178487)^(i))*(sin(((0.9377888518178487)*(x))+((i)*(1.5707963267948966))))),([(0,-0.6284696589995866),(1,3.6611938820369262e-3),(2,-5.965147311821722e-6),(3,3.157074417250837e-9)],Just cos((0.9377888518178487)*(x)),Just ((0.9377888518178487)^((i)+(1.0)))*(sin(((0.9377888518178487)*(x))+(((i)+(1.0))*(1.5707963267948966)))))]"
-          --print pol
-          
-        --print (getDerivative 1 3 (modulatedPolynom [(0, 17), (1, 11), (2, 12), (3, 13), (4, 14), (5, 15)] sinus dsinus))
-        --print ((polynom [(0, 17), (1, 11), (3, 13), (4, 14), (5, 0)]) `plus` 
-      --          (polynom [(0, 15), (2, 12), (3, 13), (4, 14), (5, 10)]))
-        --print (for_ 0 0 (undefined) (\_ _ -> LSQ.solve func1))
-{-        state <- return (initialize (getNumColumns x))
-        print state
-        state1 <- return (update (Vector (getRow 0 x)) (V.get 0 y) 1 state)
-        print state1
-        state2 <- return (update (Vector (getRow 1 x)) (V.get 1 y) 1 state1)
-        print state2
- -}
-
-        --let f = AnalyticData [(0, 1, F.function "rnd(0,1)")]
-            --let f = F.add
-        --print $ AD.getValues [[0]] (mkStdGen 1) f
-        {-
-        let
-            --pol@(Polynom _) = read "Polynom [([(0,1.0),(1,1.0),(2,1.0),(3,1.0)],Just (Function {initialExpr = \"1.0\", expr = 1.0, defs = [], varDefs = [], funcDefs = [], unknownVarNames = [], unknownFuncNames = []}),Just (Function {initialExpr = \"0.0\", expr = 0.0, defs = [], varDefs = [], funcDefs = [], unknownVarNames = [], unknownFuncNames = []})),([(0,1.0),(1,1.0),(2,1.0),(3,1.0)],Just (Function {initialExpr = \"sin((6.283185307179586)*(x))\", expr = sin((6.283185307179586)*(x)), defs = [], varDefs = [], funcDefs = [], unknownVarNames = [\"x\"], unknownFuncNames = []}),Just (Function {initialExpr = \"((6.283185307179586)^(i))*(sin(((6.283185307179586)*(x))+((i)*(1.5707963267948966))))\", expr = ((6.283185307179586)^(i))*(sin(((6.283185307179586)*(x))+((i)*(1.5707963267948966)))), defs = [], varDefs = [], funcDefs = [], unknownVarNames = [\"i\",\"x\"], unknownFuncNames = []})),([(0,1.0),(1,1.0),(2,1.0),(3,1.0)],Just (Function {initialExpr = \"sin((12.566370614359172)*(x))\", expr = sin((12.566370614359172)*(x)), defs = [], varDefs = [], funcDefs = [], unknownVarNames = [\"x\"], unknownFuncNames = []}),Just (Function {initialExpr = \"((12.566370614359172)^(i))*(sin(((12.566370614359172)*(x))+((i)*(1.5707963267948966))))\", expr = ((12.566370614359172)^(i))*(sin(((12.566370614359172)*(x))+((i)*(1.5707963267948966)))), defs = [], varDefs = [], funcDefs = [], unknownVarNames = [\"i\",\"x\"], unknownFuncNames = []})),([(0,1.0),(1,1.0),(2,1.0),(3,1.0)],Just (Function {initialExpr = \"cos((6.283185307179586)*(x))\", expr = cos((6.283185307179586)*(x)), defs = [], varDefs = [], funcDefs = [], unknownVarNames = [\"x\"], unknownFuncNames = []}),Just (Function {initialExpr = \"((6.283185307179586)^((i)+(1.0)))*(sin(((6.283185307179586)*(x))+(((i)+(1.0))*(1.5707963267948966))))\", expr = ((6.283185307179586)^((i)+(1.0)))*(sin(((6.283185307179586)*(x))+(((i)+(1.0))*(1.5707963267948966)))), defs = [], varDefs = [], funcDefs = [], unknownVarNames = [\"i\",\"x\"], unknownFuncNames = []})),([(0,1.0),(1,1.0),(2,1.0),(3,1.0)],Just (Function {initialExpr = \"cos((12.566370614359172)*(x))\", expr = cos((12.566370614359172)*(x)), defs = [], varDefs = [], funcDefs = [], unknownVarNames = [\"x\"], unknownFuncNames = []}),Just (Function {initialExpr = \"((12.566370614359172)^((i)+(1.0)))*(sin(((12.566370614359172)*(x))+(((i)+(1.0))*(1.5707963267948966))))\", expr = ((12.566370614359172)^((i)+(1.0)))*(sin(((12.566370614359172)*(x))+(((i)+(1.0))*(1.5707963267948966)))), defs = [], varDefs = [], funcDefs = [], unknownVarNames = [\"i\",\"x\"], unknownFuncNames = []}))]"
-            pol@(Polynom _) = read "Polynom [([(0,1.0),(1,1.0),(2,1.0),(3,1.0)],Nothing,Nothing)]"
-        putStrLn (show pol)
-        
-        time <- getCPUTime
-        print $ sum $ map (\x -> x * x) [0 :: Double, 1 .. 10000000]
-        time1 <- getCPUTime
-        putStrLn $ show (time1 - time)
-        time2 <- getCPUTime
-        print $ V.sum $ V.map (\x -> x * x) (V.generate 10000000 (\i -> fromIntegral i :: Double))
-        time3 <- getCPUTime
-        putStrLn $ show (time3 - time2)
-        time4 <- getCPUTime
-        print $ sum $ map (\x -> x * x) [0 :: Double, 1 .. 10000000]
-        time5 <- getCPUTime
-        putStrLn $ show (time5 - time4)
-        -}
-        
-        (x, y, w) <- loadData
-        --w <- return $ repeat 1
-        time1231 <- getCPUTime
-        let
-            calc =
-                --return $ CLSQ.solve (CLSQ.invert (cudaGentleman x y w))
-                cudaGentleman x y w
-            calc2 =
-                --return $ LSQ.solve (LSQ.invert (gentleman x y w))
-                do
-                    LSQ.IOLSQState (b, d, e) <- gentleman x y w
-                    IOM.getValues b
-        res <- calc2
-        print $ res
-        time123123 <- getCPUTime
-        putStrLn $ show $ fromIntegral (time123123 - time1231) / 1e12
-
-                
-        g <- getStdGen 
-        
-        time6 <- getCPUTime
-        let
-            func :: F.Function Double = F.function "cos(x)"
-            ad = AD.AnalyticData [([0], [100], func)]
-        extrema <- return $ AD.getExtrema 10000000 (Just 6.28) g ad
-        --print extrema
-        time7 <- getCPUTime
-        putStrLn $ show $ fromIntegral (time7 - time6) / 1e12
-        
-        return ()
+main = do
+    let
+        dataPath = "." ++ [pathSeparator] ++ "tests" ++ [pathSeparator] ++ "Regression" ++ [pathSeparator] ++ "data" ++ [pathSeparator]
+    datStr <- readFile (dataPath ++ "dat3.xml")
+    splineStr <- readFile (dataPath ++ "spline3.xml")
+    let
+        dat = fromDocument (parse "" datStr)
+    result <- interpolateWithSpline dat
+    return ()

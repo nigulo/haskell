@@ -345,6 +345,7 @@ getValues x (Polynom (p:ps)) =
 
 -- | Returns all polynom coeficient derivatives at the given coordinate
 getDerivatives :: Int -> Double -> Polynom -> [[Double]]
+--getDerivatives :: Int -> Double -> Polynom -> [[[Double]]]
 getDerivatives i x p@(Polynom ((coefs, f, d):[])) =
     let
         precalculated = map (\j -> (j, funcDeriv j, combination j i)) [0 .. i] where
@@ -362,12 +363,12 @@ getDerivatives i x p@(Polynom ((coefs, f, d):[])) =
                                 ["x", "i"] -> F.getValue_ [x, fromIntegral j] d
                                 ["i", "x"] -> F.getValue_ [fromIntegral j, x] d
                         Nothing -> 0
-        
         deriv j coefIndex =
             if coefIndex < j then 0
             else if j <= 0 then 1
             else fromIntegral (product [coefIndex - j + 1 .. coefIndex]) / x ^ j
     in
+        --[[map (\sums -> x ^ coefIndex * coefValue * sums) (scanl' (\sum (j, funcDeriv, comb) -> comb * (deriv (i - j) coefIndex) * funcDeriv) precalculated]) | (coefIndex, coefValue) <- coefs]]
         [[x ^ coefIndex * coefValue * (sum [comb * (deriv (i - j) coefIndex) * funcDeriv | (j, funcDeriv, comb) <- precalculated]) | (coefIndex, coefValue) <- coefs]]
 getDerivatives i x (Polynom (p:ps)) = 
     let [derivatives] = getDerivatives i x (Polynom [p])

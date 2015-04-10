@@ -3,8 +3,7 @@ version:             0.0.1
 cabal-version:       >= 1.2
 build-type:          Simple
 license:             AllRightsReserved
-license-file:        ""
-copyright:           maintainer:          stability:           homepage:            package-url:         bug-reports:         synopsis:            description:         category:            author:              tested-with:         data-files:          data-dir:            ""
+data-dir:            ""
 extra-source-files:  extra-tmp-files:
 
 library 
@@ -48,9 +47,10 @@ executable Regression
   build-depends:   
                    base -any,
                    random -any,
-                   accelerate -any
+                   accelerate -any,
+                   filepath -any
   hs-source-dirs:  src
-  ghc-options:     -O2 -fexcess-precision -threaded -rtsopts
+  ghc-options:     -O2 -fexcess-precision -threaded -fprof-auto "-with-rtsopts=-N -p -s -h -i0.1"
   main-is:         Main.hs
   extensions:      
                    ExistentialQuantification,
