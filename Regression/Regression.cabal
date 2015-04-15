@@ -19,7 +19,8 @@ library
                    accelerate -any,
                    fft -any,
                    carray -any,
-                   statistics -any
+                   statistics -any,
+                   cubicspline
   hs-source-dirs:   src
   ghc-options:      -O2 -fexcess-precision
   exposed-modules:  

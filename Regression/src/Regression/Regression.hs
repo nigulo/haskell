@@ -29,6 +29,9 @@ import Control.Concurrent
 import Control.Monad
 import System.CPUTime
 import qualified Data.Vector.Unboxed as V
+--import qualified Data.Eigen.LA as LA
+--import qualified Data.Eigen.Matrix as EM
+import qualified Data.Algorithm.CubicSpline as CS
 
 
 
@@ -161,7 +164,7 @@ fitWithSpline unitPolynoms numNodes dat smoothUpTo puFunc = do
     (state1, _) <- foldM (forData) (state, dat) [0 .. numPolynoms - 1]
     LSQ.invert state1
     state3 <- foldM (forConstraints) state1 [0 .. numPolynoms - 2]
-    coefs <- solve state3 >>= \v -> IOV.values v
+    coefs <- LSQ.solve state3 >>= \v -> IOV.values v
         
     puFunc $ 0.5
     let 
@@ -214,9 +217,12 @@ interpolateWithSpline dat = do
             ++ [(concat (P.getDerivatives 2 (V.head xs) pol)) ++ numTerms ++ [0]]
             ++ [(numTerms ++ (concat (P.getDerivatives 2 (V.last xs) pol)) ++ [0])] where
                 numTerms = replicate ((numData - 2) * 4) 0
-    m <- IOM.matrix equations
-    solution <- solveGauss m
-    solutionVals <- IOV.values solution
+    --m <- IOM.matrix equations
+    --solution <- solveGauss m
+    --solutionVals <- IOV.values solution
+        --m :: EM.MatrixXd = EM.fromList equations
+        --solutionVals = concat $ EM.toList $ LA.solve LA.HouseholderQR (EM.leftCols (EM.cols m - 1) m) (EM.rightCols 1 m)
+        solutionVals = concat $ CS.cubicSplineCoefficients $ V.toList $ D.xys1 dat
     let
         solutionVect = V.fromList solutionVals 
         forSolution i =
@@ -230,7 +236,6 @@ interpolateWithSpline dat = do
 
 
 --------------------------------------------------------------------------------
-
 -- | Returns upper or lower envelope estimation for given data set
 --   Algorithm is based on iterative smooth and clip operations
 envelope :: Bool      -- ^ Upper (True) or lower (False)
