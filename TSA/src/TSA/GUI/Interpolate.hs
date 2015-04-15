@@ -7,11 +7,12 @@ import Debug.Trace
 import Regression.Polynom as P
 import Regression.Spline as S
 import Regression.Regression as R
-import Regression.Data as D
+import Regression.Data as D hiding (interpolate)
 
 import System.Random
 
 import TSA.Params
+import qualified TSA.Interpolate as I
 import TSA.GUI.State
 import TSA.GUI.Data
 import TSA.Data
@@ -89,21 +90,20 @@ paramsDialog stateRef = do
                         interpolateCommonParams = updateCommonParams name commonParams
                     }}
 
-                runTask stateRef "Interpolate" $ fit stateRef methodNo name selectedData
+                runTask stateRef "Interpolate" $ interpolate stateRef methodNo name selectedData
                 return ()
         else
             do
                 widgetDestroy dialog
 
-fit :: StateRef -> Int -> String -> DataParams -> IO ()
-fit stateRef method fitName dat = do
+interpolate :: StateRef -> Int -> String -> DataParams -> IO ()
+interpolate stateRef method fitName dat = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
     tEnv <- taskEnv stateRef
     let 
         graphTabParms = (graphTabs state) !! currentGraphTab
         selectedGraph = graphTabSelection graphTabParms
-        func i j (Left dat) _ = interpolateWithSpline dat >>= \spline -> return $ Right $ Left spline
-    result <- applyToData1 func dat fitName tEnv
+    result <- I.interpolate method fitName dat tEnv
     modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
 

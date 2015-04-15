@@ -44,7 +44,9 @@ executable TSA
   extensions:      
                DoAndIfThenElse,
                ScopedTypeVariables
-  other-modules: TSA.GUI.TaskManager
+  other-modules: 
+                 TSA.GUI.TaskManager,
+                 TSA.Interpolate
 
 executable Bootstrap
   build-depends:   
@@ -58,7 +60,9 @@ executable Bootstrap
   extensions:      
                 DoAndIfThenElse,
                 ScopedTypeVariables
-  other-modules: TSA.GUI.TaskManager
+  other-modules: 
+                 TSA.GUI.TaskManager,
+                 TSA.Interpolate
 
 executable Significance
   build-depends:   base >= 4
@@ -66,7 +70,9 @@ executable Significance
   ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
   main-is:         TSA/Apps/Significance.hs
   extensions:      ScopedTypeVariables
-  other-modules:   TSA.GUI.TaskManager
+  other-modules:   
+                   TSA.GUI.TaskManager,
+                   TSA.Interpolate
 
 executable D2
   build-depends:   base >= 4
@@ -74,7 +80,9 @@ executable D2
   ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
   main-is:         TSA/Apps/D2.hs
   extensions:      ScopedTypeVariables
-  other-modules:   TSA.GUI.TaskManager
+  other-modules:   
+                   TSA.GUI.TaskManager,
+                   TSA.Interpolate
 
 executable HilbertHuang
   build-depends:   base >= 4,
@@ -84,4 +92,6 @@ executable HilbertHuang
   ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
   main-is:         TSA/Apps/HilbertHuang.hs
   extensions:      ScopedTypeVariables
-  other-modules:   TSA.GUI.TaskManager
+  other-modules:   
+                   TSA.GUI.TaskManager,
+                   TSA.Interpolate

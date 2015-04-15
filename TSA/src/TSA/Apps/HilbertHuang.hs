@@ -4,12 +4,14 @@ import Math.Function as F
 import Regression.Spline as S
 import Regression.Data as D
 import Regression.Utils as U
+import Regression.Regression as R
 import TSA.LeastSquares
 import TSA.SpecificPoints
 import TSA.AnalyticSignal
 import TSA.Params
 import TSA.Data
 import Utils.IO
+import qualified Utils.Misc as Misc
 
 import Data.List as List
 import Data.Char
@@ -221,6 +223,8 @@ imf modeNo dat = do
                         [upperEnv, lowerEnv] <- MP.sequence [
                             fitData fitUpperParams stepMaxima defaultTaskEnv,
                             fitData fitLowerParams stepMinima defaultTaskEnv]
+                            --R.interpolateWithSpline stepMaxima,
+                            --R.interpolateWithSpline stepMinima]
 
                         let 
                             envMean = (upperEnv `S.add` lowerEnv) `S.divide` 2
@@ -280,15 +284,16 @@ collect = do
             return modes
         ) $ filter (isSuffixOf ".log") $ map (map (toLower) . F.encodeString . filename) fileNames
     let
-        totalEnergy = foldl' (\s modes -> s + (foldl' (\s1 (_, _, _, en) -> s1 + en) 0 modes)) 0 allModes'
-        allModes'' = if normalize 
+        allModes'' = List.transpose allModes'
+        totalEnergies = map (\modes -> foldl' (\s1 (_, _, _, en) -> s1 + en) 0 modes) allModes''
+        totalEnergy = sum totalEnergies
+        allModes = if normalize 
             then 
-                map (map (\(lat, r, freq, en) -> (lat, r, freq, en / totalEnergy))) allModes' 
+                map (map (\(lat, r, freq, en) -> (lat, r, freq, en / totalEnergy))) allModes'' 
             else 
-                allModes'
-        --maxModes = maximum $ map length allModes'
-        --allModes'' = map (\modes@((lat, r, _, _):_) -> modes ++ replicate (maxModes - length modes) (lat, r, 0, 0)) allModes'
-        allModes = List.transpose allModes''
+                allModes''
+    putStrLn "Relative energies of the modes:"
+    print $ map (/totalEnergy) totalEnergies
     zipWithM_ (\mode modeNo -> do
             let
                 sortedMode = sortBy (\(lat1, r1, _, _) (lat2, r2, _, _) -> compare (lat1, r1) (lat2, r2)) mode
