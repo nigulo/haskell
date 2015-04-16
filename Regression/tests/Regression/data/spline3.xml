@@ -1,303 +1,1934 @@
 <?xml version='1.0' encoding='UTF-8' ?>
 <spline
-          ><node left="172.317" right="172.353"
+          ><node left="185.023" right="185.06"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-1.5684589274708804e11)]]><![CDATA[(1,2.730651699783229e9)]]><![CDATA[(2,-1.5846676699938336e7)]]><![CDATA[(3,30654.11750811649)]]></coeficients
+                ><![CDATA[(0,4.725357513648776e10)]]><![CDATA[(1,-7.661789752302995e8)]]><![CDATA[(2,4140993.2520793243)]]><![CDATA[(3,-7460.321603403045)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="172.353" right="172.39"
+          ><node left="185.06" right="185.096"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,3.1608371001528394e11)]]><![CDATA[(1,-5.501225948340771e9)]]><![CDATA[(2,3.191505444558277e7)]]><![CDATA[(3,-61717.79971123584)]]></coeficients
+                ><![CDATA[(0,-1.420519746447052e11)]]><![CDATA[(1,2.3026454565409036e9)]]><![CDATA[(2,-1.2441868694160828e7)]]><![CDATA[(3,22409.02157581838)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="172.39" right="172.426"
+          ><node left="185.096" right="185.132"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-2.2861555005290414e11)]]><![CDATA[(1,3.9778492892284875e9)]]><![CDATA[(2,-2.307117003129674e7)]]><![CDATA[(3,44603.5732935392)]]></coeficients
+                ><![CDATA[(0,1.9270825656175153e11)]]><![CDATA[(1,-3.12308331998247e9)]]><![CDATA[(2,1.6871183865177967e7)]]><![CDATA[(3,-30379.896173779653)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="172.426" right="172.463"
+          ><node left="185.132" right="185.169"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,5.379832805079658e10)]]><![CDATA[(1,-9.358043031015713e8)]]><![CDATA[(2,5426003.204352523)]]><![CDATA[(3,-10487.06121179308)]]></coeficients
+                ><![CDATA[(0,-1.6779002128626746e11)]]><![CDATA[(1,2.7186665317128444e9)]]><![CDATA[(2,-1.4683327789724018e7)]]><![CDATA[(3,26434.541911662058)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="172.463" right="172.499"
+          ><node left="185.169" right="185.205"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,8.089554310908369e9)]]><![CDATA[(1,-1.4069856320568228e8)]]><![CDATA[(2,815705.6918664309)]]><![CDATA[(3,-1576.3624677415214)]]></coeficients
+                ><![CDATA[(0,1.187361739640628e11)]]><![CDATA[(1,-1.9234635535119529e9)]]><![CDATA[(2,1.0386365761706276e7)]]><![CDATA[(3,-18694.850789834578)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="172.499" right="172.535"
+          ><node left="185.205" right="185.242"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-2.326620608524482e10)]]><![CDATA[(1,4.046221701809437e8)]]><![CDATA[(2,-2345592.2483339533)]]><![CDATA[(3,4532.461235971514)]]></coeficients
+                ><![CDATA[(0,-4.4664380587871704e10)]]><![CDATA[(1,7.233422220114033e8)]]><![CDATA[(2,-3904856.2653629472)]]><![CDATA[(3,7026.596664012461)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="172.535" right="172.572"
+          ><node left="185.242" right="185.278"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,1.0459297237665562e10)]]><![CDATA[(1,-1.8178934034579682e8)]]><![CDATA[(2,1053205.1581443883)]]><![CDATA[(3,-2033.9309095416518)]]></coeficients
+                ><![CDATA[(0,8.56485037254401e9)]]><![CDATA[(1,-1.387068428942184e8)]]><![CDATA[(2,748780.9492299726)]]><![CDATA[(3,-1347.3811858504566)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="172.572" right="172.608"
+          ><node left="185.278" right="185.314"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,7.666103509167155e10)]]><![CDATA[(1,-1.3326435551779716e9)]]><![CDATA[(2,7722040.281062216)]]><![CDATA[(3,-14915.192301729314)]]></coeficients
+                ><![CDATA[(0,-8.487895234713342e10)]]><![CDATA[(1,1.3743244298906367e9)]]><![CDATA[(2,-7417494.986309353)]]><![CDATA[(3,13344.551901257073)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="172.608" right="172.645"
+          ><node left="185.314" right="185.351"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-8.3050421504561e10)]]><![CDATA[(1,1.443209069200376e9)]]><![CDATA[(2,-8359790.3662910275)]]><![CDATA[(3,16141.36484385151)]]></coeficients
+                ><![CDATA[(0,1.4099511542964746e11)]]><![CDATA[(1,-2.2822919257562256e9)]]><![CDATA[(2,1.2314507753078185e7)]]><![CDATA[(3,-22148.36415723021)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="172.645" right="172.681"
+          ><node left="185.351" right="185.387"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-6.807648451043509e9)]]><![CDATA[(1,1.1836143874161778e8)]]><![CDATA[(2,-685964.7098355402)]]><![CDATA[(3,1325.1704247535808)]]></coeficients
+                ><![CDATA[(0,-9.710179287007724e10)]]><![CDATA[(1,1.571427368443286e9)]]><![CDATA[(2,-8476959.75559191)]]><![CDATA[(3,15242.797312396056)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="172.681" right="172.717"
+          ><node left="185.387" right="185.424"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-3.7712820781288857e9)]]><![CDATA[(1,6.56104173858006e7)]]><![CDATA[(2,-380482.2227303162)]]><![CDATA[(3,735.4848443959194)]]></coeficients
+                ><![CDATA[(0,6.618739352820651e10)]]><![CDATA[(1,-1.0709777581020007e9)]]><![CDATA[(2,5776494.513290406)]]><![CDATA[(3,-10385.490663356135)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="172.717" right="172.754"
+          ><node left="185.424" right="185.46"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,9.367494101922752e10)]]><![CDATA[(1,-1.6269772797839575e9)]]><![CDATA[(2,9419292.536961885)]]><![CDATA[(3,-18177.48600713617)]]></coeficients
+                ><![CDATA[(0,-4.959876546595836e10)]]><![CDATA[(1,8.023421842058697e8)]]><![CDATA[(2,-4326404.476634685)]]><![CDATA[(3,7776.306065447561)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="172.754" right="172.79"
+          ><node left="185.46" right="185.496"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-1.3713486590694499e11)]]><![CDATA[(1,2.3812044166081214e9)]]><![CDATA[(2,-1.3782379762331199e7)]]><![CDATA[(3,26590.743767173113)]]></coeficients
+                ><![CDATA[(0,-1.3771262032973724e10)]]><![CDATA[(1,2.2279667412847346e8)]]><![CDATA[(2,-1201496.0862680494)]]><![CDATA[(3,2159.8058491086636)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="172.79" right="172.827"
+          ><node left="185.496" right="185.533"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,1.0133015013102272e11)]]><![CDATA[(1,-1.7590528211597066e9)]]><![CDATA[(2,1.0178828859509345e7)]]><![CDATA[(3,-19633.398489980165)]]></coeficients
+                ><![CDATA[(0,5.746787938509642e10)]]><![CDATA[(1,-9.293436644999084e8)]]><![CDATA[(2,5009636.976592506)]]><![CDATA[(3,-9001.500527417973)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="172.827" right="172.863"
+          ><node left="185.533" right="185.569"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-7.287095795941158e10)]]><![CDATA[(1,1.2647994951525748e9)]]><![CDATA[(2,-7317582.675217753)]]><![CDATA[(3,14112.122627914408)]]></coeficients
+                ><![CDATA[(0,-9.24861204719096e10)]]><![CDATA[(1,1.4953570602823024e9)]]><![CDATA[(2,-8059201.045658041)]]><![CDATA[(3,14478.30813600138)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="172.863" right="172.899"
+          ><node left="185.569" right="185.606"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,8.645516695495425e10)]]><![CDATA[(1,-1.5002709637836788e9)]]><![CDATA[(2,8678150.70286925)]]><![CDATA[(3,-16732.599065154667)]]></coeficients
+                ><![CDATA[(0,1.1962277023614716e11)]]><![CDATA[(1,-1.9336999057204802e9)]]><![CDATA[(2,1.0419407806050934e7)]]><![CDATA[(3,-18714.3926055179)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="172.899" right="172.936"
+          ><node left="185.606" right="185.642"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-9.701306059017958e9)]]><![CDATA[(1,1.68156378432971e8)]]><![CDATA[(2,-971571.633388618)]]><![CDATA[(3,1871.1760410400152)]]></coeficients
+                ><![CDATA[(0,-1.285822931377378e11)]]><![CDATA[(1,2.0781056938918989e9)]]><![CDATA[(2,-1.1195225339495976e7)]]><![CDATA[(3,20103.736739343276)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="172.936" right="172.972"
+          ><node left="185.642" right="185.678"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-9.528009753810286e10)]]><![CDATA[(1,1.6527308709461236e9)]]><![CDATA[(2,-9556102.86178035)]]><![CDATA[(3,18417.819940886842)]]></coeficients
+                ><![CDATA[(0,1.5429835221891235e11)]]><![CDATA[(1,-2.4932840566492023e9)]]><![CDATA[(2,1.3429534954732172e7)]]><![CDATA[(3,-24111.76100044289)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="172.972" right="173.009"
+          ><node left="185.678" right="185.715"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,4.077319176708796e10)]]><![CDATA[(1,-7.069566386830193e8)]]><![CDATA[(2,4085917.289626478)]]><![CDATA[(3,-7871.637604085414)]]></coeficients
+                ><![CDATA[(0,-2.1133813387114246e11)]]><![CDATA[(1,3.4143057400427294e9)]]><![CDATA[(2,-1.838678036906457e7)]]><![CDATA[(3,33005.60584574018)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.009" right="173.045"
+          ><node left="185.715" right="185.751"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,3.0208199364804386e10)]]><![CDATA[(1,-5.237582085039497e8)]]><![CDATA[(2,3027021.913206353)]]><![CDATA[(3,-5831.4828984147525)]]></coeficients
+                ><![CDATA[(0,2.3962846887696515e11)]]><![CDATA[(1,-3.870511362745531e9)]]><![CDATA[(2,2.083900700830538e7)]]><![CDATA[(3,-37399.382761121495)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.045" right="173.081"
+          ><node left="185.751" right="185.788"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,2.897295569188992e10)]]><![CDATA[(1,-5.0234336832513237e8)]]><![CDATA[(2,2903268.899950741)]]><![CDATA[(3,-5593.099793334934)]]></coeficients
+                ><![CDATA[(0,-1.7601884972910645e11)]]><![CDATA[(1,2.8424643726110196e9)]]><![CDATA[(2,-1.5300640882454565e7)]]><![CDATA[(3,27453.83093312499)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.081" right="173.118"
+          ><node left="185.788" right="185.824"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-8.724027065580032e10)]]><![CDATA[(1,1.5119717733892713e9)]]><![CDATA[(2,-8734722.22394156)]]><![CDATA[(3,16820.281078226744)]]></coeficients
+                ><![CDATA[(0,1.0866726309178345e11)]]><![CDATA[(1,-1.7544866600857651e9)]]><![CDATA[(2,9442351.305936424)]]><![CDATA[(3,-16939.047308725912)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.118" right="173.154"
+          ><node left="185.824" right="185.86"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,4.790456202866483e10)]]><![CDATA[(1,-8.299828359141836e8)]]><![CDATA[(2,4793360.409311219)]]><![CDATA[(3,-9227.621957569221)]]></coeficients
+                ><![CDATA[(0,-7.44465211160004e10)]]><![CDATA[(1,1.2017587798108683e9)]]><![CDATA[(2,-6466494.913586535)]]><![CDATA[(3,11598.432994361883)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.154" right="173.191"
+          ><node left="185.86" right="185.897"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,6.234675516707993e10)]]><![CDATA[(1,-1.0802027523772464e9)]]><![CDATA[(2,6238431.943685606)]]><![CDATA[(3,-12009.483834615834)]]></coeficients
+                ><![CDATA[(0,3.837025023769772e10)]]><![CDATA[(1,-6.19237206744036e8)]]><![CDATA[(2,3331180.68393259)]]><![CDATA[(3,-5973.3514984806225)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.191" right="173.227"
+          ><node left="185.897" right="185.933"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-1.841391292278413e11)]]><![CDATA[(1,3.1894050978272324e9)]]><![CDATA[(2,-1.8414164612743303e7)]]><![CDATA[(3,35438.31764165201)]]></coeficients
+                ><![CDATA[(0,1.324462662920182e10)]]><![CDATA[(1,-2.137606749791999e8)]]><![CDATA[(2,1149991.4675125508)]]><![CDATA[(3,-2062.2444223039606)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.227" right="173.263"
+          ><node left="185.933" right="185.97"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,1.7817940299360193e11)]]><![CDATA[(1,-3.085341891177537e9)]]><![CDATA[(2,1.780852000919651e7)]]><![CDATA[(3,-34263.450600673204)]]></coeficients
+                ><![CDATA[(0,-3.85533894469671e10)]]><![CDATA[(1,6.219922480011574e8)]]><![CDATA[(2,-3344922.9531677878)]]><![CDATA[(3,5996.060488031731)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.263" right="173.3"
+          ><node left="185.97" right="186.006"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-5.058910743914292e10)]]><![CDATA[(1,8.757203742699862e8)]]><![CDATA[(2,-5053038.808597956)]]><![CDATA[(3,9718.932285064006)]]></coeficients
+                ><![CDATA[(0,4.25530400387404e10)]]><![CDATA[(1,-6.863869984209676e8)]]><![CDATA[(2,3690508.8176668906)]]><![CDATA[(3,-6614.274101480338)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.3" right="173.336"
+          ><node left="186.006" right="186.043"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-2.098318402546514e10)]]><![CDATA[(1,3.632116019616579e8)]]><![CDATA[(2,-2095688.7087230096)]]><![CDATA[(3,4030.626649605368)]]></coeficients
+                ><![CDATA[(0,-1.553594285367342e10)]]><![CDATA[(1,2.5050185826774967e8)]]><![CDATA[(2,-1346365.5664321028)]]><![CDATA[(3,2412.0913277692443)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.336" right="173.373"
+          ><node left="186.043" right="186.079"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,4.707645351849366e10)]]><![CDATA[(1,-8.147255411123505e8)]]><![CDATA[(2,4699997.952293791)]]><![CDATA[(3,-9037.800491932454)]]></coeficients
+                ><![CDATA[(0,-7.571049813314499e10)]]><![CDATA[(1,1.2208348771849608e9)]]><![CDATA[(2,-6562003.988287325)]]><![CDATA[(3,11756.953217861359)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.373" right="173.409"
+          ><node left="186.079" right="186.115"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-1.2420966569963155e11)]]><![CDATA[(1,2.149163632255912e9)]]><![CDATA[(2,-1.2395450435680477e7)]]><![CDATA[(3,23830.539999328714)]]></coeficients
+                ><![CDATA[(0,1.319390430045745e11)]]><![CDATA[(1,-2.1269293703290427e9)]]><![CDATA[(2,1.14290871478108e7)]]><![CDATA[(3,-20471.457181481794)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.409" right="173.446"
+          ><node left="186.115" right="186.152"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,2.2449001858148172e11)]]><![CDATA[(1,-3.8833897694899015e9)]]><![CDATA[(2,2.2392555963905554e7)]]><![CDATA[(3,-43040.280622411476)]]></coeficients
+                ><![CDATA[(0,-7.404387462122668e10)]]><![CDATA[(1,1.1933229085168495e9)]]><![CDATA[(2,-6410701.578760899)]]><![CDATA[(3,11479.735587454434)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.446" right="173.482"
+          ><node left="186.152" right="186.188"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-2.7735684533147565e11)]]><![CDATA[(1,4.79677922684828e9)]]><![CDATA[(2,-2.76528126023236e7)]]><![CDATA[(3,53138.29669892416)]]></coeficients
+                ><![CDATA[(0,2.5869949857795715e10)]]><![CDATA[(1,-4.16874529260167e8)]]><![CDATA[(2,2239205.1521741264)]]><![CDATA[(3,-4009.231727669813)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.482" right="173.518"
+          ><node left="186.188" right="186.225"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,1.8156338734750046e11)]]><![CDATA[(1,-3.139264270672659e9)]]><![CDATA[(2,1.8092818054003492e7)]]><![CDATA[(3,-34758.68138588596)]]></coeficients
+                ><![CDATA[(0,-1.284432718321772e10)]]><![CDATA[(1,2.0691879320444047e8)]]><![CDATA[(2,-1111136.0216104763)]]><![CDATA[(3,1988.9012951970433)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.518" right="173.555"
+          ><node left="186.225" right="186.261"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-7.103674129597198e10)]]><![CDATA[(1,1.228008207862232e9)]]><![CDATA[(2,-7076170.054059592)]]><![CDATA[(3,13591.707061927484)]]></coeficients
+                ><![CDATA[(0,-3.9083083066133606e10)]]><![CDATA[(1,6.29613209360959e8)]]><![CDATA[(2,-3380940.9143827604)]]><![CDATA[(3,6051.737278142914)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.555" right="173.591"
+          ><node left="186.261" right="186.297"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,1.2553845001264175e11)]]><![CDATA[(1,-2.1699093048907356e9)]]><![CDATA[(2,1.250216253649077e7)]]><![CDATA[(3,-24010.84465664466)]]></coeficients
+                ><![CDATA[(0,4.451145195504445e10)]]><![CDATA[(1,-7.167964258473469e8)]]><![CDATA[(2,3847677.1817742777)]]><![CDATA[(3,-6884.622804674634)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.591" right="173.628"
+          ><node left="186.297" right="186.334"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-2.0628477623591824e11)]]><![CDATA[(1,3.564660337231724e9)]]><![CDATA[(2,-2.053278537050014e7)]]><![CDATA[(3,39423.60357126061)]]></coeficients
+                ><![CDATA[(0,1.6091967401259804e10)]]><![CDATA[(1,-2.5914840327396166e8)]]><![CDATA[(2,1391126.4988680293)]]><![CDATA[(3,-2489.220690655534)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.628" right="173.664"
+          ><node left="186.334" right="186.37"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,2.088498538573138e11)]]><![CDATA[(1,-3.608168298009687e9)]]><![CDATA[(2,2.0778688788284212e7)]]><![CDATA[(3,-39886.711506154614)]]></coeficients
+                ><![CDATA[(0,1.3389178196156776e10)]]><![CDATA[(1,-2.156331692570399e8)]]><![CDATA[(2,1157592.9836914015)]]><![CDATA[(3,-2071.4520329823454)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.664" right="173.7"
+          ><node left="186.37" right="186.407"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-1.943658403276237e11)]]><![CDATA[(1,3.357276944267425e9)]]><![CDATA[(2,-1.933005707889098e7)]]><![CDATA[(3,37098.62774507227)]]></coeficients
+                ><![CDATA[(0,-1.2550186467797122e11)]]><![CDATA[(1,2.0200975203517163e9)]]><![CDATA[(2,-1.0838601090509146e7)]]><![CDATA[(3,19384.422614583513)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.7" right="173.737"
+          ><node left="186.407" right="186.443"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,2.0797342003652765e11)]]><![CDATA[(1,-3.591587656149697e9)]]><![CDATA[(2,2.0674920471006095e7)]]><![CDATA[(3,-39671.622782460014)]]></coeficients
+                ><![CDATA[(0,1.988154806203734e11)]]><![CDATA[(1,-3.199406231626663e9)]]><![CDATA[(2,1.716197695633662e7)]]><![CDATA[(3,-30686.261510021548)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.737" right="173.773"
+          ><node left="186.443" right="186.479"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-2.3739473726115414e11)]]><![CDATA[(1,4.098797649761223e9)]]><![CDATA[(2,-2.3589601800651178e7)]]><![CDATA[(3,45254.67821973924)]]></coeficients
+                ><![CDATA[(0,-1.566382514405932e11)]]><![CDATA[(1,2.5200962231874065e9)]]><![CDATA[(2,-1.3514972324752335e7)]]><![CDATA[(3,24159.722304672403)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.773" right="173.81"
+          ><node left="186.479" right="186.516"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,1.6238418764581396e11)]]><![CDATA[(1,-2.8029464343076744e9)]]><![CDATA[(2,1.6127408805535618e7)]]><![CDATA[(3,-30930.9405783226)]]></coeficients
+                ><![CDATA[(0,6.721214453546939e10)]]><![CDATA[(1,-1.081119934815307e9)]]><![CDATA[(2,5796672.192875459)]]><![CDATA[(3,-10360.061902714295)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.81" right="173.846"
+          ><node left="186.516" right="186.552"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-4.3021820235920845e10)]]><![CDATA[(1,7.424078240503281e8)]]><![CDATA[(2,-4270463.9196125455)]]><![CDATA[(3,8188.160212096366)]]></coeficients
+                ><![CDATA[(0,-1.8918477779337738e10)]]><![CDATA[(1,3.042403932231534e8)]]><![CDATA[(2,-1630896.1017398038)]]><![CDATA[(3,2914.1671082289354)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node
-          ><node left="173.846" right="173.882"
+          ><node left="186.552" right="186.589"
             ><polynoms
               ><polynom version="1"
                 ><coeficients
-                ><![CDATA[(0,-1.3249885587612565e9)]]><![CDATA[(1,2.2860091968607783e7)]]><![CDATA[(2,-131468.87755394055)]]><![CDATA[(3,252.02700213159991)]]></coeficients
+                ><![CDATA[(0,-1.7365231193253906e10)]]><![CDATA[(1,2.792621578879573e8)]]><![CDATA[(2,-1497001.8774205998)]]><![CDATA[(3,2674.923315043114)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="186.589" right="186.625"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,4.050104090981561e10)]]><![CDATA[(1,-6.511186057648224e8)]]><![CDATA[(2,3489255.424203716)]]><![CDATA[(3,-6232.813835636214)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="186.625" right="186.661"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.9234166950877953e10)]]><![CDATA[(1,3.0912586085047954e8)]]><![CDATA[(2,-1656059.8691133736)]]><![CDATA[(3,2957.3005529631864)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="186.661" right="186.698"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-4.68604163278981e10)]]><![CDATA[(1,7.531326331867492e8)]]><![CDATA[(2,-4034739.7879837845)]]><![CDATA[(3,7205.07221544296)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="186.698" right="186.734"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.5094576278193677e11)]]><![CDATA[(1,-2.425361712384733e9)]]><![CDATA[(2,1.2990050759164456e7)]]><![CDATA[(3,-23191.237238234884)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="186.734" right="186.771"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-2.158317410477887e11)]]><![CDATA[(1,3.467151228425065e9)]]><![CDATA[(2,-1.8565600278192416e7)]]><![CDATA[(3,33137.820918210244)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="186.771" right="186.807"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.0466634252629175e11)]]><![CDATA[(1,-3.2870785541548924e9)]]><![CDATA[(2,1.759756093302323e7)]]><![CDATA[(3,-31403.178864439178)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="186.807" right="186.843"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.3448031891110907e11)]]><![CDATA[(1,2.159398206952574e9)]]><![CDATA[(2,-1.1558074354238315e7)]]><![CDATA[(3,20621.344283803926)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="186.843" right="186.88"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,7.103497039005414e10)]]><![CDATA[(1,-1.1404089461304398e9)]]><![CDATA[(2,6102780.765209635)]]><![CDATA[(3,-10886.133686912932)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="186.88" right="186.916"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-5.257872281464212e10)]]><![CDATA[(1,8.439718309141282e8)]]><![CDATA[(2,-4515695.13935248)]]><![CDATA[(3,8053.784807240384)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="186.916" right="186.953"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,5.985275002354239e10)]]><![CDATA[(1,-9.605522254242994e8)]]><![CDATA[(2,5138502.76953936)]]><![CDATA[(3,-9162.85780029783)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="186.953" right="186.989"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-2.9187031891907364e10)]]><![CDATA[(1,4.682525851235355e8)]]><![CDATA[(2,-2504085.5309844883)]]><![CDATA[(3,4463.719112123738)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="186.989" right="187.026"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-4.84730498362699e10)]]><![CDATA[(1,7.776721436702294e8)]]><![CDATA[(2,-4158832.914770134)]]><![CDATA[(3,7413.531460774631)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.026" right="187.062"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,6.719197751131308e10)]]><![CDATA[(1,-1.0776585699350934e9)]]><![CDATA[(2,5761342.42772408)]]><![CDATA[(3,-10267.032279907082)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.062" right="187.098"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.8193258034201042e10)]]><![CDATA[(1,2.9170402982617414e8)]]><![CDATA[(2,-1559025.1496634558)]]><![CDATA[(3,2777.4263797664244)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.098" right="187.135"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-9.286650234217731e9)]]><![CDATA[(1,1.488921162838065e8)]]><![CDATA[(2,-795725.0954546052)]]><![CDATA[(3,1417.5328939838394)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.135" right="187.171"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.36312720522221e9)]]><![CDATA[(1,-3.7867882210969016e7)]]><![CDATA[(2,202270.99557473464)]]><![CDATA[(3,-360.1429212107882)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.171" right="187.208"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.0820574324397316e10)]]><![CDATA[(1,-3.3370613363627154e8)]]><![CDATA[(2,1782848.3896438077)]]><![CDATA[(3,-3174.997419804896)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.208" right="187.244"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-4.1165858175841125e10)]]><![CDATA[(1,6.596237320784171e8)]]><![CDATA[(2,-3523174.1399205737)]]><![CDATA[(3,6272.644649558915)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.244" right="187.28"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.5798986523362858e10)]]><![CDATA[(1,-2.530599004951875e8)]]><![CDATA[(2,1351126.9462215973)]]><![CDATA[(3,-2404.6268716329896)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.28" right="187.317"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-5.724685554952629e9)]]><![CDATA[(1,9.172339849534254e7)]]><![CDATA[(2,-489877.4268589773)]]><![CDATA[(3,872.1145014991733)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.317" right="187.353"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,9.536700269836865e10)]]><![CDATA[(1,-1.5273238036270692e9)]]><![CDATA[(2,8153476.898281889)]]><![CDATA[(3,-14508.860574870236)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.353" right="187.39"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.3628366372977869e11)]]><![CDATA[(1,2.1819949651380014e9)]]><![CDATA[(2,-1.1645078602644552e7)]]><![CDATA[(3,20716.187864753436)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.39" right="187.426"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,6.911589837277274e10)]]><![CDATA[(1,-1.1063271774931657e9)]]><![CDATA[(2,5902934.325639604)]]><![CDATA[(3,-10498.592234298732)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.426" right="187.462"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-4.788985415573309e10)]]><![CDATA[(1,7.665040070037423e8)]]><![CDATA[(2,-4089442.316325267)]]><![CDATA[(3,7272.646622574326)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.462" right="187.499"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.0566291827736597e11)]]><![CDATA[(1,-1.6908383733149204e9)]]><![CDATA[(2,9019040.364530921)]]><![CDATA[(3,-16036.046482972733)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.499" right="187.535"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.881023727840204e11)]]><![CDATA[(1,3.0094313517724648e9)]]><![CDATA[(2,-1.6049198533209259e7)]]><![CDATA[(3,28529.949242764793)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.535" right="187.572"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.0412018654928296e11)]]><![CDATA[(1,-3.264958378144141e9)]]><![CDATA[(2,1.740796802192235e7)]]><![CDATA[(3,-30938.35721581913)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.572" right="187.608"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.2790588399608722e11)]]><![CDATA[(1,2.0454195654514399e9)]]><![CDATA[(2,-1.0903176197873674e7)]]><![CDATA[(3,19373.246185889766)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.608" right="187.644"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,7.554819701962302e10)]]><![CDATA[(1,-1.207971777386449e9)]]><![CDATA[(2,6438255.632527423)]]><![CDATA[(3,-11438.218553355711)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.644" right="187.681"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-7.884558043395749e10)]]><![CDATA[(1,1.2604329270578227e9)]]><![CDATA[(2,-6716466.631143524)]]><![CDATA[(3,11930.007562180352)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.681" right="187.717"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,4.3822129341173645e10)]]><![CDATA[(1,-7.00357612876391e8)]]><![CDATA[(2,3730997.629672507)]]><![CDATA[(3,-6625.35012953419)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.717" right="187.754"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.0868357764511803e10)]]><![CDATA[(1,-3.3352181894198143e8)]]><![CDATA[(2,1776801.7180906597)]]><![CDATA[(3,-3155.240138462796)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.754" right="187.79"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-5.493930142654018e10)]]><![CDATA[(1,8.777598452204651e8)]]><![CDATA[(2,-4674627.621164145)]]><![CDATA[(3,8298.451641303645)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.79" right="187.826"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,4.3629191380197266e10)]]><![CDATA[(1,-6.969005649196508e8)]]><![CDATA[(2,3710592.0930917566)]]><![CDATA[(3,-6585.584985169014)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.826" right="187.863"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-2.25739561328842e10)]]><![CDATA[(1,3.6051130851237917e8)]]><![CDATA[(2,-1919149.654227731)]]><![CDATA[(3,3405.4736671998244)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.863" right="187.899"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-2.9106461095338333e10)]]><![CDATA[(1,4.648294280322549e8)]]><![CDATA[(2,-2474437.9202507143)]]><![CDATA[(3,4390.745320874725)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.899" right="187.936"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.2700546648978003e11)]]><![CDATA[(1,-2.027657401356699e9)]]><![CDATA[(2,1.0790597175140714e7)]]><![CDATA[(3,-19141.46275437036)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.936" right="187.972"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.921238136464923e11)]]><![CDATA[(1,3.0665653149340444e9)]]><![CDATA[(2,-1.6315559794735968e7)]]><![CDATA[(3,28935.46586295448)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="187.972" right="188.009"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.9098518096360712e11)]]><![CDATA[(1,-3.0477867365964923e9)]]><![CDATA[(2,1.6212434010354875e7)]]><![CDATA[(3,-28746.873005052174)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.009" right="188.045"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.7046186263981287e11)]]><![CDATA[(1,2.719709132272873e9)]]><![CDATA[(2,-1.4464266939436713e7)]]><![CDATA[(3,25641.837020871393)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.045" right="188.081"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.0417515289892181e11)]]><![CDATA[(1,-1.6617476818737617e9)]]><![CDATA[(2,8835777.274164468)]]><![CDATA[(3,-15660.411933015852)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.081" right="188.118"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-5.8770186633958786e10)]]><![CDATA[(1,9.373240935774627e8)]]><![CDATA[(2,-4983118.709221544)]]><![CDATA[(3,8830.624700821014)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.118" right="188.154"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,8.573037774212868e9)]]><![CDATA[(1,-1.3662775167134333e8)]]><![CDATA[(2,725807.8435209147)]]><![CDATA[(3,-1285.2361821397828)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.154" right="188.191"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.5014091723613228e10)]]><![CDATA[(1,-3.987702617864676e8)]]><![CDATA[(2,2119041.6313496307)]]><![CDATA[(3,-3753.486990571025)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.191" right="188.227"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.3508519004340973e11)]]><![CDATA[(1,-2.1534412872839117e9)]]><![CDATA[(2,1.144292548072311e7)]]><![CDATA[(3,-20268.417476749924)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.227" right="188.263"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-2.960511240757362e11)]]><![CDATA[(1,4.718096496123556e9)]]><![CDATA[(2,-2.5063727568029016e7)]]><![CDATA[(3,44381.62927310021)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.263" right="188.3"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.5934626973897156e11)]]><![CDATA[(1,-2.538731353449239e9)]]><![CDATA[(2,1.348249686041839e7)]]><![CDATA[(3,-23867.26443489943)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.3" right="188.336"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,3.2020278679991135e10)]]><![CDATA[(1,-5.101706886752543e8)]]><![CDATA[(2,2709471.556254906)]]><![CDATA[(3,-4796.587670580997)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.336" right="188.373"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,4.664584798701889e9)]]><![CDATA[(1,-7.442244275377508e7)]]><![CDATA[(2,395796.8157832003)]]><![CDATA[(3,-701.6461113965149)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.373" right="188.409"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-7.55204266673693e10)]]><![CDATA[(1,1.2025919616365225e9)]]><![CDATA[(2,-6383382.813942385)]]><![CDATA[(3,11294.375310154674)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.409" right="188.445"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-2.9374593836552628e10)]]><![CDATA[(1,4.678208069016109e8)]]><![CDATA[(2,-2483509.9058811376)]]><![CDATA[(3,4394.7174593067)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.445" right="188.482"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.498186852774604e11)]]><![CDATA[(1,-2.384893976414684e9)]]><![CDATA[(2,1.2654672499151073e7)]]><![CDATA[(3,-22382.648889906086)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.482" right="188.518"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-2.1332365190119983e11)]]><![CDATA[(1,3.395111602558271e9)]]><![CDATA[(2,-1.8011415397692945e7)]]><![CDATA[(3,31850.802044124775)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.518" right="188.555"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.878106301639308e11)]]><![CDATA[(1,-4.57973878942229e9)]]><![CDATA[(2,2.429144370319164e7)]]><![CDATA[(3,-42948.17223752576)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.555" right="188.591"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-2.6282521708924152e11)]]><![CDATA[(1,4.181140220731339e9)]]><![CDATA[(2,-2.217181110391308e7)]]><![CDATA[(3,39190.9998998784)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.591" right="188.627"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,5.010070137638808e10)]]><![CDATA[(1,-7.967100234313662e8)]]><![CDATA[(2,4223140.10883146)]]><![CDATA[(3,-7461.900137317684)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.627" right="188.664"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,5.876894334890683e10)]]><![CDATA[(1,-9.345732451204998e8)]]><![CDATA[(2,4954017.563751135)]]><![CDATA[(3,-8753.474611314294)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.664" right="188.7"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-3.3623527778229706e10)]]><![CDATA[(1,5.3458575384808767e8)]]><![CDATA[(2,-2833154.3342717397)]]><![CDATA[(3,5004.9740911812805)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.7" right="188.737"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,3.620015892968358e10)]]><![CDATA[(1,-5.75488756611583e8)]]><![CDATA[(2,3049593.4689061656)]]><![CDATA[(3,-5386.737272849644)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.737" right="188.773"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-3.913024128706911e10)]]><![CDATA[(1,6.218980867220402e8)]]><![CDATA[(2,-3294614.8385991096)]]><![CDATA[(3,5817.934320434971)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.773" right="188.809"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.907010957438401e10)]]><![CDATA[(1,-4.619489283932532e8)]]><![CDATA[(2,2446921.3721688148)]]><![CDATA[(3,-4320.408576003123)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.809" right="188.846"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-3.3554207548121834e10)]]><![CDATA[(1,5.330934232293788e8)]]><![CDATA[(2,-2823178.8435128108)]]><![CDATA[(3,4983.70336725104)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.846" right="188.882"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.287729547355666e10)]]><![CDATA[(1,-2.045155759818066e8)]]><![CDATA[(2,1082696.8393779332)]]><![CDATA[(3,-1910.5838348267446)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.882" right="188.919"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-7.439702532907955e9)]]><![CDATA[(1,1.1817792588387577e8)]]><![CDATA[(2,-625742.831240137)]]><![CDATA[(3,1104.4196605090913)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.919" right="188.955"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.3812652843191734e10)]]><![CDATA[(1,-3.7810389928087264e8)]]><![CDATA[(2,2001212.7696509773)]]><![CDATA[(3,-3530.6454571535296)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.955" right="188.992"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-4.267892261774559e10)]]><![CDATA[(1,6.775692841903877e8)]]><![CDATA[(2,-3585689.8445760095)]]><![CDATA[(3,6325.144923672569)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="188.992" right="189.028"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,9.695401137425342e10)]]><![CDATA[(1,-1.538920313125886e9)]]><![CDATA[(2,8142264.76364166)]]><![CDATA[(3,-14359.953930983835)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.028" right="189.064"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.2073163684827075e11)]]><![CDATA[(1,1.9158956118565135e9)]]><![CDATA[(2,-1.0134476909456506e7)]]><![CDATA[(3,17869.38365057052)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.064" right="189.101"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,9.759546561586835e10)]]><![CDATA[(1,-1.5484408424257276e9)]]><![CDATA[(2,8189140.777053043)]]><![CDATA[(3,-14436.462846752345)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.101" right="189.137"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.1365638634223633e11)]]><![CDATA[(1,1.8029721901564057e9)]]><![CDATA[(2,-9533732.357315011)]]><![CDATA[(3,16804.11429521245)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.137" right="189.174"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.308205022690235e11)]]><![CDATA[(1,-2.0748024696604433e9)]]><![CDATA[(2,1.0968732310184464e7)]]><![CDATA[(3,-19329.243478076176)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.174" right="189.21"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-3.518530424714136e10)]]><![CDATA[(1,5.577866786817951e8)]]><![CDATA[(2,-2947499.034198159)]]><![CDATA[(3,5191.7994848091785)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.21" right="189.246"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.1208715819763885e11)]]><![CDATA[(1,1.777096238702369e9)]]><![CDATA[(2,-9391712.130866274)]]><![CDATA[(3,16544.640414055546)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.246" right="189.283"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.6878623675622327e11)]]><![CDATA[(1,-2.675416283948499e9)]]><![CDATA[(2,1.4135931902037285e7)]]><![CDATA[(3,-24896.38349645169)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.283" right="189.319"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.5311374304439526e11)]]><![CDATA[(1,2.4264678757586904e9)]]><![CDATA[(2,-1.2817804882075341e7)]]><![CDATA[(3,22569.997150714422)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.319" right="189.356"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,9.463583819504962e10)]]><![CDATA[(1,-1.499438893864721e9)]]><![CDATA[(2,7919188.074909493)]]><![CDATA[(3,-13941.557345461935)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.356" right="189.392"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-6.437145264828134e10)]]><![CDATA[(1,1.0197412352571063e9)]]><![CDATA[(2,-5384748.051338565)]]><![CDATA[(3,9478.061654812782)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.392" right="189.428"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.9778470751074448e10)]]><![CDATA[(1,-3.132072007806747e8)]]><![CDATA[(2,1653291.7604685938)]]><![CDATA[(3,-2909.0152576354026)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.428" right="189.465"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,5.912272844798248e9)]]><![CDATA[(1,-9.360611900380637e7)]]><![CDATA[(2,494006.5345417597)]]><![CDATA[(3,-869.0401291312849)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.465" right="189.501"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,3.1441153178719437e10)]]><![CDATA[(1,-4.978319179733448e8)]]><![CDATA[(2,2627518.259501718)]]><![CDATA[(3,-4622.612424735501)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.501" right="189.538"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-3.861116932787015e10)]]><![CDATA[(1,6.111699739415725e8)]]><![CDATA[(2,-3224703.5858443086)]]><![CDATA[(3,5671.4789790847535)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.538" right="189.574"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,3.008730849314392e10)]]><![CDATA[(1,-4.761868276657158e8)]]><![CDATA[(2,2512176.6260777777)]]><![CDATA[(3,-4417.755918265797)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.574" right="189.61"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.2959520774947003e11)]]><![CDATA[(1,2.0507817900130913e9)]]><![CDATA[(2,-1.0817544842471747e7)]]><![CDATA[(3,19020.27086555745)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.61" right="189.647"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.5967522904213074e11)]]><![CDATA[(1,-4.1082357215886283e9)]]><![CDATA[(2,2.1665011518488746e7)]]><![CDATA[(3,-38083.883909965094)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.647" right="189.683"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-2.376258517796942e11)]]><![CDATA[(1,3.758502178117008e9)]]><![CDATA[(2,-1.9815939404571652e7)]]><![CDATA[(3,34825.171551076375)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.683" right="189.72"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.1710594715692352e11)]]><![CDATA[(1,-1.8518867170915947e9)]]><![CDATA[(2,9761771.276979163)]]><![CDATA[(3,-17152.269199282233)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.72" right="189.756"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-8.97793396711e10)]]><![CDATA[(1,1.4195441309163651e9)]]><![CDATA[(2,-7481697.245095259)]]><![CDATA[(3,13144.077209591233)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.756" right="189.792"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.0237968803633197e11)]]><![CDATA[(1,-1.618447200700532e9)]]><![CDATA[(2,8528291.011491604)]]><![CDATA[(3,-14979.738386203475)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.792" right="189.829"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-9.783640444545111e10)]]><![CDATA[(1,1.5463241144515786e9)]]><![CDATA[(2,-8146654.798406129)]]><![CDATA[(3,14306.613356577629)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.829" right="189.865"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,6.929815389407126e10)]]><![CDATA[(1,-1.0950198057005942e9)]]><![CDATA[(2,5767678.207363128)]]><![CDATA[(3,-10126.486970153717)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.865" right="189.902"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-2.0729286539198166e10)]]><![CDATA[(1,3.2747681716200846e8)]]><![CDATA[(2,-1724469.4915945649)]]><![CDATA[(3,3026.9776827271753)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.902" right="189.938"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,4.3621671564622025e10)]]><![CDATA[(1,-6.891152898798373e8)]]><![CDATA[(2,3628776.430206395)]]><![CDATA[(3,-6369.528448156054)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.938" right="189.975"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.5705215738998303e11)]]><![CDATA[(1,2.480453131730451e9)]]><![CDATA[(2,-1.3058607987921039e7)]]><![CDATA[(3,22916.14094243006)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="189.975" right="190.011"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.8673495279884424e11)]]><![CDATA[(1,-4.5276338827003e9)]]><![CDATA[(2,2.3830914393606808e7)]]><![CDATA[(3,-41810.83608354327)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.011" right="190.047"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-3.362076111928248e11)]]><![CDATA[(1,5.307731922305763e9)]]><![CDATA[(2,-2.7931172038263258e7)]]><![CDATA[(3,48994.58471116522)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.047" right="190.084"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.7289858779617883e11)]]><![CDATA[(1,-4.307355908425644e9)]]><![CDATA[(2,2.266203822410031e7)]]><![CDATA[(3,-39743.48229745821)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.084" right="190.12"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.2590253855245593e11)]]><![CDATA[(1,1.9867213366128857e9)]]><![CDATA[(2,-1.0450045091899615e7)]]><![CDATA[(3,18322.220788195023)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.12" right="190.157"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-2.5947203408124268e10)]]><![CDATA[(1,4.0947535810986286e8)]]><![CDATA[(2,-2153990.0818900303)]]><![CDATA[(3,3776.9248172125162)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.157" right="190.193"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,7.376375491356357e10)]]><![CDATA[(1,-1.1636083304478211e9)]]><![CDATA[(2,6118562.012209497)]]><![CDATA[(3,-10724.34184507098)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.193" right="190.229"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-2.765801537873124e10)]]><![CDATA[(1,4.361630116987587e8)]]><![CDATA[(2,-2292743.041849167)]]><![CDATA[(3,4017.359223595522)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.229" right="190.266"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-5.23308236703071e10)]]><![CDATA[(1,8.25264699005781e8)]]><![CDATA[(2,-4338181.367798535)]]><![CDATA[(3,7601.527648580441)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.266" right="190.302"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,5.1776175555491455e10)]]><![CDATA[(1,-8.162319303310196e8)]]><![CDATA[(2,4289196.247418061)]]><![CDATA[(3,-7513.062127866911)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.302" right="190.339"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.0613819116428046e11)]]><![CDATA[(1,-1.673217389371739e9)]]><![CDATA[(2,8792488.167843066)]]><![CDATA[(3,-15401.036541211677)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.339" right="190.375"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.5593413521122595e11)]]><![CDATA[(1,2.4573968259310584e9)]]><![CDATA[(2,-1.2908866863457913e7)]]><![CDATA[(3,22603.707680590785)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.375" right="190.411"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-9.53230770616258e10)]]><![CDATA[(1,1.5022652464232426e9)]]><![CDATA[(2,-7891760.733410294)]]><![CDATA[(3,13819.105132903995)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.411" right="190.448"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.5373447102183008e11)]]><![CDATA[(1,-3.9972733529768295e9)]]><![CDATA[(2,2.099070193628879e7)]]><![CDATA[(3,-36742.5092515925)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.448" right="190.484"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.8162049757946667e11)]]><![CDATA[(1,2.860582365139873e9)]]><![CDATA[(2,-1.501836992645958e7)]]><![CDATA[(3,26282.694238333657)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.484" right="190.521"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.4385620058641547e11)]]><![CDATA[(1,-2.2654654630118155e9)]]><![CDATA[(2,1.1892277834778573e7)]]><![CDATA[(3,-20809.008584017396)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.521" right="190.557"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.7454322484831293e11)]]><![CDATA[(1,2.7481460354801335e9)]]><![CDATA[(2,-1.442299186510726e7)]]><![CDATA[(3,25231.882271209124)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.557" right="190.593"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.739651112014557e11)]]><![CDATA[(1,-2.7385325339206557e9)]]><![CDATA[(2,1.4369855258854548e7)]]><![CDATA[(3,-25134.23237158684)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.593" right="190.63"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-2.1849807540429742e11)]]><![CDATA[(1,3.4389742990546346e9)]]><![CDATA[(2,-1.8042178934296783e7)]]><![CDATA[(3,31552.064594813346)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.63" right="190.666"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.3966873755561682e11)]]><![CDATA[(1,-3.771330683790371e9)]]><![CDATA[(2,1.9781379702040657e7)]]><![CDATA[(3,-34585.75672805896)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.666" right="190.703"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.2398871867985333e11)]]><![CDATA[(1,1.950572375519684e9)]]><![CDATA[(2,-1.0228706308627501e7)]]><![CDATA[(3,17879.612050622356)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.703" right="190.739"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,5.142126962796423e9)]]><![CDATA[(1,-8.081956340078023e7)]]><![CDATA[(2,423417.3544531241)]]><![CDATA[(3,-739.4337310042667)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.739" right="190.776"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,9.226286800224677e10)]]><![CDATA[(1,-1.4510806170833044e9)]]><![CDATA[(2,7607375.819594098)]]><![CDATA[(3,-13294.03882861754)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.776" right="190.812"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.9059989773959558e11)]]><![CDATA[(1,2.9970066539860497e9)]]><![CDATA[(2,-1.5708383348589292e7)]]><![CDATA[(3,27444.41738562218)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.812" right="190.848"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.0093110133640448e11)]]><![CDATA[(1,-3.158753975471217e9)]]><![CDATA[(2,1.6552484046843208e7)]]><![CDATA[(3,-28912.74288283141)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.848" right="190.885"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.0166805868232962e11)]]><![CDATA[(1,1.5978978105375562e9)]]><![CDATA[(2,-8371286.629342934)]]><![CDATA[(3,14618.882068589159)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.885" right="190.921"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-3.3969303055161194e10)]]><![CDATA[(1,5.339259589960254e8)]]><![CDATA[(2,-2797397.368575819)]]><![CDATA[(3,4885.466206041698)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.921" right="190.958"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.4912290124734473e11)]]><![CDATA[(1,-2.343057782486146e9)]]><![CDATA[(2,1.227157745075873e7)]]><![CDATA[(3,-21423.801011523945)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.958" right="190.994"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-2.1175076510317725e11)]]><![CDATA[(1,3.3263616660395293e9)]]><![CDATA[(2,-1.7417775435874328e7)]]><![CDATA[(3,30401.474505663176)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="190.994" right="191.03"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.804721693410437e11)]]><![CDATA[(1,-2.8344015167445507e9)]]><![CDATA[(2,1.4838542473505443e7)]]><![CDATA[(3,-25894.04247284535)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.03" right="191.067"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-6.0764920184554306e10)]]><![CDATA[(1,9.540676691256998e8)]]><![CDATA[(2,-4993259.787240254)]]><![CDATA[(3,8710.99733023217)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.067" right="191.103"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-2.57142262970782e10)]]><![CDATA[(1,4.037262618579441e8)]]><![CDATA[(2,-2112901.5502461325)]]><![CDATA[(3,3685.956834849013)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.103" right="191.14"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-4.470842780379855e10)]]><![CDATA[(1,7.019037081573796e8)]]><![CDATA[(2,-3673198.595815462)]]><![CDATA[(3,6407.520678377249)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.14" right="191.176"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.0481171699745276e11)]]><![CDATA[(1,-3.2143902878861165e9)]]><![CDATA[(2,1.6815940234588936e7)]]><![CDATA[(3,-29323.94810611649)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.176" right="191.212"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-2.13520637612175e11)]]><![CDATA[(1,3.3502258973509603e9)]]><![CDATA[(2,-1.752213664345578e7)]]><![CDATA[(3,30547.7179294471)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.212" right="191.249"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,3.8219226110534836e10)]]><![CDATA[(1,-5.994194762036808e8)]]><![CDATA[(2,3133708.0396950804)]]><![CDATA[(3,-5460.908940468431)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.249" right="191.285"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.9945139266114456e10)]]><![CDATA[(1,-3.127656347024906e8)]]><![CDATA[(2,1634856.586870804)]]><![CDATA[(3,-2848.518021083621)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.285" right="191.322"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.1220372520439667e11)]]><![CDATA[(1,-1.7596943422061973e9)]]><![CDATA[(2,9199112.57925759)]]><![CDATA[(3,-16029.994164685728)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.322" right="191.358"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.4380288949025702e11)]]><![CDATA[(1,2.2545844343274016e9)]]><![CDATA[(2,-1.1782681341638068e7)]]><![CDATA[(3,20525.819108044117)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.358" right="191.394"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-4.862659935901833e9)]]><![CDATA[(1,7.63599092849905e7)]]><![CDATA[(2,-399700.0968382099)]]><![CDATA[(3,697.39760698353)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.394" right="191.431"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.012540052478855e11)]]><![CDATA[(1,-1.5869628466601381e9)]]><![CDATA[(2,8290868.86532951)]]><![CDATA[(3,-14438.167357030876)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.431" right="191.467"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.3213106266429352e11)]]><![CDATA[(1,2.0705179361625888e9)]]><![CDATA[(2,-1.0815131640454441e7)]]><![CDATA[(3,18830.565686526945)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.467" right="191.504"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.550340526594325e11)]]><![CDATA[(1,-2.428927639164636e9)]]><![CDATA[(2,1.2684717290835151e7)]]><![CDATA[(3,-22081.356352761966)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.504" right="191.54"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.06583644442262e11)]]><![CDATA[(1,1.6694363182727203e9)]]><![CDATA[(2,-8716214.060141105)]]><![CDATA[(3,15169.269136307468)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.54" right="191.576"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-2.9411111155202484e10)]]><![CDATA[(1,4.6071960186268336e8)]]><![CDATA[(2,-2405695.5448960545)]]><![CDATA[(3,4187.196609689789)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.576" right="191.613"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.2953178345047052e11)]]><![CDATA[(1,-2.0282596221372914e9)]]><![CDATA[(2,1.0586428854819857e7)]]><![CDATA[(3,-18418.495821714132)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.613" right="191.649"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.448168819615481e11)]]><![CDATA[(1,2.267096101305567e9)]]><![CDATA[(2,-1.1830399457679084e7)]]><![CDATA[(3,20578.21162593459)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.649" right="191.686"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,8.722957767828421e10)]]><![CDATA[(1,-1.3652702503033495e9)]]><![CDATA[(2,7122824.152195826)]]><![CDATA[(3,-12386.954919633801)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.686" right="191.722"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.8573668974791008e10)]]><![CDATA[(1,2.9061353859738207e8)]]><![CDATA[(2,-1515698.165035122)]]><![CDATA[(3,2635.04689101999)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.722" right="191.759"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.1148865702181286e8)]]><![CDATA[(1,-1765389.722990541)]]><![CDATA[(2,9316.847954376342)]]><![CDATA[(3,-16.387673939514265)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.759" right="191.795"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.9583081303781845e10)]]><![CDATA[(1,-4.628377667184906e8)]]><![CDATA[(2,2413753.547121039)]]><![CDATA[(3,-4196.0032316041925)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.795" right="191.831"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.0187357591900546e11)]]><![CDATA[(1,1.5933679303453631e9)]]><![CDATA[(2,-8307097.867482332)]]><![CDATA[(3,14436.48008757057)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.831" right="191.868"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,5.7074738152484634e10)]]><![CDATA[(1,-8.92387459630555e8)]]><![CDATA[(2,4650950.57086141)]]><![CDATA[(3,-8079.950934776779)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.868" right="191.904"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-5.74672289150098e9)]]><![CDATA[(1,8.987317336690551e7)]]><![CDATA[(2,-468509.8550431723)]]><![CDATA[(3,814.11586445426)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.904" right="191.941"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,5.18426454190751e10)]]><![CDATA[(1,-8.104108484967775e8)]]><![CDATA[(2,4222815.087968349)]]><![CDATA[(3,-7334.619862804373)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.941" right="191.977"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.5577714339442265e10)]]><![CDATA[(1,2.4335608652779868e8)]]><![CDATA[(2,-1267241.413897205)]]><![CDATA[(3,2199.6580348578505)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="191.977" right="192.013"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-8.836853831726794e10)]]><![CDATA[(1,1.380848973350059e9)]]><![CDATA[(2,-7192393.31658482)]]><![CDATA[(3,12487.612499346851)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.013" right="192.05"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.2305374349277701e11)]]><![CDATA[(1,-1.9224005224139524e9)]]><![CDATA[(2,1.00108663364804e7)]]><![CDATA[(3,-17377.135639347267)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.05" right="192.086"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.041829776936749e11)]]><![CDATA[(1,1.6272488582648063e9)]]><![CDATA[(2,-8472077.587907823)]]><![CDATA[(3,14702.954483690519)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.086" right="192.123"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,3.855353024244667e10)]]><![CDATA[(1,-6.020105557912139e8)]]><![CDATA[(2,3133450.217637715)]]><![CDATA[(3,-5436.510487807555)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.123" right="192.159"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,5.7864686604082306e10)]]><![CDATA[(1,-9.035541975462716e8)]]><![CDATA[(2,4702984.535522912)]]><![CDATA[(3,-8159.651943862959)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.159" right="192.195"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.7677161827699988e11)]]><![CDATA[(1,2.7596045129135385e9)]]><![CDATA[(2,-1.4360180397994699e7)]]><![CDATA[(3,24908.735751600365)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.195" right="192.232"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.2122495082796338e11)]]><![CDATA[(1,-3.4527824238688445e9)]]><![CDATA[(2,1.7963173158457775e7)]]><![CDATA[(3,-31151.2615713485)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.232" right="192.268"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.4236171125141846e11)]]><![CDATA[(1,2.2214028638987784e9)]]><![CDATA[(2,-1.1554208379307128e7)]]><![CDATA[(3,20032.34562857122)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.268" right="192.305"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,5.612682260439691e10)]]><![CDATA[(1,-8.756574975105377e8)]]><![CDATA[(2,4553830.1991839195)]]><![CDATA[(3,-7894.018575718365)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.305" right="192.341"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-7.021474097270007e10)]]><![CDATA[(1,1.0952984876759682e9)]]><![CDATA[(2,-5695284.411390459)]]><![CDATA[(3,9871.362131273789)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.341" right="192.377"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,9.392459509211664e10)]]><![CDATA[(1,-1.4648317403796737e9)]]><![CDATA[(2,7615087.41809801)]]><![CDATA[(3,-13195.9537807236)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.377" right="192.414"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.3900264445424866e10)]]><![CDATA[(1,2.1663006956966826e8)]]><![CDATA[(2,-1125363.9349709216)]]><![CDATA[(3,1948.7037633503298)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.414" right="192.45"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.5145750485077637e11)]]><![CDATA[(1,2.3613374256667013e9)]]><![CDATA[(2,-1.2271680502876757e7)]]><![CDATA[(3,21258.311463250608)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.45" right="192.487"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.4615959741848682e11)]]><![CDATA[(1,-2.278056218437168e9)]]><![CDATA[(2,1.1835327260718308e7)]]><![CDATA[(3,-20496.270269831697)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.487" right="192.523"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,7.888763807549075e10)]]><![CDATA[(1,-1.2295912414309902e9)]]><![CDATA[(2,6388388.106353713)]]><![CDATA[(3,-11063.703993728905)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.523" right="192.559"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-2.4968078673059082e11)]]><![CDATA[(1,3.8903439061526504e9)]]><![CDATA[(2,-2.0205500143796355e7)]]><![CDATA[(3,34980.81752690338)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.559" right="192.596"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.331661877000678e11)]]><![CDATA[(1,-3.6322383844282913e9)]]><![CDATA[(2,1.8860875827105764e7)]]><![CDATA[(3,-32645.85961430549)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.596" right="192.632"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-2.2442468081375854e11)]]><![CDATA[(1,3.495493269092446e9)]]><![CDATA[(2,-1.814784529649357e7)]]><![CDATA[(3,31406.562941371216)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.632" right="192.669"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,3.229071703633976e11)]]><![CDATA[(1,-5.028508732296053e9)]]><![CDATA[(2,2.6102341595551886e7)]]><![CDATA[(3,-45164.63134280009)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.669" right="192.705"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-3.6224491050892334e11)]]><![CDATA[(1,5.639820073152472e9)]]><![CDATA[(2,-2.926893663524042e7)]]><![CDATA[(3,50632.26770996623)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.705" right="192.742"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.641529123364801e11)]]><![CDATA[(1,-2.5550553506103287e9)]]><![CDATA[(2,1.325655789662331e7)]]><![CDATA[(3,-22926.616823152148)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.742" right="192.778"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,5.997704459402316e10)]]><![CDATA[(1,-9.335737678345408e8)]]><![CDATA[(2,4843852.919110429)]]><![CDATA[(3,-8377.4526943982)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.778" right="192.814"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.4069460468899585e11)]]><![CDATA[(1,2.189266742229145e9)]]><![CDATA[(2,-1.1355301082195148e7)]]><![CDATA[(3,19632.57957295177)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.814" right="192.851"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.0726554195076428e11)]]><![CDATA[(1,-1.668754147951444e9)]]><![CDATA[(2,8653727.775567194)]]><![CDATA[(3,-14958.665284375917)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.851" right="192.887"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.129482741471683e11)]]><![CDATA[(1,1.7569032159916914e9)]]><![CDATA[(2,-9109505.829356479)]]><![CDATA[(3,15744.19790175167)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.887" right="192.924"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.5413960540548584e11)]]><![CDATA[(1,-2.3971540230029645e9)]]><![CDATA[(2,1.2426716098480314e7)]]><![CDATA[(3,-21473.139931343685)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.924" right="192.96"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.94574596020386e11)]]><![CDATA[(1,3.0254092883404427e9)]]><![CDATA[(2,-1.5680535002178015e7)]]><![CDATA[(3,27090.458688939132)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.96" right="192.996"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.8178581153243762e11)]]><![CDATA[(1,-2.825965207194746e9)]]><![CDATA[(2,1.4643752391764708e7)]]><![CDATA[(3,-25293.951541061426)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="192.996" right="193.033"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-8.375033495696576e10)]]><![CDATA[(1,1.3016252064314935e9)]]><![CDATA[(2,-6743169.687585324)]]><![CDATA[(3,11644.503278986711)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.033" right="193.069"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-7.76649684535527e8)]]><![CDATA[(1,1.2099292119998889e7)]]><![CDATA[(2,-62830.50044377376)]]><![CDATA[(3,108.7569089505838)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.069" right="193.106"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.4977237046135315e10)]]><![CDATA[(1,-2.326922600816105e8)]]><![CDATA[(2,1205066.2214619147)]]><![CDATA[(3,-2080.264843040826)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.106" right="193.142"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-7.424858565134045e9)]]><![CDATA[(1,1.1533569779545243e8)]]><![CDATA[(2,-597197.6019152098)]]><![CDATA[(3,1030.7446946865098)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.142" right="193.178"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.2058595447621887e10)]]><![CDATA[(1,-1.8729325933592162e8)]]><![CDATA[(2,969675.2539699633)]]><![CDATA[(3,-1673.4364360966674)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.178" right="193.215"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.0481321122304535e10)]]><![CDATA[(1,-3.180958197933645e8)]]><![CDATA[(2,1646784.2439038216)]]><![CDATA[(3,-2841.8044523543126)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.215" right="193.251"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.0953962022615619e11)]]><![CDATA[(1,1.7007061575136878e9)]]><![CDATA[(2,-8801690.135968613)]]><![CDATA[(3,15183.839484663058)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.251" right="193.288"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.2746310489842487e11)]]><![CDATA[(1,-1.9784891655311759e9)]]><![CDATA[(2,1.0236738244970493e7)]]><![CDATA[(3,-17655.02185963202)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.288" right="193.324"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-9.10898022099519e10)]]><![CDATA[(1,1.413644445066123e9)]]><![CDATA[(2,-7312895.517070084)]]><![CDATA[(3,12610.0640260939)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.324" right="193.36"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,8.347300113171106e10)]]><![CDATA[(1,-1.2952194829768991e9)]]><![CDATA[(2,6699146.07136706)]]><![CDATA[(3,-11549.79470577099)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.36" right="193.397"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-7.818963180329785e10)]]><![CDATA[(1,1.2129926539957266e9)]]><![CDATA[(2,-6272575.778925792)]]><![CDATA[(3,10812.158559800744)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.397" right="193.433"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,8.286135318911737e10)]]><![CDATA[(1,-1.2852516568118134e9)]]><![CDATA[(2,6645123.620793645)]]><![CDATA[(3,-11452.405005851664)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.433" right="193.47"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-7.827848194505377e10)]]><![CDATA[(1,1.2139057020799646e9)]]><![CDATA[(2,-6274891.882723221)]]><![CDATA[(3,10812.00610551828)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.47" right="193.506"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,6.348742065289595e10)]]><![CDATA[(1,-9.843560842117039e8)]]><![CDATA[(2,5087395.739604109)]]><![CDATA[(3,-8764.3065395556)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.506" right="193.542"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-6.367524978386185e10)]]><![CDATA[(1,9.870970557957032e8)]]><![CDATA[(2,-5100676.671625553)]]><![CDATA[(3,8785.661611698384)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.542" right="193.579"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.0600861246796942e11)]]><![CDATA[(1,-1.6430896052674963e9)]]><![CDATA[(2,8489069.538825922)]]><![CDATA[(3,-14619.673682366081)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.579" right="193.615"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.3641928522252008e11)]]><![CDATA[(1,2.1139485707302513e9)]]><![CDATA[(2,-1.0919224625302143e7)]]><![CDATA[(3,18800.435875192783)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.615" right="193.652"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,3.356069022415654e10)]]><![CDATA[(1,-5.1983458832266194e8)]]><![CDATA[(2,2683973.2625315133)]]><![CDATA[(3,-4619.233550959903)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.652" right="193.688"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,7.800194008560211e10)]]><![CDATA[(1,-1.2083053998006577e9)]]><![CDATA[(2,6239169.240254418)]]><![CDATA[(3,-10738.795062886633)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.688" right="193.725"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.0908643058097147e11)]]><![CDATA[(1,1.6894740805993724e9)]]><![CDATA[(2,-8721899.490901)]]><![CDATA[(3,15008.917290925376)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.725" right="193.761"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,9.805255166750238e10)]]><![CDATA[(1,-1.5182530932058754e9)]]><![CDATA[(2,7836248.263933162)]]><![CDATA[(3,-13481.894865196558)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.761" right="193.797"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.1171047367555237e10)]]><![CDATA[(1,1.7285500958660066e8)]]><![CDATA[(2,-891556.1073927304)]]><![CDATA[(3,1532.8300989360453)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.797" right="193.834"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-3.942803759135469e10)]]><![CDATA[(1,6.10276490163691e8)]]><![CDATA[(2,-3148667.8303662054)]]><![CDATA[(3,5415.09130176422)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.834" right="193.87"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.599984633945047e10)]]><![CDATA[(1,-2.4758978609545568e8)]]><![CDATA[(2,1277110.2903925204)]]><![CDATA[(3,-2195.850914700601)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.87" right="193.907"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-3.417378938264084e10)]]><![CDATA[(1,5.28811447547057e8)]]><![CDATA[(2,-2727641.52083414)]]><![CDATA[(3,4689.780025666071)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.907" right="193.943"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,6.7443068805564514e10)]]><![CDATA[(1,-1.0433369254596739e9)]]><![CDATA[(2,5380102.7741460875)]]><![CDATA[(3,-9247.73348163421)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.943" right="193.979"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-5.6408925339729996e10)]]><![CDATA[(1,8.724629870707268e8)]]><![CDATA[(2,-4498056.852808227)]]><![CDATA[(3,7730.037696760667)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="193.979" right="194.016"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,6.790646585456552e10)]]><![CDATA[(1,-1.050148087235701e9)]]><![CDATA[(2,5413382.397349923)]]><![CDATA[(3,-9301.770299909333)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.016" right="194.052"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.012132043329902e11)]]><![CDATA[(1,1.5648888713793993e9)]]><![CDATA[(2,-8065077.928680406)]]><![CDATA[(3,13855.186387563745)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.052" right="194.089"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,6.079716401961008e10)]]><![CDATA[(1,-9.397547553691059e8)]]><![CDATA[(2,4841996.601592436)]]><![CDATA[(3,-8315.974830860257)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.089" right="194.125"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.5441862796798893e10)]]><![CDATA[(1,-2.387057331760222e8)]]><![CDATA[(2,1229998.898512491)]]><![CDATA[(3,-2112.639070667864)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.125" right="194.161"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-7.8242204977361e10)]]><![CDATA[(1,1.2090841100820825e9)]]><![CDATA[(2,-6228029.914149992)]]><![CDATA[(3,10693.591987778125)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.161" right="194.198"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.470182252444969e11)]]><![CDATA[(1,-2.271436131704754e9)]]><![CDATA[(2,1.1697919384560032e7)]]><![CDATA[(3,-20081.468054678095)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.198" right="194.234"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.6944472310674146e11)]]><![CDATA[(1,2.617331234868099e9)]]><![CDATA[(2,-1.347621920890052e7)]]><![CDATA[(3,23128.964242016602)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.234" right="194.271"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,8.887428079166406e10)]]><![CDATA[(1,-1.3724800839289012e9)]]><![CDATA[(2,7065041.944126243)]]><![CDATA[(3,-12122.77876388824)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.271" right="194.307"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-3.8201185947592285e10)]]><![CDATA[(1,5.898632417232494e8)]]><![CDATA[(2,-3036019.5918320348)]]><![CDATA[(3,5208.786482525751)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.307" right="194.343"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.9595739600897003e10)]]><![CDATA[(1,-4.568863691784061e8)]]><![CDATA[(2,2351072.0255654645)]]><![CDATA[(3,-4032.760171990899)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.343" right="194.38"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-5.446278344102137e9)]]><![CDATA[(1,8.40441188504778e7)]]><![CDATA[(2,-432308.3278760479)]]><![CDATA[(3,741.2396692545833)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.38" right="194.416"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,3.93406130574644e10)]]><![CDATA[(1,-6.071827265281601e8)]]><![CDATA[(2,3123751.1709336955)]]><![CDATA[(3,-5356.883420929152)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.416" right="194.453"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-9.290035350818304e10)]]><![CDATA[(1,1.433404980743577e9)]]><![CDATA[(2,-7372235.3079144275)]]><![CDATA[(3,12638.86877856081)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.453" right="194.489"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,4.488704576178606e10)]]><![CDATA[(1,-6.923642170055305e8)]]><![CDATA[(2,3559810.98475839)]]><![CDATA[(3,-6100.95745652396)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.489" right="194.525"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,5.470708571527826e10)]]><![CDATA[(1,-8.438386955646089e8)]]><![CDATA[(2,4338644.124725578)]]><![CDATA[(3,-7435.794113896508)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.525" right="194.562"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-8.422738491009564e10)]]><![CDATA[(1,1.2988340296692765e9)]]><![CDATA[(2,-6676252.290819392)]]><![CDATA[(3,11439.065870758368)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.562" right="194.598"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,3.1387052171025665e10)]]><![CDATA[(1,-4.838538088776324e8)]]><![CDATA[(2,2486317.1654305873)]]><![CDATA[(3,-4258.705630099933)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.598" right="194.635"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,1.3037415608812e11)]]><![CDATA[(1,-2.0098782888377695e9)]]><![CDATA[(2,1.0328250175842497e7)]]><![CDATA[(3,-17691.411362621864)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.635" right="194.671"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-3.534693365534817e11)]]><![CDATA[(1,5.44782704640412e9)]]><![CDATA[(2,-2.7988112940975603e7)]]><![CDATA[(3,47929.47408418558)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.671" right="194.708"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,4.0422984111493994e11)]]><![CDATA[(1,-6.228783917762422e9)]]><![CDATA[(2,3.199314242919532e7)]]><![CDATA[(3,-54775.86872525689)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.708" right="194.744"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-3.59634391520371e11)]]><![CDATA[(1,5.540597401474239e9)]]><![CDATA[(2,-2.845317369154271e7)]]><![CDATA[(3,48706.125030757285)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.744" right="194.78"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,3.961587019707134e11)]]><![CDATA[(1,-6.102273652182114e9)]]><![CDATA[(2,3.1332345008167442e7)]]><![CDATA[(3,-53625.68613280472)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.78" right="194.817"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-4.1427339826692285e11)]]><![CDATA[(1,6.3799950648982315e9)]]><![CDATA[(2,-3.275158926167723e7)]]><![CDATA[(3,56043.22968648656)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.817" right="194.853"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,3.335231979542915e11)]]><![CDATA[(1,-5.135374685501602e9)]]><![CDATA[(2,2.635706013955488e7)]]><![CDATA[(3,-45092.10826525296)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.853" right="194.89"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.6481215308071948e11)]]><![CDATA[(1,2.537106893458087e9)]]><![CDATA[(2,-1.3018682491863102e7)]]><![CDATA[(3,22267.632379263647)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.89" right="194.926"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-3.778543330939337e10)]]><![CDATA[(1,5.81746642475594e8)]]><![CDATA[(2,-2985534.3006655406)]]><![CDATA[(3,5107.271506980886)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.926" right="194.962"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,2.245498768488014e11)]]><![CDATA[(1,-3.455713370424606e9)]]><![CDATA[(2,1.7727249078156166e7)]]><![CDATA[(3,-30312.637208500386)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.962" right="194.999"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-3.6147713620516016e11)]]><![CDATA[(1,5.561844098014806e9)]]><![CDATA[(2,-2.8525648760599136e7)]]><![CDATA[(3,48767.55592102452)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="194.999" right="195.035"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,3.763955585001658e11)]]><![CDATA[(1,-5.790101727943171e9)]]><![CDATA[(2,2.968975657972558e7)]]><![CDATA[(3,-50746.46780956678)]]></coeficients
+                ><modulatorfunc
+                /><modulatorderiv/></polynom></polynoms></node
+          ><node left="195.035" right="195.072"
+            ><polynoms
+              ><polynom version="1"
+                ><coeficients
+                ><![CDATA[(0,-1.5083373357854285e11)]]><![CDATA[(1,2.31966255147399e9)]]><![CDATA[(2,-1.1891314917273214e7)]]><![CDATA[(3,20319.531450393042)]]></coeficients
                 ><modulatorfunc
                 /><modulatorderiv/></polynom></polynoms></node></spline>
