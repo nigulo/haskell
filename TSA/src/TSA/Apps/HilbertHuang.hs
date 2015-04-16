@@ -42,6 +42,7 @@ import System.Random.MWC.Distributions
 
 precision = 0.01
 numLinesToSkip = 1
+interpolateOrFit = True
 
 data Env = Env {
     modesToSkip :: Double,
@@ -208,13 +209,15 @@ imf modeNo dat fullSDev = do
         numMinima = V.length minima 
         numMaxima = V.length maxima
         numExtrema = min numMinima numMaxima
+        numLowerNodes = ceiling $ (fromIntegral numMaxima)
+        numUpperNodes = ceiling $ (fromIntegral numMinima)
     if numExtrema > 1
         then do
             let
-                imfStep :: Data -> V.Vector (Double, Double) -> V.Vector (Double, Double) -> Double -> Int -> IO (Data, Int)
-                imfStep stepDat stepMinima stepMaxima prevSDev i =
+                imfStep :: Data -> V.Vector (Double, Double) -> V.Vector (Double, Double) -> Double -> Int -> Int -> Int -> IO (Data, Int)
+                imfStep stepDat stepMinima stepMaxima prevSDev numLowerNodes numUpperNodes i =
                     do
-                        {-
+                        
                         let
                             fitUpperParams = FitParams {
                                         fitPolynomRank = 3,
@@ -230,12 +233,7 @@ imf modeNo dat fullSDev = do
                                         fitPeriod = 0,
                                         fitNumHarmonics = 0
                                     }
-                        -}
-                        --[upperEnv, lowerEnv] <- MP.sequence [
-                        --    --fitData fitUpperParams stepMaxima defaultTaskEnv,
-                        --    --fitData fitLowerParams stepMinima defaultTaskEnv]
-                        --    R.interpolateWithSpline (D.data1' stepMaxima),
-                        --    R.interpolateWithSpline (D.data1' stepMinima)]
+                        
 
                         let
                             vals = D.xys1 stepDat
@@ -249,19 +247,23 @@ imf modeNo dat fullSDev = do
                                 if snd lastVal < -prevSDev then V.snoc stepMinima1 lastVal else stepMinima1
                             stepMaxima2 =
                                 if snd lastVal > prevSDev then V.snoc stepMaxima1 lastVal else stepMaxima1
-                        lowerEnv <- R.interpolateWithSpline $ D.data1' stepMinima2
-                        upperEnv <- R.interpolateWithSpline $ D.data1' stepMaxima2
-
+                        [lowerEnv, upperEnv] <- if interpolateOrFit
+                            then 
+                                sequence [
+                                    R.interpolateWithSpline $ D.data1' stepMinima2, 
+                                    R.interpolateWithSpline $ D.data1' stepMaxima2]
+                            else
+                                MP.sequence [
+                                    fitData fitLowerParams (D.data1' stepMinima2) defaultTaskEnv,
+                                    fitData fitUpperParams (D.data1' stepMaxima2) defaultTaskEnv]
                         let 
                             envMean = (upperEnv `S.add` lowerEnv) `S.divide` 2
                             Left dat2 = U.binaryOp (F.subtr) (Left stepDat) (Right (Left envMean)) True g
-                            --filteredVals = V.filter (\(x, y) -> x >= max firstMinimum firstMaximum && x <= min lastMinimum lastMaximum) $ D.xys1 dat2
                             (datMean, datVar) = Sample.meanVariance $ D.ys dat2 --V.map snd $ filteredVals
                             (minima2, maxima2) = findExtremaOfOrder (findExtrema dat2) 0
+                            numLowerNodes2 = ceiling $ (fromIntegral (V.length minima2))
+                            numUpperNodes2 = ceiling $ (fromIntegral (V.length maxima2))
                             zeroCrossings = D.getZeroCrossings dat2
-                            --Left maxima2 = U.binaryOp (F.subtr) (Left stepMaxima) (Right (Left envMean)) True g
-                            --Left minima2 = U.binaryOp (F.subtr) (Left stepMinima) (Right (Left envMean)) True g
-                            --sdev2 = U.stdev stepDat (Left dat2)
                             numExtrema = V.length minima2 + V.length maxima2
                             numZeroCrossings = V.length zeroCrossings
                         
@@ -277,13 +279,13 @@ imf modeNo dat fullSDev = do
                             --            -- diverging? increase number of nodes
                             --            imfStep dat minima maxima 0 (numUpperNodes + 1) (numLowerNodes + 1) 0
                             --        else
-                                        imfStep dat2 minima2 maxima2 (sqrt datVar) (i + 1)
+                                        imfStep dat2 minima2 maxima2 (sqrt datVar) numLowerNodes2 numUpperNodes2 (i + 1)
     
             (imfDat, numZeroCrossings) <- liftIO $ do
                 putStr $ "Extracting mode " ++ show modeNo ++ " (" ++ show numExtrema ++ ") ... "
                 hFlush stdout
                 time1 <- getCPUTime
-                (imfDat, numZeroCrossings) <- imfStep dat minima maxima (sqrt datVar) 0
+                (imfDat, numZeroCrossings) <- imfStep dat minima maxima (sqrt datVar) numLowerNodes numUpperNodes 0
                 time2 <- getCPUTime
                 putStrLn $ "done in " ++ show (fromIntegral (time2 - time1) / 1e12) ++ " CPU secs"
                 return (imfDat, numZeroCrossings) 
