@@ -211,7 +211,7 @@ imf modeNo dat fullSDev = do
         numExtrema = min numMinima numMaxima
         numLowerNodes = ceiling $ (fromIntegral numMaxima)
         numUpperNodes = ceiling $ (fromIntegral numMinima)
-    if numExtrema > 1
+    if numExtrema > 2 -- should be 1, but there are cases when iteration doesn't converge (NZC=2, NE=4)
         then do
             let
                 imfStep :: Data -> V.Vector (Double, Double) -> V.Vector (Double, Double) -> Double -> Int -> Int -> Int -> IO (Data, Int)
@@ -250,12 +250,12 @@ imf modeNo dat fullSDev = do
                         [lowerEnv, upperEnv] <- if interpolateOrFit
                             then 
                                 sequence [
-                                    R.interpolateWithSpline $ D.data1' stepMinima2, 
-                                    R.interpolateWithSpline $ D.data1' stepMaxima2]
+                                    R.interpolateWithSpline $ D.data1' stepMinima, 
+                                    R.interpolateWithSpline $ D.data1' stepMaxima]
                             else
                                 MP.sequence [
-                                    fitData fitLowerParams (D.data1' stepMinima2) defaultTaskEnv,
-                                    fitData fitUpperParams (D.data1' stepMaxima2) defaultTaskEnv]
+                                    fitData fitLowerParams (D.data1' stepMinima) defaultTaskEnv,
+                                    fitData fitUpperParams (D.data1' stepMaxima) defaultTaskEnv]
                         let 
                             envMean = (upperEnv `S.add` lowerEnv) `S.divide` 2
                             Left dat2 = U.binaryOp (F.subtr) (Left stepDat) (Right (Left envMean)) True g
@@ -269,8 +269,9 @@ imf modeNo dat fullSDev = do
                         
                         putStrLn $ "M: " ++ show datMean ++ ", V: " ++ show datVar ++ ", NE: " ++ show numExtrema ++ ", NZC: " ++ show numZeroCrossings
                         --putStrLn $ "sdev: " ++ show sdev2 ++ ", needed: " ++ show sdev
-                        --if i == 20 then storeData stepDat ("last_imf" ++ show i) else return ()
-                        if abs datMean < 3 * sqrt (datVar / fromIntegral (D.dataLength dat2)) && fromIntegral (numExtrema - numZeroCrossings) <= max 1 (precision * fromIntegral numZeroCrossings)
+                        if i == 100 then storeData stepDat ("last_imf" ++ show i) else return ()
+                        if fromIntegral (numExtrema - numZeroCrossings) <= 1
+                        --if abs datMean < 3 * sqrt (datVar / fromIntegral (D.dataLength dat2)) && fromIntegral (numExtrema - numZeroCrossings) <= max 1 (precision * fromIntegral numZeroCrossings)
                             then 
                                     return (dat2, numZeroCrossings)
                             else
