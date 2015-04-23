@@ -39,7 +39,8 @@ data ModifyOp = Add
         | Subtract 
         | Mean 
         | Multiply 
-        | Invert -- only 2d data
+        | Invert
+        | Swap -- only 2d data (swith x and y)
         | Union
         | Intersection
         | Complement
@@ -57,6 +58,7 @@ data ModifyOp = Add
         | RemoveNeighbour
         | FindNeighbour
         | Scale
+        | Function
         | AddNoise
         | Interpolate
         | Convert 
@@ -79,7 +81,8 @@ modifyOps = [Add,
         Subtract, 
         Mean,
         Multiply, 
-        Invert, -- only 2d data
+        Invert,
+        Swap,
         Union,
         Intersection,
         Complement,
@@ -97,6 +100,7 @@ modifyOps = [Add,
         RemoveNeighbour,
         FindNeighbour,
         Scale,
+        Function,
         AddNoise,
         Interpolate,
         Convert]
@@ -180,6 +184,23 @@ modifyDialog stateRef = do
     constant2Spin <- spinButtonNew constant2Adjustment 1 10
     addWidget (Just "Constant 2: ") constant2Spin dialog
 
+    ----
+    functionTextBuffer <- textBufferNew Nothing
+    textBufferSetText functionTextBuffer "x^2"
+    functionTextView <- textViewNewWithBuffer functionTextBuffer
+    font <- fontDescriptionNew
+    fontDescriptionSetFamily font TSA.GUI.Common.defaultFontFamily
+    widgetModifyFont functionTextView (Just font)
+    textViewSetAcceptsTab functionTextView False
+
+    scrolledWindow <- scrolledWindowNew Nothing Nothing
+    containerAdd scrolledWindow functionTextView
+
+    functionFrame <- frameNew
+    frameSetLabel functionFrame (stringToGlib "Function" )
+    containerAdd functionFrame scrolledWindow
+    addWidgetToBox Nothing functionFrame PackGrow vBox
+    ----
     let
         updateWidgets =
             do
@@ -187,7 +208,22 @@ modifyDialog stateRef = do
                 numRows <- listStoreGetSize listStore
                 mapM_ (\_ -> comboBoxRemoveText typeCombo 0) [1 .. numRows]
                 opNo <- comboBoxGetActive opCombo
-                mapM_ (\t -> comboBoxAppendText typeCombo (fromString t)) (map (getTypeText) (getOpTypes (getModifyOp opNo)))
+                let
+                    modifyOp = getModifyOp opNo
+                mapM_ (\t -> comboBoxAppendText typeCombo (fromString t)) (map (getTypeText) (getOpTypes modifyOp))
+                case modifyOp of
+                    Function -> do
+                        constantSpin `set`  [widgetVisible := False]
+                        constant2Spin `set`  [widgetVisible := False]
+                        functionFrame `set`  [widgetVisible := True]
+                    FindNeighbour -> do
+                        constantSpin `set`  [widgetVisible := True]
+                        constant2Spin `set`  [widgetVisible := True]
+                        functionFrame `set`  [widgetVisible := False]
+                    otherwise -> do
+                        constantSpin `set`  [widgetVisible := True]
+                        constant2Spin `set`  [widgetVisible := False]
+                        functionFrame `set`  [widgetVisible := False]
 
     after dialog realize updateWidgets
     on opCombo changed updateWidgets
@@ -208,6 +244,11 @@ modifyDialog stateRef = do
                 typeNo <- comboBoxGetActive typeCombo
                 constant <- spinButtonGetValue constantSpin
                 constant2 <- spinButtonGetValue constant2Spin
+
+                startIter <- textBufferGetStartIter functionTextBuffer
+                endIter <- textBufferGetEndIter functionTextBuffer
+                f <- textBufferGetText functionTextBuffer startIter endIter False
+                
                 widgetDestroy dialog
                 tEnv <- taskEnv stateRef
 
@@ -286,7 +327,7 @@ modifyDialog stateRef = do
                                     modifyState stateRef $ addDataParams (createDataParams_ name result) (Just (currentGraphTab, selectedGraph))
                             Nothing -> 
                                 case op of
-                                    Invert ->
+                                    Swap ->
                                         if isDiscrete selectedData1 then do
                                                 let
                                                     func i j (Left ds1) _ =
@@ -390,7 +431,24 @@ modifyDialog stateRef = do
                                             dataWithWeights <- applyToData1 (\_ _ (Left dat) _ -> return (Left (D.setW (V.replicate (D.dataLength dat) constant) dat))) selectedData1 name tEnv
                                             modifyState stateRef $ addDataParams dataWithWeights (Just (currentGraphTab, selectedGraph))
                                         else return ()
-                                    --MovingAverage ->
+                                    MovingAverage -> -- for evenly sampled data only
+                                        if isDiscrete selectedData1 && constant > 0 then do
+                                            dataWithWeights <- applyToData1 (\_ _ (Left dat) _ -> 
+                                                    let
+                                                        numNeighbours = round constant
+                                                        xys = D.xys1 dat
+                                                        newXYs =
+                                                            map (\i -> 
+                                                                    let
+                                                                        mean = (foldl' (\sum j -> sum + snd (xys V.! j)) 0 [i - numNeighbours .. i + numNeighbours]) / (2 * constant + 1)
+                                                                    in
+                                                                        (fst (xys V.! i), mean)
+                                                                ) [numNeighbours .. D.dataLength dat - numNeighbours - 1]
+                                                    in
+                                                        return $ Left $ D.data1' $ V.fromList newXYs
+                                                ) selectedData1 name tEnv
+                                            modifyState stateRef $ addDataParams dataWithWeights (Just (currentGraphTab, selectedGraph))
+                                        else return ()
                                     JDToYear ->
                                         if isDiscrete selectedData1 then do
                                             dataWithWeights <- applyToData1 (\_ _ (Left dat) _ -> return (Left (D.data1 (V.map (\(x, y, w) -> let TropicalYears year = toTropicalYears (JD x) in (year, y, w) ) (D.values1 dat))))) selectedData1 name tEnv
@@ -445,6 +503,17 @@ modifyDialog stateRef = do
                                             modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                                         else
                                             return ()
+                                    Function -> -- Applicable only to y-values
+                                        if isDiscrete selectedData1 
+                                        then do
+                                            maybeFunc <- getFunction dialog f
+                                            case maybeFunc of
+                                                Just func -> do
+                                                    result <- applyToData1 (\i j d _ -> return (constantOp func d 0 True)) selectedData1 name tEnv
+                                                    modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
+                                                Nothing -> return ()
+                                        else
+                                            return ()
                                     AddNoise ->
                                         if isDiscrete selectedData1 && constant /= 0 
                                         then do
@@ -496,14 +565,10 @@ modifyDialog stateRef = do
                                             modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                                         else
                                             return ()
-                                    otherwise ->
-                                        if constant /= 0 
-                                        then do
-                                            let func i j d _ = return $ constantOp (getModifyFunc op) d constant (opType == Y)
-                                            result <- applyToData1 func selectedData1 name tEnv
-                                            modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
-                                        else
-                                            return ()
+                                    otherwise -> do
+                                        let func i j d _ = return $ constantOp (getModifyFunc op) d constant (opType == Y)
+                                        result <- applyToData1 func selectedData1 name tEnv
+                                        modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                 mapM_ modify (case selectedData1 of 
                         Just dat -> [(name, dat)]
                         Nothing -> map (\gp -> (graphDataParamsName gp ++ "_" ++ name, getDataByName (graphDataParamsName gp) state)) $ graphData graphParms
@@ -525,4 +590,42 @@ getModifyFunc Add = F.add
 getModifyFunc Subtract = F.subtr
 getModifyFunc Mean = (F.function "(x+y)/2")
 getModifyFunc Multiply = F.mult
+getModifyFunc Invert = (F.function "1/x")
+    
+
+getFunction :: Dialog -> String -> IO (Maybe (F.Function Double))
+getFunction dialog f = do
+    let
+        func = F.function f
+        varNames = F.varNames func 
+        opNames = F.funcNames func 
+    if F.isValid func
+        then
+            if opNames /= []
+                then
+                    do                    
+                        messageDialog <- messageDialogNew (Just (toWindow dialog)) [DialogModal] MessageWarning ButtonsOk $ ("Missing definitions for " ++ (show opNames))
+                        widgetShowAll messageDialog
+                        dialogRun messageDialog 
+                        widgetDestroy messageDialog
+                        return Nothing
+                else
+                    if length varNames > 1
+                        then
+                            do                    
+                                messageDialog <- messageDialogNew (Just (toWindow dialog)) [DialogModal] MessageWarning ButtonsOk $ ("Too many function arguments " ++ (show varNames))
+                                widgetShowAll messageDialog
+                                dialogRun messageDialog 
+                                widgetDestroy messageDialog
+                                return Nothing
+                        else
+                            return $ Just func
+    
+        else
+            do                    
+                messageDialog <- messageDialogNew (Just (toWindow dialog)) [DialogModal] MessageWarning ButtonsOk $ ("Error while parsing function")
+                widgetShowAll messageDialog
+                dialogRun messageDialog 
+                widgetDestroy messageDialog
+                return Nothing
     
