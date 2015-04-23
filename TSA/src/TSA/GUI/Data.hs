@@ -75,6 +75,7 @@ import Control.Applicative
 import qualified Data.Vector.Unboxed as V
 import Control.Monad.IO.Class
 import Control.Monad
+import Statistics.Sample
 
 infoDialog :: StateRef -> IO ()
 infoDialog stateRef = do
@@ -182,15 +183,15 @@ showInfo :: DataParams -> IO ()
 showInfo dp = do
     textBuffer <- textBufferNew Nothing
 
-    textBufferSetText textBuffer $ "No Left Right Count\n" ++ (concatMap (\(sdp, i) -> 
+    textBufferSetText textBuffer $ "No Left Right Count Mean Var\n" ++ (concatMap (\(sdp, i) -> 
         let
             (rangeStart, rangeEnd) = subDataRange sdp
-            (left, right, n) = case subData sdp of
-                Left d -> (formatRangeBound rangeStart, formatRangeBound rangeEnd, D.dataLength d)
-                Right (Left s) -> (formatRangeBound rangeStart, formatRangeBound rangeEnd, 0)
-                Right (Right f) -> (formatRangeBound rangeStart, formatRangeBound rangeEnd, 0)  
+            (left, right, n, (mean, var)) = case subData sdp of
+                Left d -> (formatRangeBound rangeStart, formatRangeBound rangeEnd, D.dataLength d, meanVarianceUnb (D.ys d))
+                Right (Left s) -> (formatRangeBound rangeStart, formatRangeBound rangeEnd, 0, (0, 0))
+                Right (Right f) -> (formatRangeBound rangeStart, formatRangeBound rangeEnd, 0, (0, 0))  
         in
-            (show i) ++ ": " ++ left ++ " - " ++ right ++ (if isDiscrete dp then " " ++ show n else "") ++ "\n"
+            (show i) ++ ": " ++ left ++ " - " ++ right ++ (if isDiscrete dp then " " ++ (show n ++ " " ++ show mean ++ " " ++ show var) else "") ++ "\n"
         ) $ zip (dataSet dp) [1, 2 ..])
 
     textView <- textViewNewWithBuffer textBuffer
