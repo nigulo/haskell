@@ -143,10 +143,12 @@ instance Fn (Function Double) where
             }
     constantOp func func1 a = 
         let
-            [x, y] = E.varNames (expr func)
+            (x, replaceConstFunc) = case E.varNames (expr func) of
+                [x] -> (x, id)
+                [x, y] -> (x, replaceAll y (show a))
         in
             func {
-                expr = read (replaceAll y (show a) (replaceAll x (show (expr func1)) (show (expr func)))),
+                expr = read (replaceConstFunc (replaceAll x (show (expr func1)) (show (expr func)))),
                 defs = []
             }
 
