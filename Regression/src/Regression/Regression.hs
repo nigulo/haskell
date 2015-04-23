@@ -222,17 +222,21 @@ interpolateWithSpline dat = do
     --solutionVals <- IOV.values solution
         --m :: EM.MatrixXd = EM.fromList equations
         --solutionVals = concat $ EM.toList $ LA.solve LA.HouseholderQR (EM.leftCols (EM.cols m - 1) m) (EM.rightCols 1 m)
-        solutionVals = concat $ CS.cubicSplineCoefficients $ V.toList $ D.xys1 dat
-    let
-        solutionVect = V.fromList solutionVals 
-        forSolution i =
-            let
-                xLeft = xs V.! i
-                xRight = xs V.! (i + 1)
-                subSolution = [solutionVect V.! (i * 4 + j) | j <- [0 .. 3]]
-            in
-                ([xLeft], [xRight], polynom $ zip [0 .. 3] subSolution)
-    return $ AnalyticData [forSolution i | i <- [0 .. numData - 2]]
+        --solutionVals = concat $ CS.cubicSplineCoefficients $ V.toList $ D.xys1 dat
+        solutionVals = CS.cubicSplineCoefficients $ V.toList $ D.xys1 dat
+        
+        xlList = V.toList xs
+    return $ AnalyticData $ zipWith3 (\xLeft xRight subSolution -> ([xLeft], [xRight], polynom $ zip [0 .. 3] subSolution)) (init xlList) (tail xlList) solutionVals
+    --let
+    --    solutionVect = V.fromList solutionVals 
+    --    forSolution i =
+    --        let
+    --            xLeft = xs V.! i
+    --            xRight = xs V.! (i + 1)
+    --            subSolution = [solutionVect V.! (i * 4 + j) | j <- [0 .. 3]]
+    --        in
+    --            ([xLeft], [xRight], polynom $ zip [0 .. 3] subSolution)
+    --return $ AnalyticData [forSolution i | i <- [0 .. numData - 2]]
 
 
 --------------------------------------------------------------------------------

@@ -686,12 +686,19 @@ getExtrema d =
         vals = V.toList $ xys1 d
         getExtrema' ((_, _):(_, _):[]) = (V.empty, V.empty)
         getExtrema' ((x0, y0):(x1, y1):(x2, y2):xys) =
-            let
-                (minima, maxima) = getExtrema' ((x1, y1):(x2, y2):xys)
-            in
-            if (y1 - y0) < 0 && (y1 - y2) < 0 then (V.cons (x1, y1) minima, maxima)
-                else if (y1 - y0) > 0 && (y1 - y2) > 0 then (minima, V.cons (x1, y1) maxima)
-                else (minima, maxima)
+                if y1 == y2 
+                    then getExtrema' ((x0, y0):(x2, y2):xys)
+                else
+                    let
+                        (minima, maxima) = getExtrema' ((x1, y1):(x2, y2):xys)
+                    in
+                        if (y1 - y0) < 0 && (y1 - y2) < 0 
+                            then 
+                                (V.cons (x1, y1) minima, maxima)
+                            else if (y1 - y0) > 0 && (y1 - y2) > 0 
+                                then 
+                                    (minima, V.cons (x1, y1) maxima)
+                            else (minima, maxima)
             
     in        
         getExtrema' vals
