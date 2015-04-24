@@ -51,7 +51,7 @@ data ModifyOp = Add
         | SegmentByGaps
         | Unsegment
         | SetWeights
-        | MovingAverage
+        | Smooth
         | JDToYear
         | YearToJD
         | Round
@@ -69,7 +69,6 @@ getOpText SegmentByMarkers = "Segment by markers"
 getOpText SegmentByCount = "Segment by count" 
 getOpText SegmentByGaps = "Segment by gaps" 
 getOpText SetWeights = "Set weights" 
-getOpText MovingAverage = "Moving average" 
 getOpText JDToYear = "JD to year" 
 getOpText YearToJD = "Year to JD" 
 getOpText RemoveNeighbour = "Remove neighbour" 
@@ -93,7 +92,7 @@ modifyOps = [Add,
         SegmentByGaps,
         Unsegment,
         SetWeights,
-        MovingAverage,
+        Smooth,
         JDToYear,
         YearToJD,
         Round,
@@ -113,6 +112,8 @@ data ModifyOpType =
     | Inside
     | ToSpectrum
     | ToData
+    | GaussianKernel
+    | MovingAverage
     | Y
     | X 
     deriving (Eq, Show, Read)
@@ -120,13 +121,16 @@ data ModifyOpType =
 getTypeText :: ModifyOpType -> String
 getTypeText ToSpectrum = "To spectrum"
 getTypeText ToData = "To data"
+getTypeText GaussianKernel = "Gaussian kernel"
+getTypeText MovingAverage = "Moving average"
 getTypeText Y = "y"
 getTypeText X = "x"
 getTypeText opType = show opType
 
 typeMappings = M.fromList [
         (RemoveNeighbour, [Outside, Inside]),
-        (Convert, [ToSpectrum, ToData])
+        (Convert, [ToSpectrum, ToData]),
+        (Smooth, [GaussianKernel, MovingAverage])
     ]
 
 getOpTypes :: ModifyOp -> [ModifyOpType]
@@ -431,23 +435,47 @@ modifyDialog stateRef = do
                                             dataWithWeights <- applyToData1 (\_ _ (Left dat) _ -> return (Left (D.setW (V.replicate (D.dataLength dat) constant) dat))) selectedData1 name tEnv
                                             modifyState stateRef $ addDataParams dataWithWeights (Just (currentGraphTab, selectedGraph))
                                         else return ()
-                                    MovingAverage -> -- for evenly sampled data only
+                                    Smooth -> 
                                         if isDiscrete selectedData1 && constant > 0 then do
-                                            dataWithWeights <- applyToData1 (\_ _ (Left dat) _ -> 
-                                                    let
-                                                        numNeighbours = round constant
-                                                        xys = D.xys1 dat
-                                                        newXYs =
-                                                            map (\i -> 
-                                                                    let
-                                                                        mean = (foldl' (\sum j -> sum + snd (xys V.! j)) 0 [i - numNeighbours .. i + numNeighbours]) / (2 * constant + 1)
-                                                                    in
-                                                                        (fst (xys V.! i), mean)
-                                                                ) [numNeighbours .. D.dataLength dat - numNeighbours - 1]
-                                                    in
+                                            smoothedData <- applyToData1 (\_ _ (Left dat) _ -> 
+                                                case opType of
+                                                    GaussianKernel -> do -- constant refers to stdev of gaussian kernel
+                                                        let
+                                                            xys = D.xys1 dat
+                                                            xMin = D.xMin1 dat
+                                                            xMax = D.xMax1 dat
+                                                            xStep = (xMax - xMin) / (fromIntegral (V.length xys))
+                                                            sigma = constant
+                                                            sigma2 = sigma * sigma
+                                                            threeSigma = 3 * sigma
+                                                            newXYs =
+                                                                map (\x ->
+                                                                        let
+                                                                            xysKernel = V.filter (\(xDat, yDat) -> xDat >= x - threeSigma && xDat <= x + threeSigma) xys
+                                                                            (y, w) = V.foldl' (\(ySum, wSum) (xDat, yDat) ->
+                                                                                    let
+                                                                                        weight = exp (-(xDat - x) ^ 2 / 2 / sigma2)  
+                                                                                    in
+                                                                                        (ySum + yDat * weight, wSum + weight)
+                                                                                ) (0, 0) xysKernel
+                                                                        in
+                                                                            (x, y / w)
+                                                                    ) [xMin, xMin + xStep .. xMax]
+                                                        return $ Left $ D.data1' $ V.fromList newXYs
+                                                    MovingAverage -> do -- for evenly sampled data only (constant refers to number of neighbouring points)
+                                                        let
+                                                            numNeighbours = round constant
+                                                            xys = D.xys1 dat
+                                                            newXYs =
+                                                                map (\i -> 
+                                                                        let
+                                                                            mean = (foldl' (\sum j -> sum + snd (xys V.! j)) 0 [i - numNeighbours .. i + numNeighbours]) / (2 * constant + 1)
+                                                                        in
+                                                                            (fst (xys V.! i), mean)
+                                                                    ) [numNeighbours .. D.dataLength dat - numNeighbours - 1]
                                                         return $ Left $ D.data1' $ V.fromList newXYs
                                                 ) selectedData1 name tEnv
-                                            modifyState stateRef $ addDataParams dataWithWeights (Just (currentGraphTab, selectedGraph))
+                                            modifyState stateRef $ addDataParams smoothedData (Just (currentGraphTab, selectedGraph))
                                         else return ()
                                     JDToYear ->
                                         if isDiscrete selectedData1 then do
