@@ -70,6 +70,7 @@ import Utils.Misc
 import Data.Either
 import Data.Maybe
 import qualified Data.Vector.Unboxed as V
+import qualified Statistics.Sample as S
 
 data Data = 
     Data1 (V.Vector (Double {-y-}, Double {-w-})) |
@@ -673,15 +674,16 @@ getTangent d =
             Data2 _ -> Data2 d1
             Spectrum2 _ -> spectrum1 d1
 
-getMinima :: Data -> V.Vector (Double, Double)
-getMinima d = fst $ getExtrema d
+getMinima :: Data -> Bool -> V.Vector (Double, Double)
+getMinima d global = fst $ getExtrema d global
 
-getMaxima :: Data -> V.Vector (Double, Double)
-getMaxima d = snd $ getExtrema d
+getMaxima :: Data -> Bool -> V.Vector (Double, Double)
+getMaxima d global = snd $ getExtrema d global
 
 -- | Returns an array containing minima and maxima of given data set (currently supported for 2d data only)
-getExtrema :: Data -> (V.Vector (Double, Double) {-minima-}, V.Vector (Double, Double) {-maxima-})
-getExtrema d =
+--   Global minima are dectected based on mean of the data set
+getExtrema :: Data -> Bool -> (V.Vector (Double, Double) {-minima-}, V.Vector (Double, Double) {-maxima-})
+getExtrema d global =
     let
         vals = V.toList $ xys1 d
         getExtrema' ((_, _):(_, _):[]) = (V.empty, V.empty)
@@ -699,9 +701,27 @@ getExtrema d =
                                 then 
                                     (minima, V.cons (x1, y1) maxima)
                             else (minima, maxima)
-            
+        (localMinima, localMaxima) = getExtrema' vals
+        extrema = 
+            if global
+                then
+                    let
+                        yMean = S.mean $ ys d
+                        globalMinima1 = V.filter (\(x, y) -> y < yMean) localMinima
+                        globalMaxima1 = V.filter (\(x, y) -> y > yMean) localMaxima
+                        containsPointBetween x1 x2 xys = not $ V.null $ V.filter (\(x, _) -> x > x1 && x < x2) xys
+                        globalMinima = V.fromList $ map (V.minimumBy (\(_, y1) (_, y2) -> compare y1 y2)) $ groupVectorBy (\(x1, _) (x2, _) -> 
+                                if containsPointBetween (min x1 x2) (max x1 x2) globalMaxima1 then False else True
+                            ) globalMinima1
+                        globalMaxima = V.fromList $ map (V.maximumBy (\(_, y1) (_, y2) -> compare y1 y2)) $ groupVectorBy (\(x1, _) (x2, _) -> 
+                                if containsPointBetween (min x1 x2) (max x1 x2) globalMinima then False else True
+                            ) globalMaxima1
+                    in
+                        (globalMinima, globalMaxima)
+                else
+                    (localMinima, localMaxima)
     in        
-        getExtrema' vals
+        extrema
 
 -- | Returns an array containing the abscissa of zero-crossings
 --   The values returned are the closest x-values taken from input data (i.e. no interpolation)
