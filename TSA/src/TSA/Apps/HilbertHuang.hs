@@ -186,7 +186,7 @@ imf modeNo dat fullSDev = do
     let
         findExtrema d =
             let
-                (minima, maxima) = D.getExtrema d
+                (minima, maxima) = D.getExtrema d False
             in
                 (minima, maxima) 
 

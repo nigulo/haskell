@@ -87,7 +87,7 @@ calcDispersions dataParams periodStart' periodEnd' precision method name bootstr
             
     bestPeriods <- mapM (\(i, SubDataParams _ (Left periodSpec) _) -> do
             let
-                freqDisps = sortBy (\(_, disp1) (_, disp2) -> compare disp1 disp2) $ V.toList $ D.getMinima periodSpec
+                freqDisps = sortBy (\(_, disp1) (_, disp2) -> compare disp1 disp2) $ V.toList $ D.getMinima periodSpec False
                 freqs = map fst freqDisps
             (logFunc taskEnv) ("Possible freqs for " ++ name ++ "[" ++ show i ++ "] = " ++ (show freqs))
             case freqDisps of 

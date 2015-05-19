@@ -138,7 +138,7 @@ calcStatistics period epoch precision g no bsNo dataSet puFunc = do
     let
         (mins, maxs) =
             case dataSet of
-                Left s -> D.getExtrema s
+                Left s -> D.getExtrema s False
                 Right (Left s) -> AD.getExtrema (round ((AD.xMax1 s - AD.xMin1 s) / period) * precision) (Just period) g s
                 Right (Right f) -> AD.getExtrema (round ((AD.xMax1 f - AD.xMin1 f) / period) * precision) (Just period) g f
         

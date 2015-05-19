@@ -27,15 +27,15 @@ import System.Random
 import qualified Data.Vector.Unboxed as V
 import Statistics.Sample
 
-findExtrema :: DataParams -> Int  -> String 
+findExtrema :: DataParams -> Int -> Bool -> String 
     -> TaskEnv
     -> IO (DataParams, DataParams)
-findExtrema dataParams precision name taskEnv = do
+findExtrema dataParams precision global name taskEnv = do
     g <- getStdGen 
     let 
         findExtremaFunc i j (Left d) puFunc = do
             let
-                (minima, maxima) = D.getExtrema d
+                (minima, maxima) = D.getExtrema d global
             return [Left $ D.data1' minima, Left $ D.data1' maxima] 
         findExtremaFunc i j (Right ad) puFunc = do 
             let

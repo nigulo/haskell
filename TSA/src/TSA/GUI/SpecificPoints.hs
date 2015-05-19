@@ -50,7 +50,7 @@ findSpecificPointsDialog stateRef = do
     nameEntry `entrySetText` (getNameWithNo commonParams)
     addWidget (Just "Name: ") nameEntry dialog
 
-    typeCombo <- createComboBox ["Extrema", "Zero-crossings"]
+    typeCombo <- createComboBox ["Local extrema", "Global extrema", "Zero-crossings"]
     typeCombo `comboBoxSetActive` (specificPointsType parms)
     addWidget (Just "Type: ") typeCombo dialog
     
@@ -98,9 +98,12 @@ findSpecificPoints stateRef dataParams precision name spType = do
     results <-
         case spType of
             0 -> do
-                (minima, maxima) <- TSA.SpecificPoints.findExtrema dataParams precision name tEnv
+                (minima, maxima) <- TSA.SpecificPoints.findExtrema dataParams precision False name tEnv
                 return [minima, maxima]
             1 -> do
+                (minima, maxima) <- TSA.SpecificPoints.findExtrema dataParams precision True name tEnv
+                return [minima, maxima]
+            2 -> do
                 zc <- TSA.SpecificPoints.findZeroCrossings dataParams precision name tEnv
                 return [zc]
     mapM_ (\dp -> modifyState stateRef $ addDataParams dp (Just (currentGraphTab, selectedGraph))) results

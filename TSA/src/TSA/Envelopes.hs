@@ -38,11 +38,11 @@ envelopes params (upperName, lowerName, meanName) taskEnv (DataUpdateFunc dataUp
             findExtremaOfOrder minimaDp maximaDp extremaSkipped = do
                 if extremaSkipped < (envStartExtrema params - 1)
                     then do
-                        (minimaDp, _) <- findExtrema minimaDp 0 "extrema" defaultTaskEnv
-                        (_, maximaDp) <- findExtrema maximaDp 0 "extrema" defaultTaskEnv
+                        (minimaDp, _) <- findExtrema minimaDp 0 False "extrema" defaultTaskEnv
+                        (_, maximaDp) <- findExtrema maximaDp 0 False "extrema" defaultTaskEnv
                         findExtremaOfOrder minimaDp maximaDp  (extremaSkipped + 1)
                     else return (minimaDp, maximaDp)
-        (minimaDp, maximaDp) <- findExtrema dataParams 0 "extrema" defaultTaskEnv
+        (minimaDp, maximaDp) <- findExtrema dataParams 0 False "extrema" defaultTaskEnv
         (minimaDpOfOrder, maximaDpOfOrder) <- findExtremaOfOrder minimaDp maximaDp 0
         let
             Left minima = subData $ head $ dataSet minimaDpOfOrder
