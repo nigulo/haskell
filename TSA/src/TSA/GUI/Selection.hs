@@ -62,6 +62,9 @@ selectionDialog stateRef = do
     nameEntry `entrySetText` (getNameWithNo commonParams)
     addWidget (Just "Name suffix: ") nameEntry dialog
     
+    dataSetCombo <- dataSetComboNew2 (\dp -> (dataName dp) `elem` (map graphDataParamsName (graphData graphParms))) state False
+    addWidget (Just "Data set: ") (getComboBox dataSetCombo) dialog
+    
     leftAdjustment <- adjustmentNew x1 (-2**52) (2**52) 1 1 10
     leftSpin <- spinButtonNew leftAdjustment 1 10
     addWidget (Just "Left: ") leftSpin dialog
@@ -89,6 +92,7 @@ selectionDialog stateRef = do
         then
             do
                 suffix <- entryGetString nameEntry
+                selectedData <- getSelectedData dataSetCombo
                 opNo <- comboBoxGetActive opCombo
                 Just op <- comboBoxGetActiveString opCombo
                 modifyOriginal <- toggleButtonGetActive modifyOriginalCheck
@@ -100,7 +104,10 @@ selectionDialog stateRef = do
                 widgetDestroy dialog
                 let
                     op1 = if (op == "Delete") then False else True
-                    dataParms = map (doSelectionOp op1 (left, right, bottom, top)) $ map (\gp -> getDataByName (graphDataParamsName gp) state) $ graphData graphParms
+                    dataToModify = case selectedData of 
+                        Just dat -> [dat]
+                        Nothing -> map (\gp -> getDataByName (graphDataParamsName gp) state) $ graphData graphParms
+                    dataParms = map (doSelectionOp op1 (left, right, bottom, top)) dataToModify
                     mapFunc dp = 
                         modifyMVar_ stateRef $ \state ->
                             if modifyOriginal 
