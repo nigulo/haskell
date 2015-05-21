@@ -14,6 +14,7 @@ import TSA.GUI.Data
 import TSA.GUI.Dialog
 import TSA.GUI.Common
 import TSA.GUI.Log
+import TSA.Correlation
 import GUI.Widget
 
 import Data.List
@@ -94,12 +95,18 @@ correlationDialog stateRef = do
                         correlationPrecision = round precision,
                         correlationCommonParams = updateCommonParams name commonParams
                     }}
-                runTask stateRef "Find correlation" $ findCorrelation stateRef selectedData1 selectedData2 precision shifts name
+                tEnv <- taskEnv stateRef
+                runTask stateRef "Find correlation" $ do
+                    correlations <- findCorrelation tEnv selectedData1 selectedData2 precision shifts name
+                    case correlations of
+                        [corr] -> modifyState stateRef $ addData (Left corr) name (Just (currentGraphTab, selectedGraph))
+                        otherwise -> return () 
                 return ()
         else
             do
                 widgetDestroy dialog
 
+{-
 findCorrelation :: StateRef -> DataParams -> DataParams -> Double -> [Double] -> String -> IO ()
 findCorrelation stateRef dataParams1 dataParams2' precision shifts name = do
     state <- readMVar stateRef
@@ -172,4 +179,4 @@ findCorrelation stateRef dataParams1 dataParams2' precision shifts name = do
                 else return ()
     calcConcurrently mapFunc (progressUpdateFunc tEnv) (taskInitializer tEnv) (taskFinalizer tEnv) shifts
     return ()
-
+-}
