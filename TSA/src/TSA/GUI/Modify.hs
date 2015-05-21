@@ -277,7 +277,7 @@ modifyDialog stateRef = do
                                                                 Intersection -> intersect
                                                                 Complement -> (\\)
                                                             vals = V.fromList $ func (V.toList (D.values1 ds1)) (V.toList (D.values1 ds2)) 
-                                                        return $ Left (D.data1 vals)
+                                                        return $ Left (D.data1 (sortVectorBy (\(x1, _, _) (x2, _, _) -> compare x1 x2) vals))
                                                                                 
                                                 result <- applyToData1 func selectedData1 name tEnv
                                                 modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))

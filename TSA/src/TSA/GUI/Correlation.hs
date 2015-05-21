@@ -77,7 +77,7 @@ correlationDialog stateRef = do
             do
                 name <- entryGetString nameEntry
                 precision <- spinButtonGetValue precisionSpin
-                shift <- spinButtonGetValue shiftSpin >>= \sfift -> return $ abs shift
+                shift <- spinButtonGetValue shiftSpin >>= \shift -> return $ abs shift
                 
                 Just selectedData1 <- getSelectedData dataSetCombo1
                 Just selectedData2 <- getSelectedData dataSetCombo2
