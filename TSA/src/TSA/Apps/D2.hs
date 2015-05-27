@@ -12,6 +12,8 @@ import Statistics.Sample as Sample
 import qualified Data.Vector.Unboxed as V
 import Data.List
 
+df = 0.1
+
 main :: IO ()
 main = do
     [periodStartS, periodEndS, corrStartS, corrEndS, methodS, precisionS, bootstrapCountS] <- getArgs
@@ -32,7 +34,7 @@ main = do
         Left dat = subData (head (dataSet dp))
         taskEnv = defaultTaskEnv {logFunc = \str -> hPutStr handle (str ++ "\n")}
     bins <- phaseBins dat (getBinSize freqEnd)
-    dispersions <- calcDispersions' bins freqStart freqEnd corrLenStart corrLenEnd method precision (dataName dp ++ "_d2") True taskEnv
+    dispersions <- calcDispersions' bins freqStart freqEnd corrLenStart corrLenEnd method precision (dataName dp ++ "_d2") True df taskEnv
 
     -- Bootstrap stuff
     let
@@ -52,8 +54,8 @@ main = do
     minDisps <- calcConcurrently (\i _ -> do
             disps <- mapM (\freq ->  
                     mapM (\corrLen -> do 
-                            bsBins <- bootstrapBins method bins corrLen freq
-                            dispDat <- calcDispersions' bsBins freq freq corrLen corrLen method 1 (dataName dp ++ "_d2" ++ (show i)) True taskEnv
+                            bsBins <- bootstrapBins method bins corrLen freq df
+                            dispDat <- calcDispersions' bsBins freq freq corrLen corrLen method 1 (dataName dp ++ "_d2" ++ (show i)) True df taskEnv
                             --putStrLn $ show freq ++ " " ++ show (V.head (D.ys dispDat))
                             return (corrLen, freq, V.head (D.ys dispDat))
                         ) corrLens 

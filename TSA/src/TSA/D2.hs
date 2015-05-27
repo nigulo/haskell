@@ -36,9 +36,8 @@ import Statistics.Sample
 import qualified Math.IODoubleVector as IOV
 import System.Random.MWC
 
-df = 0.1
+--df = 0.1
 ln2 = log 2
-lnp = ln2 / df / df
 numPhaseBins = 50
 
 getBinSize :: Double -> Double
@@ -47,23 +46,23 @@ getBinSize freqEnd = freqEnd / numPhaseBins
 data Method = Box | Gauss deriving (Show, Read)
 
 calcDispersions :: Data -> Double -> Double -> Double -> Double -> Method -> Int -> String
-    -> Bool 
+    -> Bool -> Double
     -> TaskEnv
     -> IO Data
-calcDispersions dat freqStart' freqEnd' minCorrLen' maxCorrLen' method precision name normalize taskEnv = do
+calcDispersions dat freqStart' freqEnd' minCorrLen' maxCorrLen' method precision name normalize df taskEnv = do
     let
         freqStart = min freqStart' freqEnd'
         freqEnd = max freqStart' freqEnd'
         minCorrLen = min minCorrLen' maxCorrLen'
         maxCorrLen = max minCorrLen' maxCorrLen'
     bins <- phaseBins dat (getBinSize freqEnd)
-    calcDispersions' bins freqStart freqEnd minCorrLen maxCorrLen method precision name normalize taskEnv
+    calcDispersions' bins freqStart freqEnd minCorrLen maxCorrLen method precision name normalize df taskEnv
 
 calcDispersions' :: V.Vector (Double, Double) -> Double -> Double -> Double -> Double -> Method -> Int -> String
-    -> Bool 
+    -> Bool -> Double
     -> TaskEnv
     -> IO Data
-calcDispersions' bins freqStart freqEnd minCorrLen maxCorrLen method precision name normalize taskEnv = do
+calcDispersions' bins freqStart freqEnd minCorrLen maxCorrLen method precision name normalize df taskEnv = do
     let 
         freqStep = (freqEnd - freqStart) / (fromIntegral precision)
         puFunc = progressUpdateFunc taskEnv
@@ -83,7 +82,7 @@ calcDispersions' bins freqStart freqEnd minCorrLen maxCorrLen method precision n
         dispFunc corrLen _ = 
             do 
                 let
-                    disps = map (d2 method bins corrLen) freqs 
+                    disps = map (d2 method bins corrLen df) freqs 
                     normalizedDisps =  
                         if normalize
                             then
@@ -128,16 +127,17 @@ phaseBins dat binSize = do
     return $ V.fromList $ zip [binSize * fromIntegral i | i <- [1 ..]] deltay2sList
 
 
-data MethodParams = BoxParams Double | GaussParams Double Double
+data MethodParams = BoxParams Double | GaussParams Double Double 
 
 getMethodParams :: Method -> Double -> MethodParams
 getMethodParams Box corrLen = BoxParams corrLen
 getMethodParams Gauss corrLen = GaussParams (corrLen * 2.54796540086) (1 / (corrLen * corrLen))
 
-d2 :: Method -> V.Vector (Double, Double) -> Double -> Double -> Double
-d2 method bins corrLen freq =
+d2 :: Method -> V.Vector (Double, Double) -> Double -> Double -> Double -> Double
+d2 method bins corrLen freq df =
     let
         methodParams = getMethodParams method corrLen
+        lnp = ln2 / df / df
         (disp, norm) = V.foldl' (\(disp, norm) (deltax, deltay2) ->
                 let
                     ln2deltax2 = -ln2 * deltax ^ 2
@@ -152,7 +152,8 @@ d2 method bins corrLen freq =
                                 else if deltaf < df then (disp + deltay2, norm + 1) else (disp, norm)
                         GaussParams threeSigma invSmoothWin2 ->
                             let
-                                g = exp (ln2deltax2 * invSmoothWin2 - lnpdeltaf2) 
+                                --g = exp (ln2deltax2 * invSmoothWin2 - lnpdeltaf2) 
+                                g = (0.5 * cos (pi * deltaf / df) + 0.5) * exp (ln2deltax2 * invSmoothWin2) 
                             in
                                 if deltax >= threeSigma
                                     then (disp, norm)
@@ -162,12 +163,13 @@ d2 method bins corrLen freq =
     in
         disp / norm
 
-bootstrapBins :: Method -> V.Vector (Double, Double) -> Double -> Double -> IO (V.Vector (Double, Double))
-bootstrapBins method bins corrLen freq = 
+bootstrapBins :: Method -> V.Vector (Double, Double) -> Double -> Double -> Double -> IO (V.Vector (Double, Double))
+bootstrapBins method bins corrLen freq df = 
     do 
         gen <- createSystemRandom
         let
             methodParams = getMethodParams method corrLen
+            lnp = ln2 / df / df
             closeInPhase :: V.Vector (Double, Double) -> IO (V.Vector (Double, Double))
             closeInPhase bins 
               | V.null bins = return V.empty

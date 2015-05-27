@@ -86,6 +86,10 @@ d2Dialog stateRef = do
     precisionSpin <- spinButtonNew precisionAdjustment 1 0
     addWidget (Just "Precision: ") precisionSpin dialog
 
+    deltaPhiAdjustment <- adjustmentNew (0.1) 0 (2**52) 1 1 1
+    deltaPhiSpin <- spinButtonNew deltaPhiAdjustment 1 10
+    addWidget (Just "Phase proximity: ") deltaPhiSpin dialog
+
     widgetShowAll dialog
     response <- dialogRun dialog
     
@@ -101,6 +105,7 @@ d2Dialog stateRef = do
                 methodNo <- comboBoxGetActive methodCombo
                 normalize <- toggleButtonGetActive normalizeCheck
                 precision <- spinButtonGetValue precisionSpin
+                deltaPhi <- spinButtonGetValue deltaPhiSpin
                 widgetDestroy dialog
                 
                 modifyStateParams stateRef $ \params -> params {d2Params = D2Params {
@@ -115,20 +120,20 @@ d2Dialog stateRef = do
                         d2CommonParams = updateCommonParams name commonParams
                     }}
                 
-                runTask stateRef "D2 statistic" $ d2 stateRef selectedData periodStart periodEnd corrLenStart corrLenEnd methodNo (round precision) name normalize
+                runTask stateRef "D2 statistic" $ d2 stateRef selectedData periodStart periodEnd corrLenStart corrLenEnd methodNo (round precision) name normalize deltaPhi
                 return ()
         else
             do
                 widgetDestroy dialog
 
-d2 :: StateRef -> DataParams -> Double -> Double -> Double -> Double -> Int -> Int -> String -> Bool -> IO ()
-d2 stateRef dataParams periodStart periodEnd minCorrLen maxCorrLen methodNo precision name normalize = do
+d2 :: StateRef -> DataParams -> Double -> Double -> Double -> Double -> Int -> Int -> String -> Bool -> Double -> IO ()
+d2 stateRef dataParams periodStart periodEnd minCorrLen maxCorrLen methodNo precision name normalize deltaPhi = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
     tEnv <- taskEnv stateRef
     let
         Left dat = subData (head (dataSet dataParams))
-    dispersions <- calcDispersions dat (1 / periodEnd) (1 / periodStart)  minCorrLen maxCorrLen (if methodNo == 0 then Box else Gauss) precision name normalize tEnv
+    dispersions <- calcDispersions dat (1 / periodEnd) (1 / periodStart)  minCorrLen maxCorrLen (if methodNo == 0 then Box else Gauss) precision name normalize deltaPhi tEnv
     let 
         graphTabParms = (graphTabs state) !! currentGraphTab
         selectedGraph = graphTabSelection graphTabParms
