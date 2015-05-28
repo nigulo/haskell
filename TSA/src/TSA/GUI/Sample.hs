@@ -91,14 +91,21 @@ sampleDialog stateRef = do
                 let
                     graphTabParms = (graphTabs state) !! currentGraphTab
                     selectedGraph = graphTabSelection graphTabParms
+                    (xMins, xMaxs) = unzip $ map (\sdp -> 
+                            case subData sdp of 
+                                Left d -> (D.xMins d, D.xMaxs d)
+                                Right (Left ad) -> (AD.xMins ad, AD.xMaxs ad)
+                                Right (Right ad) -> (AD.xMins ad, AD.xMaxs ad)
+                        ) (dataSet selectedData)
 
                     xs =
-                        case selectedData2 of
+                        case selectedData2 of -- only unsegmented data
                             Just dat ->
                                 let
                                     Left d = subData $ head $ dataSet dat
                                 in
-                                    D.xs d
+                                    --D.xs d
+                                    filter (\xs -> and (zipWith (>=) xs (head xMins)) && and (zipWith (<=) xs (head xMaxs))) (D.xs d)
                             Nothing ->
                                 let
                                     getXs xMin xMax =
@@ -106,12 +113,6 @@ sampleDialog stateRef = do
                                             avgStep = (xMax - xMin) / count
                                         in
                                             map (\(i, r) -> xMin + avgStep * ((fromIntegral i)  + r * randomness / 100)) (zip [0, 1 ..] (take (round count) (randomRs (0, 1) g)))
-                                    (xMins, xMaxs) = unzip $ map (\sdp -> 
-                                            case subData sdp of 
-                                                Left d -> (D.xMins d, D.xMaxs d)
-                                                Right (Left ad) -> (AD.xMins ad, AD.xMaxs ad)
-                                                Right (Right ad) -> (AD.xMins ad, AD.xMaxs ad)
-                                        ) (dataSet selectedData)
                                     xMin = minimum xMins
                                     xMax = maximum xMaxs
                                 in 
