@@ -321,6 +321,22 @@ modifyDialog stateRef = do
                                                 nearest = Left (D.data1 (V.fromList (catMaybes (map mapFunc (V.toList (D.values1 d1))))))
                                             modifyState stateRef $ addData nearest name (Just (currentGraphTab, selectedGraph))
                                         else return ()
+                                else if op == Function then
+                                    if isDiscrete selectedData1 
+                                    then do
+                                        maybeFunc <- getFunction dialog f 2
+                                        case maybeFunc of
+                                            Just func -> do
+                                                let
+                                                    mapOp sdp1 sdp2 = createSubDataParams
+                                                            (subDataRange sdp1)
+                                                            (U.binaryOp func (subData sdp1) (subData sdp2) (opType == Y) g) 
+                                                            []
+                                                    result = zipWith mapOp (dataSet selectedData1) (dataSet sd2) 
+                                                modifyState stateRef $ addDataParams (createDataParams_ name result) (Just (currentGraphTab, selectedGraph))
+                                            Nothing -> return ()
+                                    else
+                                        return ()
                                 else do
                                     let
                                         mapOp sdp1 sdp2 = createSubDataParams
@@ -534,7 +550,7 @@ modifyDialog stateRef = do
                                     Function -> -- Applicable only to y-values
                                         if isDiscrete selectedData1 
                                         then do
-                                            maybeFunc <- getFunction dialog f
+                                            maybeFunc <- getFunction dialog f 1
                                             case maybeFunc of
                                                 Just func -> do
                                                     result <- applyToData1 (\i j d _ -> return (constantOp func d 0 True)) selectedData1 name tEnv
@@ -621,8 +637,8 @@ getModifyFunc Multiply = F.mult
 getModifyFunc Invert = (F.function "1/x")
     
 
-getFunction :: Dialog -> String -> IO (Maybe (F.Function Double))
-getFunction dialog f = do
+getFunction :: Dialog -> String -> Int -> IO (Maybe (F.Function Double))
+getFunction dialog f numData = do
     let
         func = F.function f
         varNames = F.varNames func 
@@ -638,7 +654,7 @@ getFunction dialog f = do
                         widgetDestroy messageDialog
                         return Nothing
                 else
-                    if length varNames > 1
+                    if length varNames > numData
                         then
                             do                    
                                 messageDialog <- messageDialogNew (Just (toWindow dialog)) [DialogModal] MessageWarning ButtonsOk $ ("Too many function arguments " ++ (show varNames))
