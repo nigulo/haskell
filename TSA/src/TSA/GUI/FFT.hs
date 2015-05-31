@@ -7,6 +7,8 @@ import Graphics.UI.Gtk.Layout.VBox
 
 import Regression.Data as D
 import Regression.FFT
+import Regression.Utils as U
+import Math.Function as F
 
 import TSA.Params
 import TSA.GUI.State
@@ -25,6 +27,7 @@ import Debug.Trace
 import Control.Concurrent
 import Control.Concurrent.MVar
 import Control.Applicative
+import System.Random
 
 paramsDialog :: StateRef -> IO ()
 paramsDialog stateRef = do
@@ -154,6 +157,19 @@ fft stateRef name =
         realSpec <- return $ D.Spectrum2 ((0, specStep), V.zip (V.map realPart spec1) (V.replicate len 0))
         imagSpec <- return $ D.Spectrum2 ((0, specStep), V.zip (V.map imagPart spec1) (V.replicate len 0))
         
-        modifyState stateRef $ addDiscreteData realSpec (name ++ "_Real") (Just (currentGraphTab, selectedGraph))
-        modifyState stateRef $ addDiscreteData imagSpec (name ++ "_Imag") (Just (currentGraphTab, selectedGraph))
+        --modifyState stateRef $ addDiscreteData realSpec (name ++ "_Real") (Just (currentGraphTab, selectedGraph))
+        --modifyState stateRef $ addDiscreteData imagSpec (name ++ "_Imag") (Just (currentGraphTab, selectedGraph))
+        g <- getStdGen 
+        let
+            Left powerSpec = U.binaryOp (F.function "sqrt(x*x + y*y)") (Left realSpec) (Left imagSpec) True g
+            -- shift it to zero
+            yMax = D.yMax powerSpec
+            xMax = D.xMax1 powerSpec
+            xMiddle = xMax / 2
+            normVals = V.map (\(x, y, w) -> (x, y / yMax, w)) (D.values1 powerSpec)
+            xStep = xMax / fromIntegral (V.length normVals - 1)
+            (left, right) = V.partition (\(x, _, _) -> x >= xMiddle) normVals
+            left1 = V.map (\(x, y, w) -> (x - xMax - xStep, y, w)) left
+            powerSpec1 = D.spectrum1 $ left1 V.++ right
+        modifyState stateRef $ addDiscreteData powerSpec1 name (Just (currentGraphTab, selectedGraph))
 
