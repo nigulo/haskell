@@ -172,6 +172,7 @@ infoDialog stateRef = do
                 
     dialogAddButton dialog "Ok" ResponseOk
     widgetShowAll dialog
+    --notebookSetPopup notebook True
     response <- dialogRun dialog 
     onClose response
     widgetDestroy dialog

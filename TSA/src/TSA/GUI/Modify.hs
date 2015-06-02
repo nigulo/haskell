@@ -62,6 +62,7 @@ data ModifyOp = Add
         | AddNoise
         | Interpolate
         | Convert 
+        | Histogram 
         deriving (Eq, Ord, Show, Read)
 
 getOpText :: ModifyOp -> String
@@ -102,7 +103,8 @@ modifyOps = [Add,
         Function,
         AddNoise,
         Interpolate,
-        Convert]
+        Convert,
+        Histogram]
 
 getModifyOp :: Int -> ModifyOp
 getModifyOp i = modifyOps !! i
@@ -605,6 +607,26 @@ modifyDialog stateRef = do
                                                                 1 -> D.data1
                                                             newDat = dataCreateFunc (D.values1 dat)
                                                         return $ Left newDat
+                                            result <- applyToData1 func selectedData1 name tEnv
+                                            modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
+                                        else
+                                            return ()
+                                    Histogram ->
+                                        if isDiscrete selectedData1 && TSA.Data.is2d selectedData1 && constant > 1 
+                                        then do
+                                            let 
+                                                func i j d _ = 
+                                                    do
+                                                        let
+                                                            Left dat = d
+                                                            (vals, minVal, maxVal) = if opType == Y 
+                                                                then (D.ys dat, D.yMin dat, D.yMax dat) 
+                                                                else (D.xs1 dat, D.xMin1 dat, D.xMax1 dat)
+                                                            step = (maxVal - minVal) / constant
+                                                            ranges = [(minVal + step * fromIntegral i, minVal + step * fromIntegral (i + 1)) | i <- [0 .. (round constant) - 1]]
+                                                            hist = map (\(xLeft, xRight) -> 
+                                                                ((xLeft + xRight) / 2, fromIntegral (V.length (V.filter (\x -> x >= xLeft && x < xRight) vals)))) ranges
+                                                        return $ Left $ D.data1' $ V.fromList hist
                                             result <- applyToData1 func selectedData1 name tEnv
                                             modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                                         else
