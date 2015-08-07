@@ -216,6 +216,9 @@ dataDialog stateRef = do
         
         createDataParamWidgets dataPage =
             do
+                descEntry <- entryNew
+                addWidgetToBox (Just "Description: ") descEntry PackNatural dataPage
+
                 color <- colorButtonNew 
                 color `colorButtonSetColor` (Color 0 0 0)
         
@@ -268,7 +271,7 @@ dataDialog stateRef = do
                 errorBars <- checkButtonNew >>= \button -> toggleButtonSetActive button False >> return button
                 addWidgetToBox (Just "Show error bars") errorBars PackNatural dataPage 
                 
-                return (color, symbolSettings, lineSettings, errorBars)
+                return (descEntry, color, symbolSettings, lineSettings, errorBars)
         
         toggleSettings (color, symbolSettings, lineSettings, errorBars) dataParams =
             do
@@ -335,13 +338,14 @@ dataDialog stateRef = do
                     dp = dParams !! i
                     dataParams = getDataByName (graphDataParamsName dp) state
                 
+                dataPage <- vBoxNew True 0
+
                 typeLbl <- labelNew (Just "Type: ")
                 typeLabel <- labelNew $ Just $ getDataType dataParams 
         
-                dataPage <- vBoxNew True 0
                 addWidgetToBox (Just "Type:") typeLabel PackNatural dataPage
                 
-                (color, symbolSettings, lineSettings, errorBars) <- createDataParamWidgets dataPage
+                (desc, color, symbolSettings, lineSettings, errorBars) <- createDataParamWidgets dataPage
                 let 
                     (r, g, b) = graphDataParamsColor dp
                     Just selectedPointType = elemIndex (graphDataParamsPointType dp) pointTypes 
@@ -356,10 +360,10 @@ dataDialog stateRef = do
                 spinButtonSetValue (lineSettingsWidthSpin lineSettings) (graphDataParamsLineWidth dp)
         
                 toggleButtonSetActive errorBars (graphDataParamsErrorBars dp)
+                entrySetText desc (graphDataParamsDesc dp)
                 toggleSettings (color, symbolSettings, lineSettings, errorBars) dataParams
-                
         
-                return (pages ++ [(dataPage, graphDataParamsName dp, typeLabel, color, symbolSettings, lineSettings, errorBars)])
+                return (pages ++ [(dataPage, graphDataParamsName dp, desc, typeLabel, color, symbolSettings, lineSettings, errorBars)])
             
     let
         graphTabParms = (graphTabs state) !! currentTabIndex
@@ -381,8 +385,9 @@ dataDialog stateRef = do
 
     let
     
-        getDataParamValues color symbolSettings lineSettings errorBars =
+        getDataParamValues desc color symbolSettings lineSettings errorBars =
             do
+                descText <- entryGetText desc
                 Color r g b <- colorButtonGetColor color  
                 newSymbol <- comboBoxGetActive (symbolSettingsCombo symbolSettings)
                 newSymbolSize <- spinButtonGetValue (symbolSettingsSizeSpin symbolSettings)
@@ -390,11 +395,12 @@ dataDialog stateRef = do
                 newLineType2 <- spinButtonGetValue (lineSettingsDashSpin2 lineSettings)
                 newLineWidth <- spinButtonGetValue (lineSettingsWidthSpin lineSettings)
                 newErrorBars <- toggleButtonGetActive errorBars
-                return  ((r, g, b), newSymbol, newSymbolSize, [newLineType1, newLineType2], newLineWidth, newErrorBars)
+                return  (descText, (r, g, b), newSymbol, newSymbolSize, [newLineType1, newLineType2], newLineWidth, newErrorBars)
                 
-        newGraphDataParams name ((r, g, b), newSymbol, newSymbolSize, [newLineType1, newLineType2], newLineWidth, newErrorBars) =
+        newGraphDataParams name (desc, (r, g, b), newSymbol, newSymbolSize, [newLineType1, newLineType2], newLineWidth, newErrorBars) =
             GraphDataParams {
                 graphDataParamsName = name,
+                graphDataParamsDesc = desc,
                 graphDataParamsColor = (r, g, b), 
                 graphDataParamsPointType = pointTypes !! newSymbol,
                 graphDataParamsPointSize = newSymbolSize,
@@ -406,7 +412,7 @@ dataDialog stateRef = do
     
         addNewData pageRef = 
             do
-                (dataPage, dataSetCombo, color, symbolSettings, lineSettings, errorBars) <- readIORef pageRef
+                (dataPage, dataSetCombo, desc, color, symbolSettings, lineSettings, errorBars) <- readIORef pageRef
                 maybeSelectedData <- getSelectedData dataSetCombo
                 
                 case maybeSelectedData of
@@ -414,7 +420,7 @@ dataDialog stateRef = do
                         do
                             modifyMVar_ stateRef $ \state ->
                                         do
-                                            newDataParamsValues <- getDataParamValues color symbolSettings lineSettings errorBars
+                                            newDataParamsValues <- getDataParamValues desc color symbolSettings lineSettings errorBars
                                             let
                                                 graphTabParms = (graphTabs state) !! currentTabIndex
                                                 selectedGraph = graphTabSelection graphTabParms
@@ -430,7 +436,7 @@ dataDialog stateRef = do
                             pages <- readIORef pagesRef                 
                             let
                                 newPageIndex = length pages
-                            [newPage@(page, name, _, _, _, _, _)] <- createDataPage [] newPageIndex
+                            [newPage@(page, name, _, _, _, _, _, _)] <- createDataPage [] newPageIndex
             
                             modifyIORef pagesRef (\pages -> pages ++ [newPage])
                             label <- labelWithButton (Just name) stockRemove (removeData page)
@@ -447,7 +453,7 @@ dataDialog stateRef = do
                 dataSetCombo <- dataSetComboNew (\_ -> True) state
                 addWidgetToBox (Just "Data set: ") (getComboBox dataSetCombo) PackNatural dataPage
                 
-                (color, symbolSettings, lineSettings, errorBars) <- createDataParamWidgets dataPage
+                (desc, color, symbolSettings, lineSettings, errorBars) <- createDataParamWidgets dataPage
 
                 hBox <- hBoxNew False 0
                 addButton <- buttonNewWithLabel "Add"
@@ -460,13 +466,14 @@ dataDialog stateRef = do
                     onDataSetChanged = 
                         do
                             Just selectedData <- getSelectedData dataSetCombo
+                            entrySetText desc (dataDesc selectedData)
                             toggleSettings (color, symbolSettings, lineSettings, errorBars) selectedData
                                     
                 on (getComboBox dataSetCombo) changed onDataSetChanged
                 onDataSetChanged
 
                 let
-                    page = (dataPage, dataSetCombo, color, symbolSettings, lineSettings, errorBars)
+                    page = (dataPage, dataSetCombo, desc, color, symbolSettings, lineSettings, errorBars)
 
                 pageRef <- newIORef page
                 on addButton buttonReleaseEvent $ liftIO $ addNewData pageRef >> return True
@@ -477,13 +484,13 @@ dataDialog stateRef = do
             do
                 Just pageIndex <- notebookPageNum notebook page
                 pages <- readIORef pagesRef
-                let dataPage@(page, name, _, _, _, _, _) = pages !! pageIndex
+                let dataPage@(page, name, _, _, _, _, _, _) = pages !! pageIndex
                 notebookRemovePage notebook pageIndex
-                modifyIORef pagesRef (deleteBy (\(_, name1, _, _, _, _, _) (_, name2, _, _, _, _, _) -> name1 == name2) dataPage)
+                modifyIORef pagesRef (deleteBy (\(_, name1, _, _, _, _, _, _) (_, name2, _, _, _, _, _, _) -> name1 == name2) dataPage)
                 modifyMVar_ stateRef $ \state -> return $ removeDataByNameFromTab currentTabIndex name state
 
     let
-        mapOp (page, name, _, _, _, _, _) =
+        mapOp (page, name, _, _, _, _, _, _) =
             do
                 pageIndex <- notebookGetNPages notebook
                 label <- labelWithButton (Just name) stockRemove (removeData page)
@@ -492,7 +499,7 @@ dataDialog stateRef = do
 
     mapM_ mapOp dataPages
     
-    (newPage, _, _, _, _, _) <- newDataPage
+    (newPage, _, _, _, _, _, _) <- newDataPage
     newPageLabel <- labelWithImage (Just "Add data") (Just stockAdd)
     notebookAppendPageMenu notebook newPage newPageLabel newPageLabel
     widgetShowAll newPageLabel
@@ -511,8 +518,8 @@ dataDialog stateRef = do
                                 foldM (\state i -> 
                                         do
                                             let 
-                                                dataPage@(_, name, _, color, symbolSettings, lineSettings, errorBars) = pages !! i
-                                            newDataParamsValues <- getDataParamValues color symbolSettings lineSettings errorBars
+                                                dataPage@(_, name, desc, _, color, symbolSettings, lineSettings, errorBars) = pages !! i
+                                            newDataParamsValues <- getDataParamValues desc color symbolSettings lineSettings errorBars
                                             let
                                                 graphTabParms = (graphTabs state) !! currentTabIndex
                                                 selectedGraph = graphTabSelection graphTabParms

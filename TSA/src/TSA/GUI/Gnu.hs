@@ -363,15 +363,16 @@ doPlot state grphTabParams plotFunc =
                             color = Graphics.Gnuplot.ColorSpecification.name $ "#" ++
                                 (concatMap (padLeft '0' 2 . flip showHex "") [(fromIntegral (shiftR r 8)), (fromIntegral (shiftR g 8)), (fromIntegral (shiftR b 8))])
                             
+                            title = graphDataParamsDesc gdp 
                             pointType = graphDataParamsPointType gdp 
                             pointSize = graphDataParamsPointSize gdp
                             dash1:dash2:_ = graphDataParamsLineDash gdp
                             lineWidth = graphDataParamsLineWidth gdp
                             errorBars = graphDataParamsErrorBars gdp
                         in
-                            (color, pointType, pointSize, (round dash1, round dash2), lineWidth, errorBars)
+                            (title, color, pointType, pointSize, (round dash1, round dash2), lineWidth, errorBars)
 
-                    dataSets2d = filter (\(dataSet, _, _) -> 
+                    dataSets2d = filter (\(dataSet, _) -> 
                             case dataSet  of
                                 Left d -> D.is2d d
                                 Right (Left s) -> True
@@ -380,10 +381,10 @@ doPlot state grphTabParams plotFunc =
                                 let 
                                     dp = getDataByName (graphDataParamsName gdp) state
                                 in 
-                                    zipWith (\sdp title -> (subData sdp, title, gdp)) (dataSet dp) (dataDesc dp:(repeat ""))
+                                    map (\sdp -> (subData sdp, gdp)) (dataSet dp)
                             ) graphDataParms
         
-                    adMap ad title (color, _, _, (dash1, dash2), lineWidth, _) =
+                    adMap ad (title, color, _, _, (dash1, dash2), lineWidth, _) =
                         let 
                             xMin = plotAreaLeft grphArea
                             xMax = plotAreaRight grphArea
@@ -392,10 +393,10 @@ doPlot state grphTabParams plotFunc =
                         in
                             (fmap (Graph2D.lineSpec (((LineSpec.lineWidth lineWidth) . (LineSpec.lineColor color) . (LineSpec.lineType dash1) . (LineSpec.title title)) LineSpec.deflt)) 
                                 (Plot2D.list (Graph2D.lines) (zip xsWithOffset (AD.getValues (map (\x ->  [x]) xs) g ad))))
-                    dat2d = map (\(dataSet, title, gdp) ->
+                    dat2d = map (\(dataSet, gdp) ->
                         let
                             -- note that we are using dash1 as line type  
-                            settings@(color, pointType, pointSize, (dash1, dash2), lineWidth, errorBars) = getSettings gdp 
+                            settings@(title, color, pointType, pointSize, (dash1, dash2), lineWidth, errorBars) = getSettings gdp 
                         in
                             case dataSet of
                                 Left d ->
@@ -428,20 +429,22 @@ doPlot state grphTabParams plotFunc =
                                         else
                                             (fmap (Graph2D.lineSpec (((LineSpec.lineWidth lineWidth) . (LineSpec.lineColor color) . (LineSpec.lineType dash1) . (LineSpec.title title)) LineSpec.deflt)) 
                                                 (Plot2D.list (Graph2D.lines) (V.toList (D.xys1 d))))
-                                Right (Left s) -> adMap s title settings
-                                Right (Right f) -> adMap f title settings
+                                Right (Left s) -> adMap s settings
+                                Right (Right f) -> adMap f settings
                             ) dataSets2d
                     dataSets3d = filter (\(_, _, dataSet) -> 
                         case dataSet of
                             Left d -> is3d d
                             Right (Left s) -> False
                             Right (Right f) -> AD.is3d f
-                        ) (concat $ map (\name ->
+                        ) (concat $ map (\gdp ->
                                 let 
+                                    name = graphDataParamsName gdp
+                                    title = graphDataParamsDesc gdp
                                     dp = getDataByName name state
                                 in
-                                    map (\sdp -> (name, dataDesc dp, subData sdp)) (dataSet dp)
-                            ) $ map graphDataParamsName graphDataParms)
+                                    map (\sdp -> (name, title, subData sdp)) (dataSet dp)
+                            ) graphDataParms)
         
                     dat3d = map (\(name, title, dataSet) ->
                         let 

@@ -92,11 +92,11 @@ infoDialog stateRef = do
                 descEntry <- entryNew
                 addWidgetToBox (Just "Description: ") descEntry PackNatural dataPage
                 descEntry `entrySetText` (dataDesc dp)
-                typeLabel <- labelNew $ Just $ getDataType dp
+                typeLabel <- labelNew $ Just $ TSA.Data.getDataType dp
                 addWidgetToBox (Just "Type:") typeLabel PackNatural dataPage
                 componentCountLabel <- labelNew $ Just $ show (length (dataSet dp))
                 addWidgetToBox (Just "Components:") componentCountLabel PackNatural dataPage
-                if (isDiscrete dp) 
+                if (TSA.Data.isDiscrete dp) 
                     then do
                         numPointsLabel <- labelNew $ Just $ show (sum (map (\sdp -> let Left d = subData sdp in D.dataLength d) (dataSet dp)))
                         addWidgetToBox (Just "Number of points:") numPointsLabel PackNatural dataPage
@@ -192,7 +192,7 @@ showInfo dp = do
                 Right (Left s) -> (formatRangeBound rangeStart, formatRangeBound rangeEnd, 0, (0, 0))
                 Right (Right f) -> (formatRangeBound rangeStart, formatRangeBound rangeEnd, 0, (0, 0))  
         in
-            (show i) ++ ": " ++ left ++ " - " ++ right ++ (if isDiscrete dp then " " ++ (show n ++ " " ++ show mean ++ " " ++ show var) else "") ++ "\n"
+            (show i) ++ ": " ++ left ++ " - " ++ right ++ (if TSA.Data.isDiscrete dp then " " ++ (show n ++ " " ++ show mean ++ " " ++ show var) else "") ++ "\n"
         ) $ zip (dataSet dp) [1, 2 ..])
 
     textView <- textViewNewWithBuffer textBuffer
@@ -307,7 +307,7 @@ splineAndSpectrum dp =
         Right _ -> True
 
 onlyAnalytic :: DataFilter
-onlyAnalytic = isAnalytic
+onlyAnalytic = TSA.Data.isAnalytic
 
 andFilter :: DataFilter -> DataFilter -> DataFilter
 andFilter filter1 filter2 = \dp -> filter1 dp && filter2 dp
@@ -401,6 +401,7 @@ addOrUpdateDataParams dp tabIndex update state =
                                                 graphData = (graphData graphParms) ++
                                                     [GraphDataParams {
                                                         graphDataParamsName = (dataName dp),
+                                                        graphDataParamsDesc = (dataDesc dp),
                                                         graphDataParamsColor = (0, 0, 0),
                                                         graphDataParamsPointType = GUI.Plot.Plus,
                                                         graphDataParamsPointSize = pointSize,
@@ -420,7 +421,7 @@ addDataParams dp tabIndex state = addOrUpdateDataParams dp tabIndex False state
 
 addOrUpdateSegmentedData :: [Either D.Data (Either S.Spline FS.Functions)] -> String -> Maybe (Int, Int) -> Bool -> State -> State
 addOrUpdateSegmentedData ds name tabIndex update state = 
-    addOrUpdateDataParams (createDataParams_ name (map (\d -> createSubDataParams__ d) ds)) tabIndex update state
+    addOrUpdateDataParams (TSA.Data.createDataParams_ name (map (\d -> TSA.Data.createSubDataParams__ d) ds)) tabIndex update state
 
 addSegmentedData :: [Either D.Data (Either S.Spline FS.Functions)] -> String -> Maybe (Int, Int) -> State -> State
 addSegmentedData ds name tabIndex = addOrUpdateSegmentedData ds name tabIndex False

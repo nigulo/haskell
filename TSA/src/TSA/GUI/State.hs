@@ -56,6 +56,7 @@ import Utils.Misc
 
 data GraphDataParams = GraphDataParams {
     graphDataParamsName :: String, -- references DataParams.dataName
+    graphDataParamsDesc :: String,
     graphDataParamsColor :: (Word16, Word16, Word16),
     graphDataParamsPointType :: PlotPointType,
     graphDataParamsPointSize :: Double,
@@ -77,6 +78,7 @@ convertLegacyPointType 7 = Impulse
 instance Xml.XmlElement GraphDataParams where
     toElement params = Xml.element "graphdataparams"
         [("dataname", graphDataParamsName params), 
+         ("datadesc", graphDataParamsDesc params), 
          ("color", show (graphDataParamsColor params)), 
          ("pointtype", show (graphDataParamsPointType params)),
          ("pointsize", show (graphDataParamsPointSize params)),
@@ -89,6 +91,9 @@ instance Xml.XmlElement GraphDataParams where
     fromElement e =
         GraphDataParams {
             graphDataParamsName = Xml.attrValue e "dataname",
+            graphDataParamsDesc = case Xml.maybeAttrValue e "datadesc" of
+                Just desc -> desc
+                Nothing -> "",
             graphDataParamsColor = read $ Xml.attrValue e "color",
             graphDataParamsPointType =
                 let
