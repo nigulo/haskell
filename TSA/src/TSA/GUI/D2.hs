@@ -133,7 +133,7 @@ d2 stateRef dataParams periodStart periodEnd minCorrLen maxCorrLen methodNo prec
     tEnv <- taskEnv stateRef
     let
         Left dat = subData (head (dataSet dataParams))
-    dispersions <- calcDispersions dat (1 / periodEnd) (1 / periodStart)  minCorrLen maxCorrLen (if methodNo == 0 then Box else Gauss) precision name normalize deltaPhi tEnv
+    dispersions <- calcDispersions dat (1 / periodEnd) (1 / periodStart) minCorrLen maxCorrLen (if methodNo == 0 then Box else Gauss) precision name normalize deltaPhi tEnv
     let 
         graphTabParms = (graphTabs state) !! currentGraphTab
         selectedGraph = graphTabSelection graphTabParms

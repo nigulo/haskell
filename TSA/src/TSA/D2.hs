@@ -82,7 +82,7 @@ calcDispersions' bins freqStart freqEnd minCorrLen maxCorrLen method precision n
         dispFunc corrLen _ = 
             do 
                 let
-                    disps = map (d2 method bins corrLen df) freqs 
+                    disps = map (\freq -> d2 method bins corrLen freq df) freqs 
                     normalizedDisps =  
                         if normalize
                             then
