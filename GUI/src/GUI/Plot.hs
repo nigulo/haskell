@@ -880,10 +880,11 @@ drawUnits plotSettings ((drawXMinorUnits, drawYMinorUnits), (drawXMajorUnits, dr
         setLineSettings (0, 0, 0) lineWidth
         setFontSize $ ((min (width * 3) (height * 4)) / 160)
         let 
-            minXUnit = minimum [(minimum xMinorUnits), (minimum xMajorUnits)]
-            minYUnit = minimum [(minimum yMinorUnits), (minimum yMajorUnits)]
-            maxXUnit = maximum [(maximum xMinorUnits), (maximum xMajorUnits)]
-            maxYUnit = maximum [(maximum yMinorUnits), (maximum yMajorUnits)]
+            clip = False -- whether to clip graph boundaries to ticks
+            minXUnit = if clip then minimum [(minimum xMinorUnits), (minimum xMajorUnits)] else plotAreaLeft (plotArea plotSettings)
+            minYUnit = if clip then minimum [(minimum yMinorUnits), (minimum yMajorUnits)] else plotAreaBottom (plotArea plotSettings)
+            maxXUnit = if clip then maximum [(maximum xMinorUnits), (maximum xMajorUnits)] else plotAreaRight (plotArea plotSettings)
+            maxYUnit = if clip then maximum [(maximum yMinorUnits), (maximum yMajorUnits)] else plotAreaTop (plotArea plotSettings)
             drawUnits2 :: Bool -> [Double] -> Double -> Bool -> Render ()
             drawUnits2 xy units lineLength drawLabel =
                 do
@@ -920,8 +921,8 @@ drawUnits plotSettings ((drawXMinorUnits, drawYMinorUnits), (drawXMajorUnits, dr
         if drawYMinorUnits then drawUnits2 False yMinorUnits (majorTickSize / 2) False else return ()
         if drawYMajorUnits then drawUnits2 False yMajorUnits majorTickSize True else return ()
         let
-            minZUnit = minimum [(minimum zMinorUnits), (minimum zMajorUnits)]
-            maxZUnit = maximum [(maximum zMinorUnits), (maximum zMajorUnits)]
+            minZUnit = if clip then minimum [(minimum zMinorUnits), (minimum zMajorUnits)] else plotAreaBack (plotArea plotSettings)
+            maxZUnit = if clip then maximum [(maximum zMinorUnits), (maximum zMajorUnits)] else plotAreaFront (plotArea plotSettings)
             (screenXMin, screenYMin, screenZMin) = toScreenCoords scrArea (plotArea plotSettings) (minXUnit, minYUnit, minZUnit)
             (screenXMax, screenYMax, screenZMax) = toScreenCoords scrArea (plotArea plotSettings) (maxXUnit, maxYUnit, maxZUnit)
         setSourceRGB 0 0 0
