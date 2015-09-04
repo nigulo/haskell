@@ -865,7 +865,7 @@ drawUnits ::
                  ([Double], [Double], [Double]), -- ^ x, y and z minor units
                  ([Double], [Double], [Double])  -- ^ x, y and z major units
              ) -> Render ()
-drawUnits plotSettings ((drawXMinUnits, drawYMinUnits), (drawXMaxUnits, drawYMaxUnits), (xMinUnits, yMinUnits, zMinUnits), (xMaxUnits, yMaxUnits, zMaxUnits)) = 
+drawUnits plotSettings ((drawXMinorUnits, drawYMinorUnits), (drawXMajorUnits, drawYMajorUnits), (xMinorUnits, yMinorUnits, zMinorUnits), (xMajorUnits, yMajorUnits, zMajorUnits)) = 
     do
         let
             scrArea = screenArea plotSettings
@@ -880,63 +880,73 @@ drawUnits plotSettings ((drawXMinUnits, drawYMinUnits), (drawXMaxUnits, drawYMax
         setLineSettings (0, 0, 0) lineWidth
         setFontSize $ ((min (width * 3) (height * 4)) / 160)
         let 
-            minXUnit = minimum [(minimum xMinUnits), (minimum xMaxUnits)]
-            minYUnit = minimum [(minimum yMinUnits), (minimum yMaxUnits)]
+            minXUnit = minimum [(minimum xMinorUnits), (minimum xMajorUnits)]
+            minYUnit = minimum [(minimum yMinorUnits), (minimum yMajorUnits)]
+            maxXUnit = maximum [(maximum xMinorUnits), (maximum xMajorUnits)]
+            maxYUnit = maximum [(maximum yMinorUnits), (maximum yMajorUnits)]
             drawUnits2 :: Bool -> [Double] -> Double -> Bool -> Render ()
             drawUnits2 xy units lineLength drawLabel =
                 do
                     let 
-                        coords = 
+                        -- min and max prefixes denote either lower or upper instance of x-axis and left or right instance of y-axis 
+                        (minCoords, maxCoords) = 
                             if xy then
-                                map (\unit -> (unit, minYUnit, 0)) units
+                                unzip $ map (\unit -> ((unit, minYUnit, 0), (unit, maxYUnit, 0))) units
                             else
-                                map (\unit -> (minXUnit, unit, 0)) units
+                                unzip $ map (\unit -> ((minXUnit, unit, 0), (maxXUnit, unit, 0))) units
                         -- | Screen coords of unit line start points
-                        screenCoords = map (toScreenCoords scrArea (plotArea plotSettings)) coords
+                        screenMinCoords = map (toScreenCoords scrArea (plotArea plotSettings)) minCoords
+                        screenMaxCoords = map (toScreenCoords scrArea (plotArea plotSettings)) maxCoords
                         -- | Screen coords of unit line end points
-                        lineEndCoords = 
+                        (lineEndMinCoords, lineEndMaxCoords) = 
                             if xy then
-                                map (\(x, y, _) -> (x, y - (lineLength))) screenCoords
+                                (map (\(x, y, _) -> (x, y - (lineLength))) screenMinCoords, map (\(x, y, _) -> (x, y + (lineLength))) screenMaxCoords) 
                             else
-                                map (\(x, y, _) -> (x + (lineLength), y)) screenCoords
-                    mapM_ (\((x1, y1, _), (x2, y2)) -> do moveTo x1 y1; lineTo x2 y2) $ zip screenCoords lineEndCoords
+                                (map (\(x, y, _) -> (x + (lineLength), y)) screenMinCoords, map (\(x, y, _) -> (x - (lineLength), y)) screenMaxCoords)
+                    zipWithM_ (\(x1, y1, _) (x2, y2) -> do moveTo x1 y1; lineTo x2 y2) screenMinCoords lineEndMinCoords
+                    zipWithM_ (\(x1, y1, _) (x2, y2) -> do moveTo x1 y1; lineTo x2 y2) screenMaxCoords lineEndMaxCoords
                     stroke
                     if drawLabel
                         then
                             do
-                                labels <- mapM (unitLabel (width, height) xy (not xy)) (zip coords screenCoords)
+                                labels <- mapM (unitLabel (width, height) xy (not xy)) (zip minCoords screenMinCoords)
                                 setSourceRGB 0 0 0
                                 mapM_ (\(x, y, label) -> do moveTo x y; showText label) labels
                         else return ()
-        if drawXMinUnits then drawUnits2 True xMinUnits (height / 200) False else return ()
-        if drawXMaxUnits then drawUnits2 True xMaxUnits (height / 50) True else return ()
-        if drawYMinUnits then drawUnits2 False yMinUnits (width / 267) False else return ()
-        if drawYMaxUnits then drawUnits2 False yMaxUnits (width / 67) True else return ()
+            -- draw ticks and units
+            majorTickSize = (min (width * 3) (height * 4)) / 200
+        if drawXMinorUnits then drawUnits2 True xMinorUnits (majorTickSize / 2) False else return ()
+        if drawXMajorUnits then drawUnits2 True xMajorUnits majorTickSize True else return ()
+        if drawYMinorUnits then drawUnits2 False yMinorUnits (majorTickSize / 2) False else return ()
+        if drawYMajorUnits then drawUnits2 False yMajorUnits majorTickSize True else return ()
         let
-            maxXUnit = maximum [(maximum xMinUnits), (maximum xMaxUnits)]
-            maxYUnit = maximum [(maximum yMinUnits), (maximum yMaxUnits)]
-            minZUnit = minimum [(minimum zMinUnits), (minimum zMaxUnits)]
-            maxZUnit = maximum [(maximum zMinUnits), (maximum zMaxUnits)]
+            minZUnit = minimum [(minimum zMinorUnits), (minimum zMajorUnits)]
+            maxZUnit = maximum [(maximum zMinorUnits), (maximum zMajorUnits)]
             (screenXMin, screenYMin, screenZMin) = toScreenCoords scrArea (plotArea plotSettings) (minXUnit, minYUnit, minZUnit)
             (screenXMax, screenYMax, screenZMax) = toScreenCoords scrArea (plotArea plotSettings) (maxXUnit, maxYUnit, maxZUnit)
         setSourceRGB 0 0 0
-        if drawXMinUnits || drawXMaxUnits 
+        -- draw axis
+        if drawXMinorUnits || drawXMajorUnits 
             then
                 do
                     moveTo screenXMin screenYMin
                     lineTo screenXMax screenYMin
+                    moveTo screenXMin screenYMax
+                    lineTo screenXMax screenYMax
             else
                 return ()
-        if drawYMinUnits || drawYMaxUnits
+        if drawYMinorUnits || drawYMajorUnits
             then
                 do 
                     moveTo screenXMin screenYMin
                     lineTo screenXMin screenYMax
+                    moveTo screenXMax screenYMin
+                    lineTo screenXMax screenYMax
             else
                 return ()
             
         stroke
-        drawColorBox (scrRight - width / 10, scrTop + height / 5) (scrRight - width / 15, scrBottom - height / 5) zMinUnits zMaxUnits lineWidth (width, height)
+        drawColorBox (scrRight - width / 10, scrTop + height / 5) (scrRight - width / 15, scrBottom - height / 5) zMinorUnits zMajorUnits lineWidth (width, height)
         stroke
 
 drawColorBox :: (Double, Double) -> (Double, Double) -> [Double] -> [Double] -> Double -> (Double, Double) -> Render ()
@@ -1042,22 +1052,22 @@ getUnits plotSettings =
                 Just unit -> [x | x <- [startValue, startValue + unit .. endValue]] where
                     startValue = unit * (fromIntegral (ceiling (minValue / unit)))
                     endValue = unit * (fromIntegral (floor (maxValue / unit)))
-        drawXMinUnits = case plotMinorXUnit plotSettings of 
+        drawXMinorUnits = case plotMinorXUnit plotSettings of 
             Left False -> False
             otherwise -> True
-        drawYMinUnits = case plotMinorYUnit plotSettings of 
+        drawYMinorUnits = case plotMinorYUnit plotSettings of 
             Left False -> False
             otherwise -> True
-        drawXMaxUnits = case plotMajorXUnit plotSettings of 
+        drawXMajorUnits = case plotMajorXUnit plotSettings of 
             Left False -> False
             otherwise -> True
-        drawYMaxUnits = case plotMajorYUnit plotSettings of 
+        drawYMajorUnits = case plotMajorYUnit plotSettings of 
             Left False -> False
             otherwise -> True
     in
         (
-            (drawXMinUnits, drawYMinUnits),
-            (drawXMaxUnits, drawYMaxUnits),
+            (drawXMinorUnits, drawYMinorUnits),
+            (drawXMajorUnits, drawYMajorUnits),
             (units xLeft xRight xMinUnit,
             units (plotAreaBottom area) (plotAreaTop area) yMinUnit,
             units (plotAreaBack area) (plotAreaFront area) zMinUnit),
