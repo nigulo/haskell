@@ -172,9 +172,11 @@ calcAnalyticSignal imfDat modeNo freq = do
         (enMean, enVar) = Sample.meanVarianceUnb $ V.map (^2) $ D.ys amplitude
         logText = show modeNo ++ ": " ++ show freq ++
              " " ++ show enMean ++ " " ++  show (sqrt enVar)
-    liftIO $ storeData imfDat (logFilePrefix env ++ "_imf_" ++ show modeNo)
-    liftIO $ storeData frequency (logFilePrefix env ++ "_freq_" ++ show modeNo)
-    liftIO $ storeData amplitude (logFilePrefix env ++ "_amp_" ++ show modeNo)
+    liftIO $ 
+        do
+            storeData imfDat (logFilePrefix env ++ "_imf_" ++ show modeNo)
+            storeData frequency (logFilePrefix env ++ "_freq_" ++ show modeNo)
+            storeData amplitude (logFilePrefix env ++ "_amp_" ++ show modeNo)
     return logText
 
 imf :: Int -> Data -> Double
