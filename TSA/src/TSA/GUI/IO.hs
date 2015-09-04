@@ -28,6 +28,7 @@ import Data.Maybe
 import Control.Concurrent.MVar
 import System.IO
 import System.Random
+import System.FilePath
 
 import Ephem.Types
 
@@ -67,7 +68,7 @@ loadAsciiDialog stateRef = do
                 let 
                     fileName = take (length (fromJust file) - 4) (fromJust file)
                     shortName = 
-                        let indices = (elemIndices '\\' fileName)
+                        let indices = (elemIndices (System.FilePath.pathSeparator) fileName)
                         in if length indices <= 0 then fileName else drop (last indices + 1) fileName
                     fileLines = filter (\line -> trim line /= "") $ lines fileContents
                 widgetDestroy dialog
@@ -110,7 +111,7 @@ dataFormatDialog stateRef callback lines = do
     addWidgetToBox Nothing delimitersLabel PackNatural page1 
     spaceCheck <- checkButtonNew >>= \button -> toggleButtonSetActive button True >> return button
     addWidgetToBox (Just "Space: ") spaceCheck PackNatural page1 
-    tabCheck <- checkButtonNew
+    tabCheck <- checkButtonNew >>= \button -> toggleButtonSetActive button True >> return button
     addWidgetToBox (Just "Tab: ") tabCheck PackNatural page1
     commaCheck <- checkButtonNew
     addWidgetToBox (Just "Comma: ") commaCheck PackNatural page1
@@ -184,7 +185,7 @@ dataFormatDialog stateRef callback lines = do
             ) (zip [0, 1 ..] (map (take numCols) first5Rows)) 
         typeCombos <- mapM (\col -> do
                 typeCombo <- createComboBox ["-", "General", "JD", "Year", "Month", "Day", "YYYY-MM-DD", "Error"]
-                comboBoxSetActive typeCombo 0
+                comboBoxSetActive typeCombo 1
                 tableAttachDefaults table typeCombo col (col + 1) (numRows) (numRows + 1)
                 return typeCombo
             ) [0 .. numCols - 1] 
