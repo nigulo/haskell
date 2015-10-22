@@ -11,9 +11,16 @@ import qualified Data.ByteString as B
 import Codec.Binary.UTF8.String as UTF8
 import qualified Data.Vector.Unboxed as V
 import Data.Char
-import Utils.List
 
 import Ephem.Types
+
+--------------------------------------------------------------------------------
+-- | Splits the list into sublists using given delimiter
+splitBy :: (Eq a) => a -> [a] -> [[a]]
+splitBy delimiter xs = 
+    case List.elemIndex delimiter xs of
+        Just i -> (take i xs):(splitBy delimiter (drop (i + 1) xs))
+        Nothing -> [xs]
 
 readDate :: String -> String -> Date
 readDate "ymd" str =

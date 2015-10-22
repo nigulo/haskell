@@ -43,7 +43,6 @@ executable Converter
                    system-filepath -any,
                    bytestring -any,
                    utf8-string -any,
-                   Utils -any,
                    vector -any
   hs-source-dirs:  src
   ghc-options:     -Wall -rtsopts
