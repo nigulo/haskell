@@ -5,7 +5,9 @@ module Utils.Misc (
         nubVector, sortVectorBy, sortVector, 
         groupVectorBy, 
         groupVector,
-        segmentVector) where
+        segmentVector,
+        applyToVectorWithRandomGen
+    ) where
 
 import Debug.Trace
 import System.Random
@@ -94,3 +96,14 @@ segmentVector f v =
                             (v21s, v22s) = segmentVector f v2 
                         in
                             (v1:v21s, v22s)
+
+applyToVectorWithRandomGen :: (V.Unbox a, V.Unbox b, RandomGen g) => (a -> g -> b) -> V.Vector a -> g -> V.Vector b
+applyToVectorWithRandomGen fn v g = 
+    if (V.null v) 
+        then 
+            V.empty
+        else
+            let
+                (g1, g2) = System.Random.split g
+            in
+                fn (V.head v) g1 `V.cons` applyToVectorWithRandomGen fn (V.tail v) g2 
