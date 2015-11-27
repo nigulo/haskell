@@ -27,6 +27,7 @@ import System.Random.MWC
 
 findCorrelation :: TaskEnv -> DataParams -> DataParams -> Double -> [Double] -> String -> IO [Data]
 findCorrelation taskEnv dataParams1 dataParams2' precision shifts name = do
+    g <- getStdGen 
     let 
         getRange dataParams =
             case subData $ head $ dataSet dataParams of
@@ -36,7 +37,7 @@ findCorrelation taskEnv dataParams1 dataParams2' precision shifts name = do
         shiftData dataParams 0 = return dataParams
         shiftData dataParams shift = do
             let 
-                func i j d _ = return $ constantOp (F.add) d shift False
+                func i j d _ = return $ constantOp (F.add) d shift False g
             applyToData1 func dataParams "" taskEnv
         (xMin1, xMax1) = getRange dataParams1
         mapFunc shift puFunc = do 
@@ -65,8 +66,8 @@ findCorrelation taskEnv dataParams1 dataParams2' precision shifts name = do
                                     let
                                         step =  (xMax - xMin) / precision
                                         xs = map (\x -> [x]) (init [xMin, xMin + step .. xMax] ++ [xMax])
-                                        (_, ys1) = unzip $ U.getValues xs (subData $ head $ dataSet dataParams1)
-                                        (_, ys2) = unzip $ U.getValues xs (subData $ head $ dataSet dataParams2)
+                                        (_, ys1) = unzip $ U.getValues xs (subData $ head $ dataSet dataParams1) g
+                                        (_, ys2) = unzip $ U.getValues xs (subData $ head $ dataSet dataParams2) g
                                     in
                                         (V.fromList ys1, V.fromList ys2)
                         (alpha, beta, r2) = linearRegressionRSqr ys1 ys2

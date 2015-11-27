@@ -124,7 +124,7 @@ calc args = do
                 then
                     map (\(freq, dat) ->
                             let 
-                                Left datMean = U.constantOp (F.mult) (Left dat) (1 / count) True
+                                Left datMean = U.constantOp (F.mult) (Left dat) (1 / count) True g
                             in 
                                 (freq / count, datMean)
                         ) imfSums

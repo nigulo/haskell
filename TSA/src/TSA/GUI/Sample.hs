@@ -39,7 +39,7 @@ sampleDialog stateRef = do
         parms = sampleParams (params state)
         commonParams = sampleCommonParams parms
     
-    g <- getStdGen 
+    g <- newStdGen 
     (currentGraphTab, _) <- getCurrentGraphTab state
 
     dialog <- dialogWithTitle state "Sample data set"
@@ -86,8 +86,6 @@ sampleDialog stateRef = do
                 dataType <- comboBoxGetActive dataTypeCombo
                 widgetDestroy dialog
 
-                g <- getStdGen 
-
                 let
                     graphTabParms = (graphTabs state) !! currentGraphTab
                     selectedGraph = graphTabSelection graphTabParms
@@ -117,7 +115,7 @@ sampleDialog stateRef = do
                                     xMax = maximum xMaxs
                                 in 
                                     sequence $ zipWith (\xMin xMax -> getXs xMin xMax) xMin xMax
-                samples <- calcConcurrently_ (\d -> return (U.getValues xs d)) (map (\sdp -> subData sdp) (dataSet selectedData))
+                samples <- calcConcurrently_ (\d -> return (U.getValues xs d g)) (map (\sdp -> subData sdp) (dataSet selectedData))
                 let
                     dataCreateFunc sample = if dataType == 0 
                         then 

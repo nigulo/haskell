@@ -544,7 +544,7 @@ modifyDialog stateRef = do
                                                             Left dat = d 
                                                             (maxVal, minVal) = if (opType == Y) then (D.yMax dat, D.yMin dat) else (D.xMax1 dat, D.xMin1 dat)
                                                             f = F.function ("(x-" ++ show minVal ++")*" ++ show constant ++ "/(" ++ show (maxVal - minVal) ++ ")")
-                                                        return $ constantOp f d 0 (opType == Y)
+                                                        return $ constantOp f d 0 (opType == Y) g
                                             result <- applyToData1 func selectedData1 name tEnv
                                             modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                                         else
@@ -555,7 +555,7 @@ modifyDialog stateRef = do
                                             maybeFunc <- getFunction dialog f 1
                                             case maybeFunc of
                                                 Just func -> do
-                                                    result <- applyToData1 (\i j d _ -> return (constantOp func d 0 True)) selectedData1 name tEnv
+                                                    result <- applyToData1 (\i j d _ -> return (constantOp func d 0 True g)) selectedData1 name tEnv
                                                     modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                                                 Nothing -> return ()
                                         else
@@ -632,7 +632,7 @@ modifyDialog stateRef = do
                                         else
                                             return ()
                                     otherwise -> do
-                                        let func i j d _ = return $ constantOp (getModifyFunc op) d constant (opType == Y)
+                                        let func i j d _ = return $ constantOp (getModifyFunc op) d constant (opType == Y) g
                                         result <- applyToData1 func selectedData1 name tEnv
                                         modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                 mapM_ modify (case selectedData1 of 

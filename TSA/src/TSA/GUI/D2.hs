@@ -30,7 +30,6 @@ import Control.Concurrent.MVar
 import Control.Concurrent
 import System.CPUTime
 import System.IO
-import Math.Expression
 import qualified Math.Function as F
 
 import System.Random

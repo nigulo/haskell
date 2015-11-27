@@ -28,7 +28,7 @@ import Control.Concurrent.MVar
 import Control.Concurrent
 import System.CPUTime
 import System.IO
-import Math.Expression
+import Math.Expression hiding (Gauss)
 import qualified Math.Function as F
 
 import qualified Data.Vector.Unboxed as V
