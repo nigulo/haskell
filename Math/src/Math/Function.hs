@@ -68,7 +68,7 @@ data Function a =
 
 class Fn f where
     getValue :: (RandomGen g) => [Double] -> [[Double] -> Double] -> g -> f -> Double
-    getValue_ :: [Double] -> f -> Double
+    getValue_ :: (RandomGen g) => [Double] -> g -> f -> Double
     constantOp :: Function Double -> f -> Double -> f
     binaryOp :: Function Double -> f -> f -> f
 
@@ -126,7 +126,8 @@ instance Fn (Function Double) where
         in            
             E.calcDouble (expr func) (M.fromList (varNamesAndValues ++ defVarNamesAndValues)) (M.fromList (opNamesAndDefs ++ defOpNamesAndDefs)) g
         
-    getValue_ xs = getValue xs [] (mkStdGen 1)
+    getValue_ xs g = getValue xs [] g
+    
     binaryOp func func1 func2 = 
         let 
             [x, y] = E.varNames (expr func)

@@ -62,7 +62,7 @@ instance Xml.XmlElement UnaryOp where
     fromElement e = read $ head (Xml.attrValues e "name")    
     
 data BinaryOp = Comma | Equals | NotEquals | Lower | Greather | LowerEquals | GreatherEquals |
-    Plus | Minus | Mul | Div | Pow | LogBase | Min | Max | Rnd | Normal | Sum | Product | If |
+    Plus | Minus | Mul | Div | Pow | LogBase | Min | Max | Uniform | Normal | Gauss | Sum | Product | If |
     BinaryOp String deriving (Eq)
 
 instance Xml.XmlElement BinaryOp where
@@ -73,7 +73,7 @@ instance Xml.XmlElement BinaryOp where
 -- Operator list in precedence order
 opList = [
     ",", "==", "!=", "<=", ">=", "<", ">", "+", "-", "*", "/", "^", "!", 
-    "logbase", "min", "max", "rnd", "normal", "sum", "product", "if", 
+    "logbase", "min", "max", "uniform", "normal", "gauss", "sum", "product", "if", 
     "sqrt", "asinh", "acosh", "atanh", "asin", "acos", "atan", "sinh", "cosh", "tanh", 
     "sin", "cos", "tan", "log", "exp", "abs", "sgn", "round", "trunc", "floor", "ceil"]
 
@@ -159,8 +159,9 @@ instance Show (BinaryOp) where
     show LogBase = "logbase"
     show Min = "min"
     show Max = "max"
-    show Rnd = "rnd"
+    show Uniform = "uniform"
     show Normal = "normal"
+    show Gauss = "gauss"
     show Sum = "sum"
     show Product = "product"
     show If = "if"
@@ -184,8 +185,9 @@ instance Read (BinaryOp) where
             "logbase" -> [(LogBase, "")]
             "min" -> [(Min, "")]
             "max" -> [(Max, "")]
-            "rnd" -> [(Rnd, "")]
+            "uniform" -> [(Uniform, "")]
             "normal" -> [(Normal, "")]
+            "gauss" -> [(Gauss, "")]
             "sum" -> [(Sum, "")]
             "product" -> [(Product, "")]
             "if" -> [(If, "")]
@@ -336,7 +338,7 @@ calc' (BinaryExpression (Div, expr1, expr2)) m1 m2 g calc = (calc expr1 m1 m2 g)
 calc' (BinaryExpression (Pow, expr1, expr2)) m1 m2 g calc = (calc expr1 m1 m2 g) ** (calc expr2 m1 m2 g)
 -- returns the logarithm of the second argument in the base of the first one
 calc' (BinaryExpression (LogBase, expr1, expr2)) m1 m2 g calc = logBase (calc expr1 m1 m2 g) (calc expr2 m1 m2 g)
-calc' (BinaryExpression (Normal, expr, BinaryExpression(Comma, meanExpr, sigmaExpr))) m1 m2 g calc =
+calc' (BinaryExpression (Gauss, expr, BinaryExpression(Comma, meanExpr, sigmaExpr))) m1 m2 g calc =
     let 
         x = calc expr m1 m2 g
         mean = calc meanExpr m1 m2 g
@@ -391,7 +393,7 @@ calcDouble (BinaryExpression (LowerEquals, expr1, expr2)) m1 m2 g = if (calcDoub
 calcDouble (BinaryExpression (GreatherEquals, expr1, expr2)) m1 m2 g = if (calcDouble expr1 m1 m2 g) >= (calcDouble expr2 m1 m2 g) then 1 else 0
 calcDouble (BinaryExpression (Min, expr1, expr2)) m1 m2 g = min (calcDouble expr1 m1 m2 g) (calcDouble expr2 m1 m2 g)
 calcDouble (BinaryExpression (Max, expr1, expr2)) m1 m2 g = max (calcDouble expr1 m1 m2 g) (calcDouble expr2 m1 m2 g)
-calcDouble (BinaryExpression (Rnd, expr1, expr2)) m1 m2 g = 
+calcDouble (BinaryExpression (Uniform, expr1, expr2)) m1 m2 g = 
     lVal + r * (rVal - lVal) where
         (r, g') = randomR (0, 1) g
         (g1, g2) = System.Random.split g'
@@ -399,6 +401,13 @@ calcDouble (BinaryExpression (Rnd, expr1, expr2)) m1 m2 g =
         rVal' = calcDouble expr2 m1 m2 g2
         lVal = min lVal' rVal'
         rVal = max lVal' rVal'
+calcDouble (BinaryExpression (Normal, meanExpr, sigmaExpr)) m1 m2 g = 
+    sqrt (-2 * log u1) * cos (2 * pi * u2)  * sigmaVal + meanVal where
+        (u1, g0) = randomR (0, 1) g
+        (u2, g1) = randomR (0, 1) g0
+        (g2, g3) = System.Random.split g1
+        meanVal = calcDouble meanExpr m1 m2 g2
+        sigmaVal = calcDouble sigmaExpr m1 m2 g3
 calcDouble (BinaryExpression (Sum, Variable indexName, BinaryExpression(Comma, iMinExpr, BinaryExpression(Comma, iMaxExpr, BinaryExpression(Comma, stepExpr, expr))))) m1 m2 g =
     let 
         iMin = calcDouble iMinExpr m1 m2 g
@@ -456,8 +465,8 @@ instance (Show a) => Show (Expression a) where
     show (VoidExpression (VoidOp op)) = op ++ "()"
     show (UnaryExpression (op, expr)) = (show op) ++ "(" ++ (show expr) ++ ")"
             
-    show (BinaryExpression (Normal, expr1, BinaryExpression(Comma, expr2, expr3))) =
-            "(normal(" ++ (show expr1) ++ "," ++ (show expr2) ++ "," ++ (show expr3) ++ "))"
+    show (BinaryExpression (Gauss, expr1, BinaryExpression(Comma, expr2, expr3))) =
+            "(gauss(" ++ (show expr1) ++ "," ++ (show expr2) ++ "," ++ (show expr3) ++ "))"
     show (BinaryExpression (Sum, Variable indexName, BinaryExpression(Comma, iMinExpr, BinaryExpression(Comma, iMaxExpr, BinaryExpression(Comma, stepExpr, expr))))) =
             "(sum(" ++ indexName ++ "," ++ (show iMinExpr) ++ "," ++ (show iMaxExpr) ++ "," ++ (show stepExpr) ++ "," ++ (show expr) ++ "))"
     show (BinaryExpression (Product, Variable indexName, BinaryExpression(Comma, iMinExpr, BinaryExpression(Comma, iMaxExpr, BinaryExpression(Comma, stepExpr, expr))))) =
@@ -466,7 +475,8 @@ instance (Show a) => Show (Expression a) where
             "(if(" ++ (show condition) ++ "," ++ (show trueExpr) ++ "," ++ (show falseExpr) ++ "))"
     show (BinaryExpression (op@Min, expr1, expr2)) = "(" ++ (show op) ++ "(" ++ (show expr1) ++ "," ++ (show expr2) ++ "))"
     show (BinaryExpression (op@Max, expr1, expr2)) = "(" ++ (show op) ++ "(" ++ (show expr1) ++ "," ++ (show expr2) ++ "))"
-    show (BinaryExpression (op@Rnd, expr1, expr2)) = "(" ++ (show op) ++ "(" ++ (show expr1) ++ "," ++ (show expr2) ++ "))"
+    show (BinaryExpression (op@Uniform, expr1, expr2)) = "(" ++ (show op) ++ "(" ++ (show expr1) ++ "," ++ (show expr2) ++ "))"
+    show (BinaryExpression (op@Normal, expr1, expr2)) = "(" ++ (show op) ++ "(" ++ (show expr1) ++ "," ++ (show expr2) ++ "))"
     show (BinaryExpression (BinaryOp op , expr1, expr2)) = 
         let
             vars = show expr1:",":showAll expr2 where
