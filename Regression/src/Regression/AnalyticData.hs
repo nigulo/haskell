@@ -34,7 +34,7 @@ newtype (F.Fn d) => AnalyticData d = AnalyticData [([Double] {--xMins--}, [Doubl
 
 instance (F.Fn d) => F.Fn (AnalyticData d) where
     getValue x _ g ad = head $ op (\x g d -> F.getValue x [] g d) [x] g ad
-    getValue_ xs = F.getValue xs [] (mkStdGen 1) 
+    getValue_ xs g = F.getValue xs [] g 
 
     constantOp op (AnalyticData ds) k = 
         let (xMins, xMaxs, fs) = unzip3 ds

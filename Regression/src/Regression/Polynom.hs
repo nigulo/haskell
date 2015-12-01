@@ -69,16 +69,16 @@ value x (coefs, f, d) =
 instance F.Fn Polynom where
 
     -- | Returns the polynom's value at the given coordinate
-    getValue (x:[]) _ _ (Polynom (pol@(_, Just f, _):[])) =
-        (value x pol) * (F.getValue_ [x] f) 
+    getValue (x:[]) _ g (Polynom (pol@(_, Just f, _):[])) =
+        (value x pol) * (F.getValue_ [x] g f) 
     getValue (x:[]) _ _ (Polynom (pol@(_, Nothing, _):[])) = value x pol
-    getValue (x:[]) _ _ (Polynom (p:ps)) = 
-        (F.getValue_ [x] (Polynom [p])) + (F.getValue_ [x] (Polynom ps))
+    getValue (x:[]) _ g (Polynom (p:ps)) = 
+        (F.getValue_ [x] g (Polynom [p])) + (F.getValue_ [x] g (Polynom ps))
 
-    getValue_ xs = F.getValue xs [] (mkStdGen 1) 
+    getValue_ xs g = F.getValue xs [] g 
 
     constantOp op (Polynom [(coefs, f, d)]) k = 
-        Polynom [(map (\(i, val) -> (i, F.getValue_ [val, k] op)) coefs, f, d)]
+        Polynom [(map (\(i, val) -> (i, F.getValue_ [val, k] (mkStdGen 1234) op)) coefs, f, d)]
     constantOp op (Polynom (p:ps)) k = 
         let 
             Polynom p1 = F.constantOp op (Polynom [p]) k
@@ -95,7 +95,7 @@ instance F.Fn Polynom where
     --   the function `product` function under this module instead.
     binaryOp op pol1@(Polynom [(coefs1, f1, d1)]) pol2@(Polynom [(coefs2, f2, d2)]) = 
         let indices = (fst (unzip coefs1)) `union` (fst (unzip coefs2));
-            f i = setCoef (i, F.getValue_ [getCoef i pol1, getCoef i pol2] op)
+            f i = setCoef (i, F.getValue_ [getCoef i pol1, getCoef i pol2] (mkStdGen 1234) op)
         in
             List.foldl' (\pol i -> f i pol) (Polynom [([], getModulator pol1, getModulatorDeriv pol1)]) indices
     binaryOp op pol1@(Polynom (p1:ps1)) pol2@(Polynom (p2:ps2)) = 
@@ -319,14 +319,14 @@ getDerivative i x pol@(Polynom ((coefs, f, d):[])) =
         func j = 
                 if j == 0 then
                 case f of
-                        Just f -> F.getValue_ [x] f
+                        Just f -> F.getValue_ [x] (mkStdGen 1234) f
                         Nothing -> 1            
                 else
                 case d of
                         Just d ->
                             case F.varNames d of
-                                ["x", "i"] -> F.getValue_ [x, fromIntegral j] d
-                                otherwise -> F.getValue_ [fromIntegral j, x] d
+                                ["x", "i"] -> F.getValue_ [x, fromIntegral j] (mkStdGen 1234) d
+                                otherwise -> F.getValue_ [fromIntegral j, x] (mkStdGen 1234) d
                         Nothing -> 0
 
     in {-trace ("dVal=" ++ show dVal)-} dVal
@@ -337,7 +337,7 @@ getValues :: Double -> Polynom -> [[Double]]
 getValues x p@(Polynom ((coefs, f, d):[])) = 
     [map (\(coefIndex, coef) -> x ^ coefIndex * (getCoef coefIndex p) * funcVal) coefs] where
         funcVal = case f of
-            Just f -> F.getValue_ [x] f
+            Just f -> F.getValue_ [x] (mkStdGen 1234) f
             Nothing -> 1
 getValues x (Polynom (p:ps)) = 
     values:getValues x (Polynom ps) where
@@ -352,16 +352,16 @@ getDerivatives i x p@(Polynom ((coefs, f, d):[])) =
             funcDeriv j = 
                 if j == 0 then
                     case f of
-                        Just f -> F.getValue_ [x] f
+                        Just f -> F.getValue_ [x] (mkStdGen 1234) f
                         Nothing -> 1            
                 else
                     case d of
                         Just d ->
                             case F.varNames d of
-                                [] -> F.getValue_ [] d
-                                ["x"] -> F.getValue_ [x] d
-                                ["x", "i"] -> F.getValue_ [x, fromIntegral j] d
-                                ["i", "x"] -> F.getValue_ [fromIntegral j, x] d
+                                [] -> F.getValue_ [] (mkStdGen 1234) d
+                                ["x"] -> F.getValue_ [x] (mkStdGen 1234) d
+                                ["x", "i"] -> F.getValue_ [x, fromIntegral j] (mkStdGen 1234) d
+                                ["i", "x"] -> F.getValue_ [fromIntegral j, x] (mkStdGen 1234) d
                         Nothing -> 0
         deriv j coefIndex =
             if coefIndex < j then 0

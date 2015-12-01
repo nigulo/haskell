@@ -36,7 +36,7 @@ import System.Random
 import System.Random.MWC
 
 binaryOp :: RandomGen g => F.Function Double -> Either Data (Either S.Spline FS.Functions) -> Either Data (Either S.Spline FS.Functions) -> Bool -> g -> Either Data (Either S.Spline FS.Functions)
-binaryOp op (Left d1) (Left d2) yOrx _ = 
+binaryOp op (Left d1) (Left d2) yOrx g = 
     let 
         xs2 = xs1 d2
         xs21 = V.filter (\x -> x >= V.minimum xs2 && x <= V.maximum xs2) (xs1 d1)
@@ -45,9 +45,9 @@ binaryOp op (Left d1) (Left d2) yOrx _ =
         vs = 
             if yOrx
             then
-                V.zipWith (\(x1, y1, w1) (_, y2, w2) -> (x1, F.getValue_ [y1, y2] op, w1 + w2)) (values1 d1') (values1 d2')
+                V.zipWith (\(x1, y1, w1) (_, y2, w2) -> (x1, F.getValue_ [y1, y2] g op, w1 + w2)) (values1 d1') (values1 d2')
             else
-                V.zipWith (\(x1, y1, w1) (x2, _, w2) -> (F.getValue_ [x1, x2] op, y1, w1)) (values1 d1') (values1 d2')
+                V.zipWith (\(x1, y1, w1) (x2, _, w2) -> (F.getValue_ [x1, x2] g op, y1, w1)) (values1 d1') (values1 d2')
     in
         case d1 of 
 --            Data _ -> Left $ data1 vs
@@ -79,20 +79,20 @@ binaryOp op (Right (Left s1)) (Right (Left s2)) _ g =
             then Right (Left (S.splineDiff s1 s2))
         else Right (Left (AD.AnalyticData [([0], [0], (P.unitPolynom 0))]))
 
-constantOp :: F.Function Double -> Either Data (Either S.Spline FS.Functions) -> Double -> Bool -> Either Data (Either S.Spline FS.Functions)
-constantOp op (Left d) k yOrx = 
+constantOp :: RandomGen g => F.Function Double -> Either Data (Either S.Spline FS.Functions) -> Double -> Bool -> g -> Either Data (Either S.Spline FS.Functions)
+constantOp op (Left d) k yOrx g = 
     let 
         vs = 
             if yOrx
-            then V.map (\(x, y, w) -> (x, F.getValue_ [y, k] op, w)) (values1 d)
-            else V.map (\(x, y, w) -> (F.getValue_ [x, k] op, y, w)) (values1 d)
+            then V.map (\(x, y, w) -> (x, F.getValue_ [y, k] g op, w)) (values1 d)
+            else V.map (\(x, y, w) -> (F.getValue_ [x, k] g op, y, w)) (values1 d)
     in
         case d of 
 --            Data _ -> Left $ data1 vs
 --            Spectrum _ -> Left $ spectrum1 vs
             Data2 _ -> Left $ data1 vs
             Spectrum2 _ -> Left $ spectrum1 vs
-constantOp op (Right s) k _ = 
+constantOp op (Right s) k _ _ = 
     case s of
         Left spline -> Right $ Left $ F.constantOp op spline k
         Right fs -> Right $ Right $ F.constantOp op fs k
@@ -150,33 +150,33 @@ sample2dAnalyticData s (num, size, count) g =
     in 
         D.data1' $ V.fromList vals
 
-getValues :: [[Double]] -> Either D.Data (Either S.Spline FS.Functions) -> [([Double], Double)]
-getValues xs (Left dat) = zip xs (D.interpolatedValues xs dat)
-getValues xs (Right (Left spline)) = 
+getValues :: RandomGen g => [[Double]] -> Either D.Data (Either S.Spline FS.Functions) -> g -> [([Double], Double)]
+getValues xs (Left dat) _ = zip xs (D.interpolatedValues xs dat)
+getValues xs (Right (Left spline)) g = 
     let
         filteredXs = filterXs spline xs
     in
-        zip filteredXs (map (\x -> F.getValue_ x spline) filteredXs)
-getValues xs (Right (Right fns)) = 
+        zip filteredXs (zipWith (\x g -> F.getValue_ x g spline) filteredXs (randomGens g))
+getValues xs (Right (Right fns)) g = 
     let
         filteredXs = filterXs fns xs
     in
-        zip filteredXs (map (\x -> F.getValue_ x fns) filteredXs)
+        zip filteredXs (zipWith (\x g -> F.getValue_ x g fns) filteredXs (randomGens g))
 
 filterXs ad = filter (\xs1 -> all (\(x1, xMin, xMax) -> x1 >= xMin && x1 <= xMax) (zip3 xs1 (AD.xMins ad) (AD.xMaxs ad)))
 
-getValues1 :: V.Vector Double -> Either D.Data (Either S.Spline FS.Functions) -> V.Vector (Double, Double)
-getValues1 xs (Left dat) = V.zip xs (D.interpolatedValues1 xs dat)
-getValues1 xs (Right (Left spline)) = 
+getValues1 :: RandomGen g => V.Vector Double -> Either D.Data (Either S.Spline FS.Functions) -> g -> V.Vector (Double, Double)
+getValues1 xs (Left dat) _ = V.zip xs (D.interpolatedValues1 xs dat)
+getValues1 xs (Right (Left spline)) g = 
     let
         filteredXs = filterXs1 spline xs
     in
-        V.zip filteredXs (V.map (\x -> F.getValue_ [x] spline) filteredXs)
-getValues1 xs (Right (Right fns)) = 
+        V.zip filteredXs (applyToVectorWithRandomGen (\x g -> F.getValue_ [x] g spline) filteredXs g)
+getValues1 xs (Right (Right fns)) g = 
     let
         filteredXs = filterXs1 fns xs
     in
-        V.zip filteredXs (V.map (\x -> F.getValue_ [x] fns) filteredXs)
+        V.zip filteredXs (applyToVectorWithRandomGen (\x g -> F.getValue_ [x] g fns) filteredXs g)
 
 filterXs1 ad = V.filter (\x -> x >= AD.xMin1 ad && x <= AD.xMax1 ad)
 

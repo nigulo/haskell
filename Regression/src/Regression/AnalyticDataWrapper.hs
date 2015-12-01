@@ -24,7 +24,7 @@ data AnalyticDataWrapper = forall d . F.Fn d => AnalyticDataWrapper (AD.Analytic
 
 instance F.Fn AnalyticDataWrapper where
     getValue x f g (AnalyticDataWrapper ad) = F.getValue x f g ad 
-    getValue_ xs (AnalyticDataWrapper ad) = F.getValue_ xs ad 
+    getValue_ xs g (AnalyticDataWrapper ad) = F.getValue_ xs g ad 
 
     constantOp op (AnalyticDataWrapper ad) k = analyticDataWrapper $ F.constantOp op ad k
     --binaryOp op (AnalyticDataWrapper (ad1 :: AD.AnalyticData d)) (AnalyticDataWrapper (ad2 :: AD.AnalyticData d2)) = analyticDataWrapper $ F.binaryOp op ad1 ad2  
