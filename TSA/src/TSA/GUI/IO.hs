@@ -25,6 +25,8 @@ import Utils.List
 import Data.Char
 import Data.List
 import Data.Maybe
+import Data.Time.Clock
+import Data.Time.Calendar
 import Control.Concurrent.MVar
 import System.IO
 import System.Random
@@ -206,28 +208,33 @@ dataFormatDialog stateRef callback lines = do
         return ()
     return ()
 
-readValue :: ColumnType -> String -> Double
-readValue ColYYYYMMDD val = 
+readValue :: ColumnType -> String -> Integer -> Double
+readValue ColYYYYMMDD str currentYear = 
     let
-        year = read $ take 4 val
-        month = read $ take 2 $ if length val == 8 then drop 4 val else drop 5 val
-        date = read $ if length val == 8 then drop 6 val else drop 8 val
-        TropicalYears result = toTropicalYears (YMD year month date)
+        str2 = filter (/= '-') str
+        (year, monthDateStr) = if length str2 > 6 then (read (take 4 str2), drop 4 str2) else
+            let
+                y =  read $ take 2 str2
+            in
+                (if 2000 + y > currentYear then 1900  + y else 2000 + y, drop 2 str2)
+        (monthStr, dateStr) = splitAt 2 monthDateStr
+        TropicalYears result = toTropicalYears (YMD year (read monthStr) (read dateStr))
     in
         result
-readValue _ val = read val
+readValue _ val _ = read val
 
 readAscii :: StateRef -> String -> [ColumnType] -> [[String]] -> String -> Bool -> IO ()
 readAscii stateRef _ [] _ _ _ = return ()
 readAscii stateRef fileName colTypes cols name dataOrSpectrum = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
+    (year, month, day) <- getCurrentTime >>= return . toGregorian . utctDay
     let
             ymdToYears = colTypes !! 0 == ColYear && colTypes !! 1 == ColMonth && colTypes !! 2 == ColDay
             dataLines =
                 map (\line -> 
                         let
-                            lineVals = map (\(i, val) -> readValue (colTypes !! i) val) (zip [0, 1 ..] line)
+                            lineVals = map (\(i, val) -> readValue (colTypes !! i) val year) (zip [0, 1 ..] line)
                         in
                             if ymdToYears
                                 then

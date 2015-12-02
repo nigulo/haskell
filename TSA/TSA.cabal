@@ -38,7 +38,9 @@ executable TSA
                bytestring -any,
                utf8-string -any,
                utility-ht -any,
-               filepath -any
+               filepath -any,
+               time -any
+               
   hs-source-dirs:  src
   ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
   main-is:         Main.hs
