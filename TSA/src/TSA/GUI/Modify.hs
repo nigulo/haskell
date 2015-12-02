@@ -61,6 +61,7 @@ data ModifyOp = Add
         | Function
         | AddNoise
         | Interpolate
+        | FillGaps
         | Convert 
         | Histogram 
         deriving (Eq, Ord, Show, Read)
@@ -74,7 +75,8 @@ getOpText JDToYear = "JD to year"
 getOpText YearToJD = "Year to JD" 
 getOpText RemoveNeighbour = "Remove neighbour" 
 getOpText FindNeighbour = "Find neighbour" 
-getOpText AddNoise = "Add noise" 
+getOpText AddNoise = "Add noise"
+getOpText FillGaps = "Fill gaps"
 getOpText op = show op 
 
 modifyOps = [Add, 
@@ -103,6 +105,7 @@ modifyOps = [Add,
         Function,
         AddNoise,
         Interpolate,
+        FillGaps,
         Convert,
         Histogram]
 
@@ -182,11 +185,11 @@ modifyDialog stateRef = do
     dataSetCombo2 <- dataSetComboNew2 (\_ -> True) state False
     addWidget (Just "Data set 2: ") (getComboBox dataSetCombo2) dialog
 
-    constantAdjustment <- adjustmentNew (modifyConstant parms) 0 (2**52) 1 1 1
+    constantAdjustment <- adjustmentNew (modifyConstant parms) (-2**52) (2**52) 1 1 1
     constantSpin <- spinButtonNew constantAdjustment 1 10
     addWidget (Just "Constant: ") constantSpin dialog
 
-    constant2Adjustment <- adjustmentNew (modifyConstant parms) 0 (2**52) 1 1 1
+    constant2Adjustment <- adjustmentNew (modifyConstant parms) (-2**52) (2**52) 1 1 1
     constant2Spin <- spinButtonNew constant2Adjustment 1 10
     addWidget (Just "Constant 2: ") constant2Spin dialog
 
@@ -589,6 +592,26 @@ modifyDialog stateRef = do
                                                             xVals1 = V.generate (round constant) (\i -> xMin + fromIntegral i * step) -- V.fromList [xMin, xMin + step .. xMax]
                                                             --xVals1 = (V.concatMap (\(x1, x2) -> V.init (V.fromList [x1, x1 + (x2 - x1) / constant .. x2])) (V.zip (V.init xVals) (V.tail xVals))) `V.snoc` (V.last xVals)
                                                             newDat = D.interpolatedData1 xVals1 dat
+                                                        return $ Left newDat
+                                            result <- applyToData1 func selectedData1 name tEnv
+                                            modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
+                                        else
+                                            return ()
+                                    FillGaps ->
+                                        if isDiscrete selectedData1
+                                        then do
+                                            let 
+                                                func i j d _ = 
+                                                    do
+                                                        let
+                                                            Left dat = d 
+                                                            vals = D.values1 dat
+                                                            filteredVals = V.filter (\(_, y, _) -> y /= constant) vals
+                                                            (xMin, _, _) = V.head filteredVals
+                                                            (xMax, _, _) = V.last filteredVals
+                                                            vals1 = V.filter (\(x, _, w) -> x >= xMin && x <= xMax) vals
+                                                            fillGaps (x, y, _) = if y == constant then (x, D.interpolate1' x filteredVals) else (x, y)
+                                                            newDat = D.data1' $ V.map fillGaps vals1
                                                         return $ Left newDat
                                             result <- applyToData1 func selectedData1 name tEnv
                                             modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))

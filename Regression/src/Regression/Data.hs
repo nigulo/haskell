@@ -42,6 +42,7 @@ module Regression.Data (
     interpolatedValue,
     --interpolatedData,
     interpolate1,
+    interpolate1',
     interpolatedValues1,
     interpolatedValue1,
     interpolatedData1,
