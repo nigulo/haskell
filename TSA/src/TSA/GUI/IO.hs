@@ -16,6 +16,7 @@ import TSA.Params
 import TSA.GUI.State
 import TSA.GUI.Dialog
 import TSA.GUI.Data
+import TSA.GUI.Common
 
 import GUI.Widget
 
@@ -97,10 +98,22 @@ dataFormatDialog stateRef callback lines = do
     -- Page 1
     page1 <- vBoxNew False 0
     assistantSetPageType assistant page1 AssistantPageConfirm
-    headerLabel <- labelNew $ Just "First rows of data:"
+    headerLabel <- labelNew $ Just "Data to import:"
     addWidgetToBox Nothing headerLabel PackNatural page1
-    dataLabel <- labelNew $ Just $ concatMap (++ "\n") (take 5 lines)
-    addWidgetToBox Nothing dataLabel PackNatural page1
+    ------------------------
+    textBuffer <- textBufferNew Nothing
+    textBufferSetText textBuffer (concatMap (++ "\n") lines)
+    textView <- textViewNewWithBuffer textBuffer
+    font <- fontDescriptionNew
+    fontDescriptionSetFamily font TSA.GUI.Common.defaultFontFamily
+    widgetModifyFont textView (Just font)
+    textViewSetEditable textView False 
+    scrolledWindow <- scrolledWindowNew Nothing Nothing
+    containerAdd scrolledWindow textView
+    boxPackStart page1 scrolledWindow PackGrow 2
+    --dataLabel <- labelNew $ Just $ concatMap (++ "\n") (take 5 lines)
+    --addWidgetToBox Nothing dataLabel PackNatural page1
+    ------------------------
     separator1 <- hSeparatorNew
     addWidgetToBox Nothing separator1 PackNatural page1
     separatorIndicesEntry <- entryNew
@@ -129,8 +142,14 @@ dataFormatDialog stateRef callback lines = do
     page2 <- vBoxNew False 0
     headerLabel <- labelNew $ Just "Columns:"
     addWidgetToBox Nothing headerLabel PackNatural page2
+    scrolledWindow2 <- scrolledWindowNew Nothing Nothing
+    boxPackStart page2 scrolledWindow2 PackGrow 2
     table <- tableNew 0 0 True
-    addWidgetToBox Nothing table PackNatural page2
+    scrolledWindowAddWithViewport scrolledWindow2 table
+    --addWidgetToBox Nothing table PackNatural page2
+    typeComboTable <- tableNew 0 0 True
+    addWidgetToBox Nothing typeComboTable PackNatural page2
+    
     nameEntry <- entryNew
     addWidgetToBox (Just "Name: ") nameEntry PackNatural page2
     dataTypeCombo <- createComboBox ["Data", "Spectrum"]
@@ -162,7 +181,7 @@ dataFormatDialog stateRef callback lines = do
                 )) lines
             skippedRows :: [Int] = sort $ map (read) $ filter (\ind -> trim ind /= "") $ concat $ map (splitBy ';') $ concat $ map (splitBy ',') $ words skippedRowsStr
             splittedLines = foldl' (\lines (skippedRow, i) -> removeAt (skippedRow - i) lines) splittedLines' (zip skippedRows [1 ..]) 
-            first5Rows = take 5 splittedLines
+            first5Rows = splittedLines --take 5 splittedLines
             colsAndLengths = map (\(i, line) -> (i, length line)) (zip [1, 2 ..] splittedLines)
             (minLine, minCols) = minimumBy (\(_, len1) (_, len2) -> compare len1 len2) colsAndLengths
             (maxLine, maxCols) = maximumBy (\(_, len1) (_, len2) -> compare len1 len2) colsAndLengths
@@ -179,16 +198,31 @@ dataFormatDialog stateRef callback lines = do
             else return ()
         tableCells <- containerGetChildren table
         mapM_ (containerRemove table) tableCells
-        tableResize table (numRows + 1) numCols
         mapM_ (\(row, line) -> mapM_ (\(col, elem) -> do
                         cell <- labelNew $ Just elem
                         tableAttachDefaults table cell col (col + 1) row (row + 1)
                 ) (zip [0, 1 ..] line)
-            ) (zip [0, 1 ..] (map (take numCols) first5Rows)) 
+            ) (zip [0, 1 ..] (map (take numCols) first5Rows))
+        {-
+        let
+            line = foldl' (\res row -> zipWith (\rowVal newRowVal -> rowVal ++ newRowVal ++ "\n") res row) (repeat "") (map (take numCols) first5Rows)
+        mapM_ (\(col, colText) -> do
+                textBuffer <- textBufferNew Nothing
+                textBufferSetText textBuffer colText
+                textView <- textViewNewWithBuffer textBuffer
+                font <- fontDescriptionNew
+                fontDescriptionSetFamily font TSA.GUI.Common.defaultFontFamily
+                widgetModifyFont textView (Just font)
+                textViewSetEditable textView False 
+                --cell <- labelNew $ Just colText
+                tableAttachDefaults table textView col (col + 1) 0 1
+            ) (zip [0, 1 ..] line)
+        -}   
+        --tableResize table (numRows + 1) numCols
         typeCombos <- mapM (\col -> do
                 typeCombo <- createComboBox ["-", "General", "JD", "Year", "Month", "Day", "YYYY-MM-DD", "Error"]
                 comboBoxSetActive typeCombo 1
-                tableAttachDefaults table typeCombo col (col + 1) (numRows) (numRows + 1)
+                tableAttachDefaults typeComboTable typeCombo col (col + 1) 0 1
                 return typeCombo
             ) [0 .. numCols - 1] 
         widgetShowAll page2
