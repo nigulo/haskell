@@ -132,11 +132,6 @@ main = do
           (Just stockSave)
     on exportAct actionActivated (readMVar stateRef >>= \state -> IO.exportData state)
 
-    loadAsciiAct <- actionNew "LoadAsciiAction" "Load ASCII"
-          (Just "Load data from ascii file")
-          (Just stockOpen)
-    on loadAsciiAct actionActivated (IO.loadAsciiDialog stateRef)
-
     ----------------------------------------------------------------------------
 
     exitAct <- actionNew "ExitAction" "Exit"
@@ -150,6 +145,17 @@ main = do
 
     dataSetsAct <- actionNew "DataSetsAction" "Data sets... " Nothing Nothing
     on dataSetsAct actionActivated (TSA.GUI.Data.infoDialog stateRef)
+
+    newDataAct <- actionNew "NewDataAction" "New..."
+          (Just "Create new data")
+          (Just stockOpen)
+    on newDataAct actionActivated (IO.newDataDialog stateRef)
+
+    loadDataAct <- actionNew "LoadDataAction" "Load..."
+          (Just "Load data from text file")
+          (Just stockOpen)
+    on loadDataAct actionActivated (IO.loadDataDialog stateRef)
+
 
     functionAct <- actionNew "FunctionAction" "Function... " Nothing Nothing
     on functionAct actionActivated (functionDialog stateRef)
@@ -284,10 +290,11 @@ main = do
        saveAct,
        importAct,
        exportAct,
-       loadAsciiAct, 
        exitAct,
        ----------- 
        dataSetsAct, 
+       loadDataAct, 
+       newDataAct, 
        functionAct,
        statisticAct,
        modifyAct,

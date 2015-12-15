@@ -1,5 +1,5 @@
 
-module TSA.GUI.IO (importData, exportData, loadAsciiDialog) where
+module TSA.GUI.IO (importData, exportData, loadDataDialog, newDataDialog) where
 
 import Graphics.UI.Gtk hiding (addWidget)
 import Data.IORef
@@ -38,8 +38,8 @@ import Ephem.Types
 import qualified Data.Vector.Unboxed as V
 import Control.Applicative
 
-loadAsciiDialog :: StateRef -> IO ()
-loadAsciiDialog stateRef = do
+loadDataDialog :: StateRef -> IO ()
+loadDataDialog stateRef = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
     dialog <- fileChooserDialogNew (Just "Read ASCII") (Just (getWindow state)) FileChooserActionOpen [("Cancel", ResponseCancel), ("Open", ResponseAccept)]
@@ -79,6 +79,59 @@ loadAsciiDialog stateRef = do
         else
             do
                 widgetDestroy dialog
+
+newDataDialog :: StateRef -> IO ()
+newDataDialog stateRef = do
+    state <- readMVar stateRef
+    (currentGraphTab, _) <- getCurrentGraphTab state
+    let 
+        graphTabParms = (graphTabs state) !! currentGraphTab
+        selectedGraph = graphTabSelection graphTabParms
+        graphParms = (graphTabGraphs graphTabParms) !! selectedGraph
+        ga = graphArea graphParms
+
+    dialog <- dialogWithTitle state "Create new data"
+    
+    dialogAddButton dialog "Cancel" ResponseCancel
+    fitButton <- dialogAddButton dialog "Ok" ResponseOk
+
+    contentBox <- castToBox <$> dialogGetContentArea dialog
+    vBox <- vBoxNew False 2
+    boxPackStart contentBox vBox PackGrow 2
+    
+    nameEntry <- entryNew
+    nameEntry `entrySetText` "New data"
+    addWidget (Just "Name: ") nameEntry dialog
+    
+    textBuffer <- textBufferNew Nothing
+    textBufferSetText textBuffer ""
+    textView <- textViewNewWithBuffer textBuffer
+    font <- fontDescriptionNew
+    fontDescriptionSetFamily font TSA.GUI.Common.defaultFontFamily
+    widgetModifyFont textView (Just font)
+    --textViewSetAcceptsTab textView False
+    textViewSetEditable textView False 
+    
+    scrolledWindow <- scrolledWindowNew Nothing Nothing
+    containerAdd scrolledWindow textView
+    
+    boxPackStart vBox scrolledWindow PackGrow 2
+
+    widgetShowAll dialog
+    response <- dialogRun dialog
+    
+    if response == ResponseOk 
+        then
+            do
+                name <- entryGetString nameEntry
+                
+                widgetDestroy dialog
+
+                return ()
+        else
+            do
+                widgetDestroy dialog
+
 
 data ColumnType = ColGeneral | ColJD | ColYear | ColMonth | ColDay | ColYYYYMMDD | ColError deriving (Eq)
 columnTypes = [ColGeneral, ColJD, ColYear, ColMonth, ColDay, ColYYYYMMDD, ColError]

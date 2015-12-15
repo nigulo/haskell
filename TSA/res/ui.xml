@@ -7,12 +7,13 @@
       <separator/>
       <menuitem action="ImportAction"/>
       <menuitem action="ExportAction"/>
-      <menuitem action="LoadAsciiAction"/>
       <separator/>
       <menuitem action="ExitAction"/>
     </menu>
     <menu name="Data" action="DataAction">
       <menuitem action="DataSetsAction"/>
+      <menuitem action="NewDataAction"/>
+      <menuitem action="LoadDataAction"/>
       <separator/>
       <menuitem action="FunctionAction"/>
       <menuitem action="StatisticAction"/>
