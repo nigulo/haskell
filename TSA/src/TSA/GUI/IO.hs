@@ -75,7 +75,7 @@ loadDataDialog stateRef = do
                         in if length indices <= 0 then fileName else drop (last indices + 1) fileName
                     fileLines = filter (\line -> trim line /= "") $ lines fileContents
                 widgetDestroy dialog
-                dataFormatDialog stateRef (readAscii stateRef shortName) fileLines
+                dataFormatDialog stateRef (readAscii stateRef) fileLines shortName
         else
             do
                 widgetDestroy dialog
@@ -99,18 +99,12 @@ newDataDialog stateRef = do
     vBox <- vBoxNew False 2
     boxPackStart contentBox vBox PackGrow 2
     
-    nameEntry <- entryNew
-    nameEntry `entrySetText` "New data"
-    addWidget (Just "Name: ") nameEntry dialog
-    
     textBuffer <- textBufferNew Nothing
     textBufferSetText textBuffer ""
     textView <- textViewNewWithBuffer textBuffer
     font <- fontDescriptionNew
     fontDescriptionSetFamily font TSA.GUI.Common.defaultFontFamily
     widgetModifyFont textView (Just font)
-    --textViewSetAcceptsTab textView False
-    textViewSetEditable textView False 
     
     scrolledWindow <- scrolledWindowNew Nothing Nothing
     containerAdd scrolledWindow textView
@@ -118,16 +112,18 @@ newDataDialog stateRef = do
     boxPackStart vBox scrolledWindow PackGrow 2
 
     widgetShowAll dialog
+    windowResize dialog 640 480
     response <- dialogRun dialog
     
     if response == ResponseOk 
         then
             do
-                name <- entryGetString nameEntry
+                startIter <- textBufferGetStartIter textBuffer
+                endIter <- textBufferGetEndIter textBuffer
+                text <- textBufferGetText textBuffer startIter endIter True
                 
                 widgetDestroy dialog
-
-                return ()
+                dataFormatDialog stateRef (readAscii stateRef) (filter (not . null) (lines text)) "New data"
         else
             do
                 widgetDestroy dialog
@@ -136,8 +132,8 @@ newDataDialog stateRef = do
 data ColumnType = ColGeneral | ColJD | ColYear | ColMonth | ColDay | ColYYYYMMDD | ColError deriving (Eq)
 columnTypes = [ColGeneral, ColJD, ColYear, ColMonth, ColDay, ColYYYYMMDD, ColError]
 
-dataFormatDialog :: StateRef -> ([ColumnType] -> [[String]] -> String -> Bool -> IO ()) -> [String] -> IO ()
-dataFormatDialog stateRef callback lines = do
+dataFormatDialog :: StateRef -> ([ColumnType] -> [[String]] -> String -> Bool -> IO ()) -> [String] -> String -> IO ()
+dataFormatDialog stateRef callback lines name = do
     state <- readMVar stateRef
     
     assistant <- assistantNew
@@ -204,6 +200,7 @@ dataFormatDialog stateRef callback lines = do
     addWidgetToBox Nothing typeComboTable PackNatural page2
     
     nameEntry <- entryNew
+    nameEntry `entrySetText` name
     addWidgetToBox (Just "Name: ") nameEntry PackNatural page2
     dataTypeCombo <- createComboBox ["Data", "Spectrum"]
     comboBoxSetActive dataTypeCombo 0
@@ -310,9 +307,9 @@ readValue ColYYYYMMDD str currentYear =
         result
 readValue _ val _ = read val
 
-readAscii :: StateRef -> String -> [ColumnType] -> [[String]] -> String -> Bool -> IO ()
-readAscii stateRef _ [] _ _ _ = return ()
-readAscii stateRef fileName colTypes cols name dataOrSpectrum = do
+readAscii :: StateRef -> [ColumnType] -> [[String]] -> String -> Bool -> IO ()
+readAscii stateRef [] _ _ _ = return ()
+readAscii stateRef colTypes cols name dataOrSpectrum = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
     (year, month, day) <- getCurrentTime >>= return . toGregorian . utctDay
@@ -355,7 +352,7 @@ readAscii stateRef fileName colTypes cols name dataOrSpectrum = do
                                 else (head line, line !! 1, line !! 2, last line)) dataLines
             graphTabParms = (graphTabs state) !! currentGraphTab
             selectedGraph = graphTabSelection graphTabParms
-    modifyMVar_ stateRef $ \state -> return $ addDiscreteData dat (if name == "" then fileName else name) (Just (currentGraphTab, selectedGraph)) state
+    modifyMVar_ stateRef $ \state -> return $ addDiscreteData dat name (Just (currentGraphTab, selectedGraph)) state
 
 -------------------------------------------------------------------------------
 -- Import/Export from ISDA
