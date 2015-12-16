@@ -445,7 +445,8 @@ data GuiParams = GuiParams {
     guiStatusBar :: (Statusbar, String, ContextId, MessageId),
     guiMousePos :: Maybe (Double, Double),
     guiLog :: Maybe TextView,
-    guiChanged :: Bool
+    guiChanged :: Bool,
+    guiFileName :: String
 }
 
 data Task = Task ThreadId String {- task name-} Double {- progress -} [Task {- subtasks -}]

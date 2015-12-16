@@ -58,6 +58,9 @@ import Data.Maybe
 --import Text.XML.HXT.Arrow
 import qualified Utils.Xml as Xml
 --test
+
+title = "Time Series Analysis" 
+
 main = do
     --initGUI
     unsafeInitGUIForThreadedRTS
@@ -66,7 +69,7 @@ main = do
     win <- windowNew
 
     icon <- pixbufNewFromFile "tsa.bmp"
-    win `set` [windowTitle := "Time Series Analysis", windowIcon := Just icon]
+    win `set` [windowTitle := "Untitled - " ++ title, windowIcon := Just icon]
     
     notebook <- notebookNew
     progressBar <- progressBarNew
@@ -86,7 +89,8 @@ main = do
                 guiStatusBar = (statusBar, statusBarText, contextId, messageId),
                 guiMousePos = Nothing,
                 guiLog = Nothing,
-                guiChanged = True
+                guiChanged = True,
+                guiFileName = ""
             }
         }
     
@@ -113,12 +117,17 @@ main = do
     loadAct <- actionNew "LoadAction" "Load..."
           (Just "Load project")
           (Just stockOpen)
-    on loadAct actionActivated (loadStateDialog stateRef)
+    on loadAct actionActivated (loadDialog stateRef)
 
-    saveAct <- actionNew "SaveAction" "Save..."
+    saveAct <- actionNew "SaveAction" "Save"
           (Just "Save project")
           (Just stockSave)
-    on saveAct actionActivated (readMVar stateRef >>= \state -> saveStateDialog state)
+    on saveAct actionActivated (saveDialog stateRef)
+
+    saveAsAct <- actionNew "SaveAsAction" "Save as..."
+          (Just "Save project as")
+          (Just stockSaveAs)
+    on saveAsAct actionActivated (saveAsDialog stateRef)
 
     ----------------------------------------------------------------------------
 
@@ -288,6 +297,7 @@ main = do
       [newAct,
        loadAct,
        saveAct,
+       saveAsAct,
        importAct,
        exportAct,
        exitAct,
@@ -401,7 +411,11 @@ quit stateRef =
         state <- readMVar stateRef
         let
             settings = settingsParams state
-        if settingsSaveChangesOnExit settings then saveStateDialog state else return ()
+        if settingsSaveChangesOnExit settings 
+            then 
+                saveDialog stateRef 
+            else 
+                return ()
         saveState (if settingsSaveInZippedFormat settings then "current.stsz" else "current.sts") state
         mainQuit
 
@@ -411,8 +425,8 @@ quit stateRef =
 --------------------------------------------------------------------------------
 
 
-loadStateDialog :: StateRef -> IO ()
-loadStateDialog stateRef = do
+loadDialog :: StateRef -> IO ()
+loadDialog stateRef = do
     oldState <- readMVar stateRef
     dialog <- fileChooserDialogNew (Just "Load") (Just (getWindow oldState)) FileChooserActionOpen [("Cancel", ResponseCancel), ("Open", ResponseAccept)]
 
@@ -434,6 +448,13 @@ loadStateDialog stateRef = do
                     Just fileName = file 
                 widgetDestroy dialog
                 loadState fileName stateRef
+                modifyMVar_ stateRef $ \state -> do 
+                    let
+                        gp = fromJust (guiParams state)
+                    (guiWindow gp) `set` [windowTitle := fileName ++ " - " ++ title]
+                    return $ state {
+                            guiParams = Just (gp {guiFileName = fileName})
+                        }
 
         else
             do
@@ -441,8 +462,8 @@ loadStateDialog stateRef = do
 
 newProject :: StateRef -> IO ()
 newProject stateRef = do
+    saveDialog stateRef
     state <- readMVar stateRef
-    saveStateDialog state
     let
         Just gp = guiParams state
     numTabs <- notebookGetNPages (guiGraphTabs gp) 
@@ -450,9 +471,11 @@ newProject stateRef = do
     modifyMVar_ stateRef $ \state -> do
         let
             Just gp = guiParams state
+        (guiWindow gp) `set` [windowTitle := "Untitled - " ++ title]
         return $ (newState newParams) {
             guiParams = Just $ gp {
-                guiMousePos = Nothing
+                guiMousePos = Nothing,
+                guiFileName = ""
                 }
             }
     addGraphTab stateRef Nothing
@@ -482,13 +505,24 @@ loadState fileName stateRef =
                     mapM_ (\i -> addGraphTab stateRef (Just (graphTabName (gts !! i)))) [0 .. length gts - 1]
                     notebookSetCurrentPage notebook (settingsActiveTab settings)
                     widgetShowAll notebook
-                    modifyMVar_ stateRef $ \state -> return $ state {settingsParams = settings {settingsSaveInZippedFormat = isZipped fileName}}
+                    modifyMVar_ stateRef $ \state -> 
+                        return $ state {
+                                settingsParams = settings {settingsSaveInZippedFormat = isZipped fileName}
+                            }
                     
             else return ()
 
+saveDialog :: StateRef -> IO ()
+saveDialog stateRef = do
+    state <- readMVar stateRef
+    case guiFileName (fromJust (guiParams state)) of
+        "" -> saveAsDialog stateRef
+        fileName -> 
+            saveState fileName state
 
-saveStateDialog :: State -> IO ()
-saveStateDialog state = do
+saveAsDialog :: StateRef -> IO ()
+saveAsDialog stateRef = do
+    state <- readMVar stateRef
     dialog <- fileChooserDialogNew (Just "Save") (Just (getWindow state)) FileChooserActionSave [("Cancel", ResponseCancel), ("Save", ResponseAccept)]
     
     fileFilter <- fileFilterNew
@@ -508,8 +542,15 @@ saveStateDialog state = do
         then
             do
                 widgetDestroy dialog
-                let Just f = file
-                saveState (if suffix `List.isSuffixOf` (map Char.toLower f) then f else f ++ suffix) state
+                let 
+                    Just f = file
+                    fileName = if suffix `List.isSuffixOf` (map Char.toLower f) then f else f ++ suffix
+                saveState fileName state
+                modifyMVar_ stateRef $ \state -> do
+                    let
+                        gp = fromJust (guiParams state)
+                    (guiWindow gp) `set` [windowTitle := fileName ++ " - " ++ title]
+                    return $ state {guiParams = Just (gp {guiFileName = fileName})}
         else 
             widgetDestroy dialog
 

@@ -4,6 +4,7 @@
       <menuitem action="NewAction"/>
       <menuitem action="LoadAction"/>
       <menuitem action="SaveAction"/>
+      <menuitem action="SaveAsAction"/>
       <separator/>
       <menuitem action="ImportAction"/>
       <menuitem action="ExportAction"/>
