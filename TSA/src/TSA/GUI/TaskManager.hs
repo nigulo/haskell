@@ -63,7 +63,7 @@ refresh stateRef dialog destroyedRef =
                     case tasks state of
                         [] -> do
                             label <- labelNew (Just "No tasks")
-                            hBox <- addWidget Nothing label dialog
+                            (_, hBox) <- addWidget Nothing label dialog
                             widgetSetName hBox "TaskWidget"
                         otherwise ->
                             mapM_ (\(Task threadId taskName percent _) -> do
@@ -73,7 +73,7 @@ refresh stateRef dialog destroyedRef =
                                     hBox <- hBoxNew False 2
                                     boxPackStart hBox progressBar PackGrow 2
                                     boxPackStart hBox stopButton PackNatural 2
-                                    addWidget (Just taskName) hBox dialog >>= (flip widgetSetName) "TaskWidget" 
+                                    addWidget (Just taskName) hBox dialog >>= \(_, widget) -> widgetSetName widget "TaskWidget" 
                                     on stopButton buttonReleaseEvent $ liftIO $ 
                                         do
                                             killThread threadId

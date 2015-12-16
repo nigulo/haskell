@@ -187,11 +187,11 @@ modifyDialog stateRef = do
 
     constantAdjustment <- adjustmentNew (modifyConstant parms) (-2**52) (2**52) 1 1 1
     constantSpin <- spinButtonNew constantAdjustment 1 10
-    addWidget (Just "Constant: ") constantSpin dialog
+    (Just constantLabel, _) <- addWidget (Just "Constant: ") constantSpin dialog
 
     constant2Adjustment <- adjustmentNew (modifyConstant parms) (-2**52) (2**52) 1 1 1
     constant2Spin <- spinButtonNew constant2Adjustment 1 10
-    addWidget (Just "Constant 2: ") constant2Spin dialog
+    (Just constant2Label, _) <- addWidget (Just "Constant 2: ") constant2Spin dialog
 
     ----
     functionTextBuffer <- textBufferNew Nothing
@@ -223,15 +223,21 @@ modifyDialog stateRef = do
                 case modifyOp of
                     Function -> do
                         constantSpin `set`  [widgetVisible := False]
+                        constantLabel `set`  [widgetVisible := False]
                         constant2Spin `set`  [widgetVisible := False]
+                        constant2Label `set`  [widgetVisible := False]
                         functionFrame `set`  [widgetVisible := True]
                     FindNeighbour -> do
                         constantSpin `set`  [widgetVisible := True]
+                        constantLabel `set`  [widgetVisible := True]
                         constant2Spin `set`  [widgetVisible := True]
+                        constant2Label `set`  [widgetVisible := True]
                         functionFrame `set`  [widgetVisible := False]
                     otherwise -> do
                         constantSpin `set`  [widgetVisible := True]
+                        constantLabel `set`  [widgetVisible := True]
                         constant2Spin `set`  [widgetVisible := False]
+                        constant2Label `set`  [widgetVisible := False]
                         functionFrame `set`  [widgetVisible := False]
 
     after dialog realize updateWidgets

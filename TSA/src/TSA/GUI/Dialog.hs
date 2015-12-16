@@ -33,22 +33,24 @@ dialogWithTitle state name =
         return dialog
         
         
-addWidget :: (WidgetClass w, DialogClass d) => Maybe String -> w -> d -> IO (HBox)
+addWidget :: (WidgetClass w, DialogClass d) => Maybe String -> w -> d -> IO (Maybe Label, HBox)
 addWidget maybeName w dialog = do
     contentBox <- castToBox <$> dialogGetContentArea dialog
     
     hBox <- hBoxNew True 0
-    case maybeName of 
-        Just name ->
-            do
-                label <- labelNew maybeName
-                boxPackStart hBox label PackNatural 2
-        Nothing -> return ()
+    maybeLabel <-
+        case maybeName of 
+            Just name ->
+                do
+                    label <- labelNew maybeName
+                    boxPackStart hBox label PackNatural 2
+                    return $ Just label
+            Nothing -> return Nothing
     boxPackEnd hBox w PackGrow 2
     boxPackStart contentBox hBox PackNatural 2
-    return hBox
+    return (maybeLabel, hBox)
 
-addLabel :: DialogClass d => String -> d -> IO ()
+addLabel :: DialogClass d => String -> d -> IO (Label, HBox)
 addLabel text dialog = do
     contentBox <- castToBox <$> dialogGetContentArea dialog
     vBox <- vBoxNew False 2
@@ -58,6 +60,7 @@ addLabel text dialog = do
     label <- labelNew (Just text)
     boxPackStart hBox label PackGrow 2
     boxPackStart vBox hBox PackNatural 2
+    return (label, hBox)
 
 addSeparator :: DialogClass d => d -> IO ()
 addSeparator dialog = do
@@ -119,15 +122,15 @@ addFitWidgets fitParams state dialog = do
 
     numNodesAdjustment <- adjustmentNew (fromIntegral (splineNumNodes (fitSplineParams fitParams))) 1 10000 1 1 1
     numNodesSpin <- spinButtonNew numNodesAdjustment 1 0
-    numNodesBox <- addWidget (Just "Num nodes: ") numNodesSpin dialog
+    (_, numNodesBox) <- addWidget (Just "Num nodes: ") numNodesSpin dialog
     
     slowHarmonicCoverageFactorAdjustment <- adjustmentNew (harmonicCoverageFactor (fitHarmonicParams fitParams)) 0 100000 1 1 1
     slowHarmonicCoverageFactorSpin <- spinButtonNew slowHarmonicCoverageFactorAdjustment 1 10
-    slowHarmonicCoverageFactorBox <- addWidget (Just "Coverage factor: ") slowHarmonicCoverageFactorSpin dialog
+    (_, slowHarmonicCoverageFactorBox) <- addWidget (Just "Coverage factor: ") slowHarmonicCoverageFactorSpin dialog
 
     slowHarmonicsAdjustment <- adjustmentNew (fromIntegral (harmonicCount (fitHarmonicParams fitParams))) 0 10000 1 1 1
     slowHarmonicsSpin <- spinButtonNew slowHarmonicsAdjustment 1 0
-    slowHarmonicsBox <- addWidget (Just "Num modulators: ") slowHarmonicsSpin dialog
+    (_, slowHarmonicsBox) <- addWidget (Just "Num modulators: ") slowHarmonicsSpin dialog
 
     case fitType fitParams of
         FitTypeSpline -> do
