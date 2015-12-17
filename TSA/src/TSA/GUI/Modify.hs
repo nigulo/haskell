@@ -132,12 +132,66 @@ getTypeText Y = "y"
 getTypeText X = "x"
 getTypeText opType = show opType
 
+
+{-
 typeMappings = M.fromList [
         (RemoveNeighbour, [Outside, Inside]),
         (Convert, [ToSpectrum, ToData]),
         (Smooth, [GaussianKernel, MovingAverage])
     ]
+-}
+-------------------------
+data ExtSettings = OneConstant | TwoConstants | Formula deriving (Eq, Show, Read)
+data DataSetSettings = OneDataSet | TwoDataSets deriving (Eq, Show, Read)
+type SubSettings = (DataSetSettings, (Maybe ExtSettings))
+type ModifySettings = ([ModifyOpType], [SubSettings])
 
+getSettings :: ModifyOp -> ModifySettings
+
+getSettings FindNeighbour = ([], [(TwoDataSets, Just TwoConstants)])
+getSettings Union = ([], [(TwoDataSets, Nothing)])
+getSettings Intersection = ([], [(TwoDataSets, Nothing)])
+getSettings Complement = ([], [(TwoDataSets, Nothing)])
+getSettings Join = ([], [(TwoDataSets, Nothing)])
+
+getSettings Add = ([Y, X], [(OneDataSet, Just OneConstant), (TwoDataSets, Nothing)])
+getSettings Subtract = ([Y, X], [(OneDataSet, Just OneConstant), (TwoDataSets, Nothing)])
+getSettings Mean = ([Y, X], [(OneDataSet, Just OneConstant), (TwoDataSets, Nothing)])
+getSettings Multiply = ([Y, X], [(OneDataSet, Just OneConstant), (TwoDataSets, Nothing)])
+getSettings Invert = ([Y, X], [(OneDataSet, Just OneConstant), (TwoDataSets, Nothing)])
+getSettings SegmentByMarkers = ([], [(OneDataSet, Just OneConstant), (TwoDataSets, Nothing)])
+getSettings SegmentByCount = ([], [(OneDataSet,Just OneConstant), (TwoDataSets, Nothing)])
+getSettings SegmentByGaps = ([], [(OneDataSet, Just OneConstant), (TwoDataSets, Nothing)])
+
+getSettings Swap = ([], [(OneDataSet, Nothing)])
+getSettings Split = ([], [(OneDataSet, Nothing)])
+getSettings JDToYear = ([], [(OneDataSet, Nothing)])
+getSettings YearToJD = ([], [(OneDataSet, Nothing)])
+getSettings Unsegment = ([], [(OneDataSet, Nothing)])
+getSettings Convert = ([ToSpectrum, ToData], [(OneDataSet, Nothing)])
+
+getSettings SetWeights = ([], [(OneDataSet, Just OneConstant)])
+getSettings Smooth = ([GaussianKernel, MovingAverage], [(OneDataSet, Just OneConstant)])
+getSettings Round = ([Y, X], [(OneDataSet, Just OneConstant)])
+getSettings RemoveNeighbour = ([Outside, Inside], [(OneDataSet, Just OneConstant)]) 
+getSettings Scale = ([Y, X], [(OneDataSet, Just OneConstant)])
+getSettings AddNoise = ([Y, X], [(OneDataSet, Just OneConstant)])
+getSettings Interpolate = ([], [(OneDataSet, Just OneConstant)])
+getSettings FillGaps = ([], [(OneDataSet, Just OneConstant)])
+getSettings Histogram = ([Y, X], [(OneDataSet, Just OneConstant)])
+
+getSettings Function = ([Y, X], [(OneDataSet, Just Formula), (TwoDataSets, Just Formula)])
+
+getActiveSubSetting :: [SubSettings] -> Bool -> SubSettings
+getActiveSubSetting subSettings data2Selected = 
+    let
+        filterFn (OneDataSet, _) = not data2Selected 
+        filterFn (TwoDataSets, _) = data2Selected 
+    in 
+        head $ filter (filterFn) subSettings
+-----------------------
+
+{-
 getOpTypes :: ModifyOp -> [ModifyOpType]
 getOpTypes op = case M.lookup op typeMappings of 
     Just types -> types
@@ -145,6 +199,10 @@ getOpTypes op = case M.lookup op typeMappings of
 
 getOpType :: ModifyOp -> Int -> ModifyOpType
 getOpType op i = (getOpTypes op)  !! i
+-}
+
+getOpType :: ModifyOp -> Int -> ModifyOpType
+getOpType modifyOp i = (fst (getSettings modifyOp))  !! i
 
 modifyDialog :: StateRef -> IO ()
 modifyDialog stateRef = do
@@ -180,9 +238,9 @@ modifyDialog stateRef = do
 
     typeCombo <- createComboBox ["y", "x"]
     comboBoxSetActive typeCombo (modifyType parms)
-    addWidget (Just "Type: ") typeCombo dialog
+    (Just typeLabel, _) <- addWidget (Just "Type: ") typeCombo dialog
 
-    dataSetCombo2 <- dataSetComboNew2 (\_ -> True) state False
+    dataSetCombo2 <- dataSetComboNew2 (\_ -> True) state True
     addWidget (Just "Data set 2: ") (getComboBox dataSetCombo2) dialog
 
     constantAdjustment <- adjustmentNew (modifyConstant parms) (-2**52) (2**52) 1 1 1
@@ -217,9 +275,46 @@ modifyDialog stateRef = do
                 numRows <- listStoreGetSize listStore
                 mapM_ (\_ -> comboBoxRemoveText typeCombo 0) [1 .. numRows]
                 opNo <- comboBoxGetActive opCombo
+                ds2No <- comboBoxGetActive $ getComboBox dataSetCombo2
                 let
                     modifyOp = getModifyOp opNo
-                mapM_ (\t -> comboBoxAppendText typeCombo (fromString t)) (map (getTypeText) (getOpTypes modifyOp))
+                    (opTypes, subSettings) = getSettings modifyOp
+                    (_, extSettings) = getActiveSubSetting subSettings (ds2No > 0)
+                if null opTypes 
+                    then do
+                        typeCombo `set`  [widgetVisible := False]
+                        typeLabel `set`  [widgetVisible := False]
+                    else do
+                        typeCombo `set`  [widgetVisible := True]
+                        typeLabel `set`  [widgetVisible := True]
+                        mapM_ (\t -> comboBoxAppendText typeCombo (fromString t)) (map (getTypeText) opTypes)
+
+                case extSettings of
+                    Nothing -> do
+                        constantSpin `set`  [widgetVisible := False]
+                        constantLabel `set`  [widgetVisible := False]
+                        constant2Spin `set`  [widgetVisible := False]
+                        constant2Label `set`  [widgetVisible := False]
+                        functionFrame `set`  [widgetVisible := False]
+                    Just OneConstant -> do
+                        constantSpin `set`  [widgetVisible := True]
+                        constantLabel `set`  [widgetVisible := True]
+                        constant2Spin `set`  [widgetVisible := False]
+                        constant2Label `set`  [widgetVisible := False]
+                        functionFrame `set`  [widgetVisible := False]
+                    Just TwoConstants -> do
+                        constantSpin `set`  [widgetVisible := True]
+                        constantLabel `set`  [widgetVisible := True]
+                        constant2Spin `set`  [widgetVisible := True]
+                        constant2Label `set`  [widgetVisible := True]
+                        functionFrame `set`  [widgetVisible := False]
+                    Just Formula -> do
+                        constantSpin `set`  [widgetVisible := False]
+                        constantLabel `set`  [widgetVisible := False]
+                        constant2Spin `set`  [widgetVisible := False]
+                        constant2Label `set`  [widgetVisible := True]
+                        functionFrame `set`  [widgetVisible := True]
+{-
                 case modifyOp of
                     Function -> do
                         constantSpin `set`  [widgetVisible := False]
@@ -239,9 +334,10 @@ modifyDialog stateRef = do
                         constant2Spin `set`  [widgetVisible := False]
                         constant2Label `set`  [widgetVisible := False]
                         functionFrame `set`  [widgetVisible := False]
-
+-}
     after dialog realize updateWidgets
     on opCombo changed updateWidgets
+    on (getComboBox dataSetCombo2) changed updateWidgets
 
 
 
