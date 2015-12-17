@@ -159,7 +159,6 @@ getSettings Subtract = ([Y, X], [(OneDataSet, Just OneConstant), (TwoDataSets, N
 getSettings Mean = ([Y, X], [(OneDataSet, Just OneConstant), (TwoDataSets, Nothing)])
 getSettings Multiply = ([Y, X], [(OneDataSet, Just OneConstant), (TwoDataSets, Nothing)])
 getSettings Invert = ([Y, X], [(OneDataSet, Just OneConstant), (TwoDataSets, Nothing)])
-getSettings SegmentByMarkers = ([], [(OneDataSet, Just OneConstant), (TwoDataSets, Nothing)])
 getSettings SegmentByCount = ([], [(OneDataSet,Just OneConstant), (TwoDataSets, Nothing)])
 getSettings SegmentByGaps = ([], [(OneDataSet, Just OneConstant), (TwoDataSets, Nothing)])
 
@@ -169,6 +168,7 @@ getSettings JDToYear = ([], [(OneDataSet, Nothing)])
 getSettings YearToJD = ([], [(OneDataSet, Nothing)])
 getSettings Unsegment = ([], [(OneDataSet, Nothing)])
 getSettings Convert = ([ToSpectrum, ToData], [(OneDataSet, Nothing)])
+getSettings SegmentByMarkers = ([], [(OneDataSet, Nothing)])
 
 getSettings SetWeights = ([], [(OneDataSet, Just OneConstant)])
 getSettings Smooth = ([GaussianKernel, MovingAverage], [(OneDataSet, Just OneConstant)])
@@ -229,7 +229,7 @@ modifyDialog stateRef = do
     nameEntry `entrySetText` (getNameWithNo commonParams)
     addWidget (Just "Name: ") nameEntry dialog
     
-    dataSetCombo1 <- dataSetComboNew2 (\_ -> True) state False
+    dataSetCombo1 <- dataSetComboNew2 (\_ -> True) state True
     addWidget (Just "Data set 1: ") (getComboBox dataSetCombo1) dialog
 
     opCombo <- createComboBox (map (getOpText) modifyOps)
@@ -240,8 +240,8 @@ modifyDialog stateRef = do
     comboBoxSetActive typeCombo (modifyType parms)
     (Just typeLabel, _) <- addWidget (Just "Type: ") typeCombo dialog
 
-    dataSetCombo2 <- dataSetComboNew2 (\_ -> True) state True
-    addWidget (Just "Data set 2: ") (getComboBox dataSetCombo2) dialog
+    dataSetCombo2 <- dataSetComboNew2 (\_ -> True) state False
+    (Just dataSetLabel2, _) <- addWidget (Just "Data set 2: ") (getComboBox dataSetCombo2) dialog
 
     constantAdjustment <- adjustmentNew (modifyConstant parms) (-2**52) (2**52) 1 1 1
     constantSpin <- spinButtonNew constantAdjustment 1 10
@@ -275,11 +275,27 @@ modifyDialog stateRef = do
                 numRows <- listStoreGetSize listStore
                 mapM_ (\_ -> comboBoxRemoveText typeCombo 0) [1 .. numRows]
                 opNo <- comboBoxGetActive opCombo
-                ds2No <- comboBoxGetActive $ getComboBox dataSetCombo2
                 let
                     modifyOp = getModifyOp opNo
                     (opTypes, subSettings) = getSettings modifyOp
-                    (_, extSettings) = getActiveSubSetting subSettings (ds2No > 0)
+                    onlyOneDataSet = null $ filter (\(dataSettings, _) -> dataSettings == TwoDataSets) subSettings
+                    onlyTwoDataSets = null $ filter (\(dataSettings, _) -> dataSettings == OneDataSet) subSettings
+                if onlyTwoDataSets 
+                    then
+                        comboBoxSetActive (getComboBox dataSetCombo2) 0
+                    else
+                        return ()
+                if onlyOneDataSet 
+                    then do
+                        comboBoxSetActive (getComboBox dataSetCombo2) (-1)
+                        (getComboBox dataSetCombo2) `set`  [widgetVisible := False]
+                        dataSetLabel2 `set`  [widgetVisible := False]
+                    else do
+                        (getComboBox dataSetCombo2) `set`  [widgetVisible := True]
+                        dataSetLabel2 `set`  [widgetVisible := True]
+                ds2No <- comboBoxGetActive $ getComboBox dataSetCombo2
+                let
+                    (_, extSettings) = getActiveSubSetting subSettings (ds2No >= 0)
                 if null opTypes 
                     then do
                         typeCombo `set`  [widgetVisible := False]
@@ -288,6 +304,8 @@ modifyDialog stateRef = do
                         typeCombo `set`  [widgetVisible := True]
                         typeLabel `set`  [widgetVisible := True]
                         mapM_ (\t -> comboBoxAppendText typeCombo (fromString t)) (map (getTypeText) opTypes)
+
+                    
 
                 case extSettings of
                     Nothing -> do
