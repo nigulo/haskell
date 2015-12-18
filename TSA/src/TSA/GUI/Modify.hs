@@ -132,15 +132,7 @@ getTypeText Y = "y"
 getTypeText X = "x"
 getTypeText opType = show opType
 
-
-{-
-typeMappings = M.fromList [
-        (RemoveNeighbour, [Outside, Inside]),
-        (Convert, [ToSpectrum, ToData]),
-        (Smooth, [GaussianKernel, MovingAverage])
-    ]
--}
--------------------------
+--------------------------------------------------
 data ExtSettings = OneConstant | TwoConstants | Formula deriving (Eq, Show, Read)
 data DataSetSettings = OneDataSet | TwoDataSets deriving (Eq, Show, Read)
 type SubSettings = (DataSetSettings, (Maybe ExtSettings))
@@ -186,20 +178,16 @@ getActiveSubSetting :: [SubSettings] -> Bool -> SubSettings
 getActiveSubSetting subSettings data2Selected = 
     let
         filterFn (OneDataSet, _) = not data2Selected 
-        filterFn (TwoDataSets, _) = data2Selected 
+        filterFn (TwoDataSets, _) = data2Selected
+        filteredSubSettings = filter (filterFn) subSettings 
     in 
-        head $ filter (filterFn) subSettings
------------------------
+        if null filteredSubSettings
+            then
+                head subSettings
+            else
+                head filteredSubSettings
+--------------------------------------------------
 
-{-
-getOpTypes :: ModifyOp -> [ModifyOpType]
-getOpTypes op = case M.lookup op typeMappings of 
-    Just types -> types
-    Nothing -> [Y, X]
-
-getOpType :: ModifyOp -> Int -> ModifyOpType
-getOpType op i = (getOpTypes op)  !! i
--}
 
 getOpType :: ModifyOp -> Int -> ModifyOpType
 getOpType modifyOp i = (fst (getSettings modifyOp))  !! i
@@ -236,12 +224,12 @@ modifyDialog stateRef = do
     comboBoxSetActive opCombo (modifyOp parms)
     addWidget (Just "Operation: ") opCombo dialog
 
+    dataSetCombo2 <- dataSetComboNew2 (\_ -> True) state False
+    (Just dataSetLabel2, _) <- addWidget (Just "Data set 2: ") (getComboBox dataSetCombo2) dialog
+
     typeCombo <- createComboBox ["y", "x"]
     comboBoxSetActive typeCombo (modifyType parms)
     (Just typeLabel, _) <- addWidget (Just "Type: ") typeCombo dialog
-
-    dataSetCombo2 <- dataSetComboNew2 (\_ -> True) state False
-    (Just dataSetLabel2, _) <- addWidget (Just "Data set 2: ") (getComboBox dataSetCombo2) dialog
 
     constantAdjustment <- adjustmentNew (modifyConstant parms) (-2**52) (2**52) 1 1 1
     constantSpin <- spinButtonNew constantAdjustment 1 10
@@ -267,7 +255,7 @@ modifyDialog stateRef = do
     frameSetLabel functionFrame (stringToGlib "Function" )
     containerAdd functionFrame scrolledWindow
     addWidgetToBox Nothing functionFrame PackGrow vBox
-    ----
+
     let
         updateWidgets =
             do
@@ -282,20 +270,22 @@ modifyDialog stateRef = do
                     onlyTwoDataSets = null $ filter (\(dataSettings, _) -> dataSettings == OneDataSet) subSettings
                 if onlyTwoDataSets 
                     then
-                        comboBoxSetActive (getComboBox dataSetCombo2) 0
+                        dataComboBoxSetMandatory dataSetCombo2 True
                     else
-                        return ()
+                        dataComboBoxSetMandatory dataSetCombo2 False
                 if onlyOneDataSet 
                     then do
-                        comboBoxSetActive (getComboBox dataSetCombo2) (-1)
                         (getComboBox dataSetCombo2) `set`  [widgetVisible := False]
                         dataSetLabel2 `set`  [widgetVisible := False]
                     else do
                         (getComboBox dataSetCombo2) `set`  [widgetVisible := True]
                         dataSetLabel2 `set`  [widgetVisible := True]
-                ds2No <- comboBoxGetActive $ getComboBox dataSetCombo2
+                selectedData2 <- getSelectedData dataSetCombo2
                 let
-                    (_, extSettings) = getActiveSubSetting subSettings (ds2No >= 0)
+                    (_, extSettings) = 
+                            case selectedData2 of
+                                Just _ -> getActiveSubSetting subSettings True
+                                _ -> getActiveSubSetting subSettings False
                 if null opTypes 
                     then do
                         typeCombo `set`  [widgetVisible := False]
@@ -304,9 +294,8 @@ modifyDialog stateRef = do
                         typeCombo `set`  [widgetVisible := True]
                         typeLabel `set`  [widgetVisible := True]
                         mapM_ (\t -> comboBoxAppendText typeCombo (fromString t)) (map (getTypeText) opTypes)
-
+                        typeCombo `comboBoxSetActive` 0
                     
-
                 case extSettings of
                     Nothing -> do
                         constantSpin `set`  [widgetVisible := False]
@@ -332,32 +321,9 @@ modifyDialog stateRef = do
                         constant2Spin `set`  [widgetVisible := False]
                         constant2Label `set`  [widgetVisible := True]
                         functionFrame `set`  [widgetVisible := True]
-{-
-                case modifyOp of
-                    Function -> do
-                        constantSpin `set`  [widgetVisible := False]
-                        constantLabel `set`  [widgetVisible := False]
-                        constant2Spin `set`  [widgetVisible := False]
-                        constant2Label `set`  [widgetVisible := False]
-                        functionFrame `set`  [widgetVisible := True]
-                    FindNeighbour -> do
-                        constantSpin `set`  [widgetVisible := True]
-                        constantLabel `set`  [widgetVisible := True]
-                        constant2Spin `set`  [widgetVisible := True]
-                        constant2Label `set`  [widgetVisible := True]
-                        functionFrame `set`  [widgetVisible := False]
-                    otherwise -> do
-                        constantSpin `set`  [widgetVisible := True]
-                        constantLabel `set`  [widgetVisible := True]
-                        constant2Spin `set`  [widgetVisible := False]
-                        constant2Label `set`  [widgetVisible := False]
-                        functionFrame `set`  [widgetVisible := False]
--}
     after dialog realize updateWidgets
     on opCombo changed updateWidgets
     on (getComboBox dataSetCombo2) changed updateWidgets
-
-
 
     widgetShowAll dialog
     response <- dialogRun dialog

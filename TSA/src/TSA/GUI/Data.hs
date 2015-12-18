@@ -4,6 +4,7 @@ module TSA.GUI.Data (
     infoDialog,
     dataSetComboNew,
     dataSetComboNew2,
+    dataComboBoxSetMandatory,
     only2d,
     onlyData,
     onlySpectrum,
@@ -317,32 +318,91 @@ orFilter filter1 filter2 = \dp -> filter1 dp || filter2 dp
 
 --------------------------------------------------------------------------------
 -- | Data set combo box
-type DataComboBox = (ComboBox, M.Map String DataParams)
+type DataComboBox = (ComboBox, IORef [Maybe DataParams])
 
 dataSetComboNew :: DataFilter -> State -> IO DataComboBox
 dataSetComboNew filterFunc state = dataSetComboNew2 filterFunc state True
 
 dataSetComboNew2 :: DataFilter -> State -> Bool -> IO DataComboBox
-dataSetComboNew2 filterFunc state allowNothing = do
+dataSetComboNew2 filterFunc state mandatory = do
     dataSetCombo <- createComboBox []
     let 
-        dataNamesAndSets = map (\dp -> (dataName dp, dp)) $ filter filterFunc (dataParams (params state)) where
-        --dataNames = map dataName $ filter filterFunc (dataParams state) where
-        nameDataMap = M.fromList dataNamesAndSets
-    mapM_ (\str -> comboBoxAppendText dataSetCombo (fromString str)) (fst (unzip dataNamesAndSets))
-    if allowNothing then comboBoxSetActive dataSetCombo 0 else return ()
-    return (dataSetCombo, nameDataMap)
+        dataSets = (if mandatory then [] else [Nothing]) ++(map (Just) $ filter filterFunc (dataParams (params state)))
+    mapM_ (\maybeDp -> 
+            case maybeDp of
+                Just dp ->
+                    comboBoxAppendText dataSetCombo (fromString (dataName dp))
+                Nothing -> 
+                    comboBoxAppendText dataSetCombo (fromString "[Select data]")
+        ) dataSets
+    comboBoxSetActive dataSetCombo 0
+    dataSetsRef <- newIORef dataSets
+    return (dataSetCombo, dataSetsRef)
 
 getComboBox :: DataComboBox -> ComboBox
 getComboBox (combo, _) = combo
 
+--dataComboBoxSetOnChanged :: DataComboBox -> IO () -> IO ()
+--dataComboBoxSetOnChanged (comboBox, dataSetsRef, fn) fn
+
+dataComboBoxSetMandatory :: DataComboBox -> Bool -> IO ()
+dataComboBoxSetMandatory (comboBox, dataSetsRef) True = do
+    dataSets <- readIORef dataSetsRef
+    let
+        removeVoidEntry = 
+            if null dataSets 
+                then False
+                else
+                    case head dataSets of
+                        Nothing -> True
+                        otherwise -> False
+    if removeVoidEntry
+        then do
+            index <- comboBoxGetActive comboBox
+            writeIORef dataSetsRef (tail dataSets)
+             -- writeIORef must be called before changing the state of comboBox,
+             -- otherwise we might get infinite loop, if this function is inside
+             -- registered change event handler
+            comboBoxRemoveText comboBox 0
+            comboBoxSetActive comboBox (max 0 (index - 1))
+        else 
+            return ()
+dataComboBoxSetMandatory (comboBox, dataSetsRef) False = do
+    dataSets <- readIORef dataSetsRef
+    let
+        addVoidEntry = 
+            if null dataSets 
+                then True
+                else
+                    case head dataSets of
+                        Nothing -> False
+                        otherwise -> True
+    if addVoidEntry
+        then do
+            index <- comboBoxGetActive comboBox
+             -- writeIORef must be called before changing the state of comboBox,
+             -- otherwise we might get infinite loop, if this function is inside
+             -- registered change event handler
+            writeIORef dataSetsRef (Nothing:dataSets)
+            comboBoxPrependText comboBox (fromString "[Select data]")
+            if (index >= 0)
+                then
+                    comboBoxSetActive comboBox (index + 1)
+                else
+                    return ()
+        else
+            return ()
+
 getSelectedData :: DataComboBox -> IO (Maybe DataParams)
-getSelectedData (comboBox, nameDataMap) = 
+getSelectedData (comboBox, dataSetsRef) = 
     do
-        selectedText <- comboBoxGetActiveString comboBox
-        case selectedText of
-            Just text -> return $ M.lookup text nameDataMap
-            Nothing -> return Nothing
+        index <- comboBoxGetActive comboBox
+        dataSets <- readIORef dataSetsRef
+        if index >= 0
+            then
+                return $ dataSets !! index
+            else
+                return Nothing
 
 --------------------------------------------------------------------------------
 -- | Data set chooser
