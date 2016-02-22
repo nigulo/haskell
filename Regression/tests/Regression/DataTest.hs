@@ -16,7 +16,7 @@ test_getTangent = do
 test_getExtrema = do
     let
         dat = data1' $ V.fromList [(0, 0.5), (1, 2), (2, -1), (3, -3), (4, -3), (5, 0), (6, 1), (7, 1), (8, 2)] 
-        result = D.getExtrema dat
+        result = D.getExtrema dat True
         expectedResult = (V.fromList [(4, -3)], V.fromList [(1, 2)])
     assertEqual expectedResult result
 

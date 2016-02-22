@@ -1,18 +1,23 @@
-module Regression.RBF where
+-- | Radial basis functions
+module Regression.RBF (RBF(..), values) where
 
-newtype RBF = RBF [Double {-weight-}, M.MatrixXd {-centre-}, Double {-lambda-})]
+import qualified Math.Function as F
+import qualified Data.Eigen.Matrix as M
+import System.Random
+
+newtype RBF = RBF [(Double {-weight-}, M.MatrixXd {-centre-}, Double {-lambda-})]
 
 
-values :: M.MatrixXd -> RBF -> [Double]
-values x (RBF rbf) = map (\(_, centre, lambda) -> exp(-M.squaredNorm (x - centre) / lambda)) rbf
+values :: M.MatrixXd -> [(M.MatrixXd {-centre-}, Double {-lambda-})] -> [Double]
+values x rbf = map (\(centre, lambda) -> exp(-M.squaredNorm (x - centre) / lambda)) rbf
 
-value :: M.MatrixXd -> RBF -> [Double]
+value :: M.MatrixXd -> RBF -> Double
 value x (RBF rbf) = sum $ map (\(weight, centre, lambda) -> weight * exp(-M.squaredNorm (x - centre) / lambda)) rbf
 
 instance F.Fn RBF where
 
     -- | Returns the polynom's value at the given coordinate
-    getValue xs _ g (RBF rbf) = value (M.fromList [xs] (RBF rbf)))
+    getValue xs _ g (RBF rbf) = value (M.fromList [xs]) (RBF rbf)
 
     getValue_ xs g = F.getValue xs [] g 
 

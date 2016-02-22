@@ -1,18 +1,17 @@
 -- | Bayesian linear regression 
 module Regression.Bayes where
 
+import Regression.RBF as RBF
 import Regression.Data as D
 import qualified Data.Eigen.Matrix as M
 import Numeric.Limits
 import Control.Monad
 import qualified Data.Vector.Unboxed as V
 import Data.List
-import Regression.Functions
 import Regression.AnalyticData
-import Math.Function as F
 
-data Method = Linear Int | 
-    RBF [Int] -- ^ list of numCentres (currently same in all dimentions)
+data Method = MethodLinear Int | 
+    MethodRBF [Int] -- ^ list of numCentres (currently same in all dimentions)
         [Double] -- ^ list of widths (currently all equal in the model)
 
 
@@ -41,8 +40,8 @@ bayesLinReg y sumPhi sumyPhi (maxIters, precision) = do
                 else calc (i + 1) alpha beta margLik
     calc 0 1 1 (maxValue)
 
-fit :: Data -> Method -> IO (Functions {-mean estimate-})
-fit dat (RBF numCentres lambdas) = do
+fit :: Data -> Method -> IO (AnalyticData RBF {-mean estimate-})
+fit dat (MethodRBF numCentres lambdas) = do
     let
         left = D.xMins dat
         right = D.xMaxs dat
@@ -58,7 +57,7 @@ fit dat (RBF numCentres lambdas) = do
                 centresLambdas = map (\centre -> (M.fromList [centre], lambda)) centres
                 (sumPhi, sumyPhi) = foldl' (\(sumPhi, sumyPhi) (x, y, w) ->
                         let
-                            phi = rbf (M.fromList [x]) centresLambdas
+                            phi = M.fromList $ [RBF.values (M.fromList [x]) centresLambdas]
                             phi' = M.transpose phi
                         in
                             (sumPhi `M.add` (phi `M.mul` phi'), sumyPhi `M.add` (M.map (*y) phi))
@@ -71,5 +70,5 @@ fit dat (RBF numCentres lambdas) = do
     -- fit the model one more time
     (m, s, alpha, beta, margLik) <- bayesLinReg ys sumPhi sumyPhi (50, 0.001)
     let
-        func = F.function $ "rbf(" ++ init (concatMap (\i -> "x" ++ show i ++ ",") [1 .. D.dim dat]) ++")"
-    return (AnalyticData [(left, right, func)])
+        rbf = RBF $ zipWith (\[w] (c, l) -> (w, c, l)) (M.toList m) centresLambdas
+    return (AnalyticData [(left, right, rbf)])
