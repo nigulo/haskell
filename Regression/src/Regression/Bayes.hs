@@ -2,51 +2,74 @@
 module Regression.Bayes where
 
 import Regression.Data as D
-import Data.Eigen.Matrix as M
+import qualified Data.Eigen.Matrix as M
 import Numeric.Limits
 import Control.Monad
 import qualified Data.Vector.Unboxed as V
+import Data.List
+import Regression.Functions
+import Regression.AnalyticData
+import Math.Function as F
 
-data Method = Linear Int | RBF [(MatrixXd, Double)]
-
-
-rbf :: MatrixXd -> [(MatrixXd {-center-}, Double {-lambda-})] -> MatrixXd
-rbf x centresLambdas =
-    M.fromList [Prelude.map (\(centre, lambda) -> exp(-squaredNorm (x - centre) / lambda)) centresLambdas]
+data Method = Linear Int | 
+    RBF [Int] -- ^ list of numCentres (currently same in all dimentions)
+        [Double] -- ^ list of widths (currently all equal in the model)
 
 
 -- | Linear regression with marginal likelihood maximization (ML II)
-bayesLinReg :: MatrixXd -> MatrixXd -> MatrixXd -> (Int, Double) -> IO (MatrixXd {-m-}, MatrixXd {-S-}, Double {-alpha-}, Double {-beta-}, Double {-margLik-})
+bayesLinReg :: M.MatrixXd -> M.MatrixXd -> M.MatrixXd -> (Int, Double) -> IO (M.MatrixXd {-m-}, M.MatrixXd {-S-}, Double {-alpha-}, Double {-beta-}, Double {-margLik-})
 bayesLinReg y sumPhi sumyPhi (maxIters, precision) = do
     let
-        numBases = cols sumyPhi
+        numBases = M.cols sumyPhi
         b = fromIntegral $ numBases
-        n = fromIntegral $ rows y
-        sumyy = squaredNorm y
+        n = fromIntegral $ M.rows y
+        sumyy = M.squaredNorm y
         --initial guess for the hyperparameters
         calc i prevAlpha prevBeta prevMargLik = do
             let
-                invS = (M.map (*prevAlpha) (identity numBases)) `add` (M.map (*prevAlpha) sumPhi)
-                s = inverse invS
+                invS = (M.map (*prevAlpha) (M.identity numBases)) `M.add` (M.map (*prevAlpha) sumPhi)
+                s = M.inverse invS
                 d = M.map (*prevBeta) sumyPhi
-                m = s `mul` d
-                m' = transpose m
-                beta = n / (sumyy - 2 * (((m' `mul` sumyPhi) `add` (m' `mul` sumPhi `mul` m)) ! (0, 0)) + trace (s `mul` sumPhi))
-                alpha = b / (trace s + (m' `mul` m) ! (0, 0))
-                d' = transpose d
-                margLik = 0.5 * (-beta * sumyy + (d' `mul` invS `mul` d) ! (0, 0) + log (determinant s) + b * log alpha + n * log beta - n * log (2 * pi))
+                m = s `M.mul` d
+                m' = M.transpose m
+                beta = n / (sumyy - 2 * (((m' `M.mul` sumyPhi) `M.add` (m' `M.mul` sumPhi `M.mul` m)) M.! (0, 0)) + M.trace (s `M.mul` sumPhi))
+                alpha = b / (M.trace s + (m' `M.mul` m) M.! (0, 0))
+                d' = M.transpose d
+                margLik = 0.5 * (-beta * sumyy + (d' `M.mul` invS `M.mul` d) M.! (0, 0) + log (M.determinant s) + b * log alpha + n * log beta - n * log (2 * pi))
             if (i + 1 >= maxIters) || margLik - prevMargLik < precision
                 then return (m, s, alpha, beta, margLik)
                 else calc (i + 1) alpha beta margLik
     calc 0 1 1 (maxValue)
 
-fit :: Data -> Method -> IO ()
-fit dat (RBF centresLambdas) = do
-    (sumPhi, sumyPhi) <- foldM (\(sumPhi, sumyPhi) (x, y, w) -> do
-        let
-            phi = rbf (M.fromList [x]) centresLambdas
-            phi' = transpose phi
-        return (sumPhi `add` (phi `mul` phi'), sumyPhi `add` (M.map (*y) phi))
-        ) (0, 0) (D.values dat)
-    (m, s, alpha, beta, margLik) <- bayesLinReg (M.fromList (Prelude.map (\y -> [y]) (V.toList (D.ys dat)))) sumPhi sumyPhi (50, 0.001)
-    return ()
+fit :: Data -> Method -> IO (Functions {-mean estimate-})
+fit dat (RBF numCentres lambdas) = do
+    let
+        left = D.xMins dat
+        right = D.xMaxs dat
+        ys = M.fromList (map (\y -> [y]) (V.toList (D.ys dat)))
+    results <- mapM (\(nc, lambda) -> do
+            let
+                centres = sequence $ zipWith (\xMin xMax ->
+                        let
+                            separation = (xMax - xMin) / (fromIntegral nc + 1)
+                        in
+                            map (\i -> xMin + fromIntegral i * separation) [1 .. nc]
+                    ) left right
+                centresLambdas = map (\centre -> (M.fromList [centre], lambda)) centres
+                (sumPhi, sumyPhi) = foldl' (\(sumPhi, sumyPhi) (x, y, w) ->
+                        let
+                            phi = rbf (M.fromList [x]) centresLambdas
+                            phi' = M.transpose phi
+                        in
+                            (sumPhi `M.add` (phi `M.mul` phi'), sumyPhi `M.add` (M.map (*y) phi))
+                    ) (0, 0) (D.values dat)
+            (_, _, _, _, margLik) <- bayesLinReg ys sumPhi sumyPhi (50, 0.001)
+            return (centresLambdas, (sumPhi, sumyPhi), margLik)
+        ) [(nc, lambda) | nc <- numCentres, lambda <- lambdas]
+    let
+        (centresLambdas, (sumPhi, sumyPhi), margLik) = maximumBy (\(_, _, margLik1) (_, _, margLik2) -> compare margLik1 margLik2) results
+    -- fit the model one more time
+    (m, s, alpha, beta, margLik) <- bayesLinReg ys sumPhi sumyPhi (50, 0.001)
+    let
+        func = F.function $ "rbf(" ++ init (concatMap (\i -> "x" ++ show i ++ ",") [1 .. D.dim dat]) ++")"
+    return (AnalyticData [(left, right, func)])

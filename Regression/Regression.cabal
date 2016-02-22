@@ -78,7 +78,7 @@ test-suite RegressionTests
                    Regression.RegressionTest,
                    Regression.PolynomTest,
                    CUDALeastSquares,
-                   Regression.DataTest
+                   Regression.DataTest,
   extensions:      
                    FlexibleInstances,
                    ScopedTypeVariables,
