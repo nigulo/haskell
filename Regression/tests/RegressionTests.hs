@@ -9,7 +9,7 @@ import {-@ HTF_TESTS @-} Regression.PolynomTest
 import {-@ HTF_TESTS @-} Regression.AnalyticDataTest
 import {-@ HTF_TESTS @-} Regression.LeastSquaresTest
 import {-@ HTF_TESTS @-} Regression.DataTest
---import {-@ HTF_TESTS @-} Regression.BayesTest
+import {-@ HTF_TESTS @-} Regression.BayesTest
 import {-@ HTF_TESTS @-} Regression.RBFTest
 
 main = htfMain htf_importedTests
