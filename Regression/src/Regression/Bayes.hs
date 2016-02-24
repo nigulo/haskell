@@ -35,11 +35,11 @@ bayesLinReg y sumPhi sumyPhi (maxIters, precision) = do
                 alpha = b / (M.trace s + (m' `M.mul` m) M.! (0, 0))
                 d' = M.transpose d
                 margLik = 0.5 * (-beta * sumyy + (d' `M.mul` invS `M.mul` d) M.! (0, 0) + log (M.determinant s) + b * log alpha + n * log beta - n * log (2 * pi))
-            print margLik
-            if (i + 1 >= maxIters) || margLik - prevMargLik < precision
+            print i
+            if (i >= maxIters) || margLik - prevMargLik < precision
                 then return (m, s, alpha, beta, margLik)
                 else calc (i + 1) alpha beta margLik
-    calc 0 1 1 (minValue)
+    calc 1 1 1 (minValue)
 
 fit :: Data -> Method -> IO (AnalyticData RBF {-mean estimate-})
 fit dat (MethodRBF numCentres lambdas opts) = do
