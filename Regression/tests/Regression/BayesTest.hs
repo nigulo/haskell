@@ -4,7 +4,10 @@ module Regression.BayesTest where
 
 import Regression.RBF as RBF
 import Regression.Bayes
+import Regression.Data as D
+import Regression.AnalyticData as AD
 import qualified Data.Eigen.Matrix as M
+import qualified Data.Vector.Unboxed as V
 import Test.Framework
 import Utils.Test
 import Data.List
@@ -13,14 +16,7 @@ import Debug.Trace
 
 test_bayesLinReg = do
     let
-        xTrain :: [Double] = [
-            3.7812, -4.7261, 1.7047, -0.8270, 0.5869, -3.5961, -3.0190, 3.0074, 4.6826, -1.8658,
-            1.9232, 3.7639, 3.9461, -4.1496, -4.6095, -3.3017, 3.7814, -4.0165, -0.7889, 4.5789,
-            0.3317, 1.9188, -1.8448, 1.8650, 3.3463, -4.8171, 2.5014, 4.8886, 2.4817, -2.1956,
-            2.8928, -3.9677, -0.5211, 4.0860, -2.0639, -2.1222, -3.6997, -4.8063, 1.7884, -2.8837,
-           -2.3445, -0.0843, -4.4664, 0.7412, -3.5327, 0.8931, 1.9976, -3.9767, -0.8594, 1.9440
-           ]
-
+    
         yTrain :: [Double] = [
             0.5804, -0.2090, -0.2874, -0.8108, -0.7795, 0.6245, -0.6563, 0.1730, -0.3846, -1.1996,
            -0.0588, 0.3149, 0.7521, 0.8589, 0.1093, -0.5251, 0.5377, 0.9668, -0.9194, -0.3436,
@@ -28,21 +24,7 @@ test_bayesLinReg = do
            -0.0395, 0.7844, -0.5342, 0.5128, -1.1994, -1.5737, 0.8318, -0.1754, -0.1772, -0.7289,
            -1.1197, -0.6862, 0.5082, -0.8036, 0.0758, -0.7829, -0.1923, 0.9154, -0.8727, 0.0770
             ]
-        
-        --rangeStart = -5
-        --rangeEnd = 5
-        --numBasisFunctions = 11
-        --lambdas = repeat 3.9234
-        --centres = [-5, -5 + (rangeEnd - rangeStart) / (fromIntegral numBasisFunctions - 1) .. 5]
-        
-        --(sumPhi, sumyPhi) = foldl' (\(sPhi, syPhi) (x, y) ->
-        --        let
-        --            phi = M.fromList $ map (\p -> [p]) $ RBF.values (M.fromList [[x]]) (zipWith (\c l -> ((M.fromList [[c]]), l)) centres lambdas)
-        --            --phi1 = trace ("size: " ++ show (M.dims ((phi `M.mul` (M.transpose phi))))) phi
-        --        in
-        --            (sPhi `M.add` (phi `M.mul` (M.transpose phi)), syPhi `M.add` (M.map (*y) phi))
-        --    ) (M.zero numBasisFunctions numBasisFunctions, M.zero numBasisFunctions 1) (zip xTrain yTrain)
-
+    
         sumPhi :: M.MatrixXd = M.fromList $ [    
             [8.861800985766141e+00, 1.041584957232027e+01, 8.144241915551671e+00, 4.394412437913028e+00, 1.711908447701046e+00, 5.015856555041788e-01, 1.130366246262387e-01,
              1.978828615019784e-02, 2.726829458177522e-03, 3.007599820220453e-04, 2.692962023770108e-05],
@@ -170,4 +152,68 @@ test_bayesLinReg = do
     assertEqualDouble betaExp beta
     assertEqualDouble margLikExp margLik
 
-            
+test_fitMLII = do
+    let
+        xTrain :: [Double] = [
+            3.7812, -4.7261, 1.7047, -0.8270, 0.5869, -3.5961, -3.0190, 3.0074, 4.6826, -1.8658,
+            1.9232, 3.7639, 3.9461, -4.1496, -4.6095, -3.3017, 3.7814, -4.0165, -0.7889, 4.5789,
+            0.3317, 1.9188, -1.8448, 1.8650, 3.3463, -4.8171, 2.5014, 4.8886, 2.4817, -2.1956,
+            2.8928, -3.9677, -0.5211, 4.0860, -2.0639, -2.1222, -3.6997, -4.8063, 1.7884, -2.8837,
+           -2.3445, -0.0843, -4.4664, 0.7412, -3.5327, 0.8931, 1.9976, -3.9767, -0.8594, 1.9440
+           ]
+
+        yTrain :: [Double] = [
+            0.5804, -0.2090, -0.2874, -0.8108, -0.7795, 0.6245, -0.6563, 0.1730, -0.3846, -1.1996,
+           -0.0588, 0.3149, 0.7521, 0.8589, 0.1093, -0.5251, 0.5377, 0.9668, -0.9194, -0.3436,
+           -0.9101, 0.3604, -1.2812, -0.3467, 0.1343, -0.4037, -0.0081, -0.4374, -0.0815, -0.9747,
+           -0.0395, 0.7844, -0.5342, 0.5128, -1.1994, -1.5737, 0.8318, -0.1754, -0.1772, -0.7289,
+           -1.1197, -0.6862, 0.5082, -0.8036, 0.0758, -0.7829, -0.1923, 0.9154, -0.8727, 0.0770
+            ]
+        
+        rangeStart = -5
+        rangeEnd = 5
+        numBasisFunctions = 11
+                
+        {-
+        (sumPhi, sumyPhi) = foldl' (\(sPhi, syPhi) (x, y) ->
+                let
+                    phi = M.fromList $ map (\p -> [p]) $ RBF.values (M.fromList [[x]]) (zipWith (\c l -> ((M.fromList [[c]]), l)) centres lambdas)
+                    --phi1 = trace ("size: " ++ show (M.dims ((phi `M.mul` (M.transpose phi))))) phi
+                in
+                    (sPhi `M.add` (phi `M.mul` (M.transpose phi)), syPhi `M.add` (M.map (*y) phi))
+            ) (M.zero numBasisFunctions numBasisFunctions, M.zero numBasisFunctions 1) (zip xTrain yTrain)
+        -}
+        lambdaMin = 0.9090909090909091
+        lambdaMax = 9.090909090909090
+        lambdas = [lambdaMin, lambdaMin + (lambdaMax - lambdaMin) / fromIntegral numBasisFunctions, lambdaMax]
+        
+        dat = D.data1' $ V.fromList $ zip xTrain yTrain
+    
+    AD.AnalyticData [(xMin, xMax, RBF rbf)] <- fitMLII dat (MethodRBF [numBasisFunctions] lambdas (50, 0.001))
+
+
+    let
+        expectedWeights = [
+            -1.364726194196498e+00,
+             2.191837941722041e+00,
+            -2.207454316947272e-02,
+            -2.036531694029579e+00,
+             1.366528419751266e-01,
+             5.694580561371864e-01,
+            -7.943679816509670e-01,
+            -4.484054619607754e-01,
+             7.525901031092221e-01,
+             6.910440180194533e-01,
+            -1.035601565089805e+00]        
+        expectedCentres :: [Double] = [-5, -5 + (rangeEnd - rangeStart) / (fromIntegral numBasisFunctions - 1) .. 5]
+        expectedLambdas = repeat 3.923444976076555
+        expectedRBF = zip3 expectedWeights expectedCentres expectedLambdas 
+    
+    zipWithM_ (\(expectedWeight, expectedCentre, expectedLambda) (weight, centrevec, lambda) -> do
+            assertEqualDouble expectedWeight weight
+            let
+                [[centre]] = M.toList centrevec
+            assertEqualDouble expectedCentre centre
+            assertEqualDouble expectedLambda lambda
+        ) expectedRBF rbf 
+        
