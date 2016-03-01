@@ -3,7 +3,9 @@ module Utils.Test (
     assertEqualDouble, 
     assertEqualFloat,
     assertEqualDoubleList,
-    assertEqualFloatList
+    assertEqualFloatList,
+    assertEqualApprox,
+    assertEqualApproxList
     ) where
 
 import Test.Framework
@@ -23,3 +25,12 @@ assertEqualFloatList [] [] = return ()
 assertEqualFloatList (x:xs) (y:ys) = do 
     assertEqualFloat x y
     assertEqualFloatList xs ys
+    
+assertEqualApprox epsilon x y =
+    assertEqual (fromIntegral (round (x / epsilon) :: Integer) * epsilon :: Double) (fromIntegral (round (y / epsilon) :: Integer) * epsilon :: Double)        
+
+assertEqualApproxList epsilon [] [] = return () 
+assertEqualApproxList epsilon (x:xs) (y:ys) = do 
+    assertEqualApprox epsilon x y
+    assertEqualApproxList epsilon xs ys
+    
