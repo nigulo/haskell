@@ -41,7 +41,7 @@ bayesLinReg y sumPhi sumyPhi (maxIters, precision) = do
                 else calc (i + 1) alpha beta margLik
     calc 1 1 1 (minValue)
 
-fitMLII :: Data -> Method -> IO (AnalyticData RBF {-mean estimate-})
+fitMLII :: Data -> Method -> IO (AnalyticData RBF {-mean estimate-}, ([Double] -> Double) {-varFunc-})
 fitMLII dat (MethodRBF numCentres ranges lambdas opts) = do
     let
         ys = M.fromList (map (\y -> [y]) (V.toList (D.ys dat)))
@@ -68,4 +68,10 @@ fitMLII dat (MethodRBF numCentres ranges lambdas opts) = do
         (centresLambdas, m, s, alpha, beta, margLik) = maximumBy (\(_, _, _, _, _, margLik1) (_, _, _, _, _, margLik2) -> compare margLik1 margLik2) results
     let
         rbf = RBF $ zipWith (\[w] (c, l) -> (w, c, l)) (M.toList m) centresLambdas
-    return (AnalyticData [(map (fst) ranges, map (snd) ranges, rbf)])
+    return (AnalyticData [(map (fst) ranges, map (snd) ranges, rbf)], \x ->
+            let
+                phi = M.fromList $ map (\p -> [p]) $ RBF.values (M.fromList [x]) centresLambdas
+                phi' = M.transpose phi
+            in
+                (phi' `M.mul` s `M.mul` phi) M.! (0, 0) + 1/ beta
+        )

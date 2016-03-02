@@ -180,7 +180,7 @@ test_fitMLII = do
         lambdas :: [Double] = [lambdaMin, lambdaMin + (lambdaMax - lambdaMin) / (numLambdas - 1) .. lambdaMax]
         
         dat = D.data1' $ V.fromList $ zip xTrain yTrain
-    AD.AnalyticData [([xLeft], [xRight], RBF rbf)] <- fitMLII dat (MethodRBF numBasisFunctions [(rangeStart, rangeEnd)] lambdas (50, 0.001))
+    (AD.AnalyticData [([xLeft], [xRight], RBF rbf)], varFunc) <- fitMLII dat (MethodRBF numBasisFunctions [(rangeStart, rangeEnd)] lambdas (50, 0.001))
     assertEqualDouble rangeStart xLeft
     assertEqualDouble rangeEnd xRight
 
@@ -209,4 +209,35 @@ test_fitMLII = do
             assertEqualDouble expectedCentre centre
             assertEqualDouble expectedLambda lambda
         ) expectedRBF rbf 
-        
+
+    let
+        xTest :: [Double] = [
+            -8.582073047309731e-01,
+            -4.500465410539128e+00,
+             3.589640591551158e-01,
+             1.637946452197888e+00,
+             1.488911205830856e-01,
+             4.445947559908133e+00,
+             8.655504050199294e-01,
+             4.034019152878836e+00,
+            -3.625252958537625e+00,
+            -3.607236527492415e+00]
+    
+        varTest :: [Double] = [
+            5.0150133620189025e-2,
+            4.663659620836762e-2,
+            5.046743722667654e-2,
+            4.744042007046967e-2,
+            5.051868026250257e-2,
+            4.914803916500382e-2,
+            5.028082297518349e-2,
+            4.845501331585364e-2,
+            4.656548508291483e-2,
+            4.658527528653199e-2]
+
+    zipWithM_ (\x expectedVar -> do
+            let
+                var = varFunc [x]
+            assertEqualDouble expectedVar var
+        ) xTest varTest
+
