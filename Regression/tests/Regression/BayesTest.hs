@@ -174,39 +174,32 @@ test_fitMLII = do
         rangeEnd = 5
         numBasisFunctions = 11
                 
-        {-
-        (sumPhi, sumyPhi) = foldl' (\(sPhi, syPhi) (x, y) ->
-                let
-                    phi = M.fromList $ map (\p -> [p]) $ RBF.values (M.fromList [[x]]) (zipWith (\c l -> ((M.fromList [[c]]), l)) centres lambdas)
-                    --phi1 = trace ("size: " ++ show (M.dims ((phi `M.mul` (M.transpose phi))))) phi
-                in
-                    (sPhi `M.add` (phi `M.mul` (M.transpose phi)), syPhi `M.add` (M.map (*y) phi))
-            ) (M.zero numBasisFunctions numBasisFunctions, M.zero numBasisFunctions 1) (zip xTrain yTrain)
-        -}
         lambdaMin = 0.9090909090909091
         lambdaMax = 9.090909090909090
-        lambdas = [lambdaMin, lambdaMin + (lambdaMax - lambdaMin) / fromIntegral numBasisFunctions, lambdaMax]
+        numLambdas = 20
+        lambdas :: [Double] = [lambdaMin, lambdaMin + (lambdaMax - lambdaMin) / (numLambdas - 1) .. lambdaMax]
         
         dat = D.data1' $ V.fromList $ zip xTrain yTrain
-    
-    AD.AnalyticData [(xMin, xMax, RBF rbf)] <- fitMLII dat (MethodRBF [numBasisFunctions] lambdas (50, 0.001))
+    AD.AnalyticData [([xLeft], [xRight], RBF rbf)] <- fitMLII dat (MethodRBF numBasisFunctions [(rangeStart, rangeEnd)] lambdas (50, 0.001))
+    assertEqualDouble rangeStart xLeft
+    assertEqualDouble rangeEnd xRight
 
 
     let
-        expectedWeights = [
-            -1.364726194196498e+00,
-             2.191837941722041e+00,
-            -2.207454316947272e-02,
-            -2.036531694029579e+00,
-             1.366528419751266e-01,
-             5.694580561371864e-01,
-            -7.943679816509670e-01,
-            -4.484054619607754e-01,
-             7.525901031092221e-01,
-             6.910440180194533e-01,
-            -1.035601565089805e+00]        
+        expectedWeights :: [Double] = [
+            -9.630917720757449,
+            16.914647680014628,
+            -11.79698756232887,
+            -0.4742841119064565,
+            7.723856900183861,
+            -8.657315229922997,
+            2.8525981375931764,
+            4.009505964299109,
+            -9.339440116929154,
+            10.801499974242788,
+            -6.148670506526571]
         expectedCentres :: [Double] = [-5, -5 + (rangeEnd - rangeStart) / (fromIntegral numBasisFunctions - 1) .. 5]
-        expectedLambdas = repeat 3.923444976076555
+        expectedLambdas :: [Double] = repeat 3.923444976076555
         expectedRBF = zip3 expectedWeights expectedCentres expectedLambdas 
     
     zipWithM_ (\(expectedWeight, expectedCentre, expectedLambda) (weight, centrevec, lambda) -> do
