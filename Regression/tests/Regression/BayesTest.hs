@@ -223,7 +223,7 @@ test_fitMLII = do
             -3.625252958537625e+00,
             -3.607236527492415e+00]
     
-        varTest :: [Double] = [
+        expectedVars :: [Double] = [
             5.0150133620189025e-2,
             4.663659620836762e-2,
             5.046743722667654e-2,
@@ -235,9 +235,5 @@ test_fitMLII = do
             4.656548508291483e-2,
             4.658527528653199e-2]
 
-    zipWithM_ (\x expectedVar -> do
-            let
-                var = varFunc [x]
-            assertEqualDouble expectedVar var
-        ) xTest varTest
+    assertEqualDoubleList expectedVars (map (\x -> varFunc [x]) xTest)
 
