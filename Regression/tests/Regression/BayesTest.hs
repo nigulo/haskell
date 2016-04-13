@@ -14,7 +14,7 @@ import Data.List
 import Control.Monad
 import Debug.Trace
 
-test_bayesLinReg = do
+test_rbfMLII = do
     let
     
         yTrain :: [Double] = [
@@ -62,7 +62,7 @@ test_bayesLinReg = do
             1.452061610541205e+00,
             8.463457845768559e-01]
 
-    (m, s, alpha, beta, margLik) <- bayesLinReg (M.fromList (map (\y -> [y]) yTrain)) sumPhi sumyPhi (50, 0.001)
+    (m, s, alpha, beta, margLik) <- rbfMLII (M.fromList (map (\y -> [y]) yTrain)) sumPhi sumyPhi (50, 0.001)
 
     let    
         mExp :: [Double] = [
@@ -152,7 +152,7 @@ test_bayesLinReg = do
     assertEqualDouble betaExp beta
     assertEqualDouble margLikExp margLik
 
-test_fitMLII = do
+test_linRegWithMLII = do
     let
         xTrain :: [Double] = [
             3.7812, -4.7261, 1.7047, -0.8270, 0.5869, -3.5961, -3.0190, 3.0074, 4.6826, -1.8658,
@@ -180,7 +180,7 @@ test_fitMLII = do
         lambdas :: [Double] = [lambdaMin, lambdaMin + (lambdaMax - lambdaMin) / (numLambdas - 1) .. lambdaMax]
         
         dat = D.data1' $ V.fromList $ zip xTrain yTrain
-    (AD.AnalyticData [([xLeft], [xRight], RBF rbf)], varFunc) <- fitMLII dat (MethodRBF numBasisFunctions [(rangeStart, rangeEnd)] lambdas (50, 0.001))
+    (AD.AnalyticData [([xLeft], [xRight], RBF rbf)], varFunc) <- linRegWithMLII dat (MethodRBF numBasisFunctions [(rangeStart, rangeEnd)] lambdas (50, 0.001))
     assertEqualDouble rangeStart xLeft
     assertEqualDouble rangeEnd xRight
 

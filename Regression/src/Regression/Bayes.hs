@@ -1,5 +1,5 @@
 -- | Bayesian linear regression 
-module Regression.Bayes (bayesLinReg, fitMLII, Method(..)) where
+module Regression.Bayes (rbfMLII, linRegWithMLII, Method(..)) where
 
 import Regression.RBF as RBF
 import Regression.Data as D
@@ -11,14 +11,16 @@ import Data.List
 import Regression.AnalyticData
 
 data Method = MethodLinear Int | 
-    MethodRBF Int  -- ^ numer of centres (currently same in all dimentions)
+    MethodRBF Int  -- ^ number of centres (currently same in all dimensions)
               [(Double, Double)] -- ^ ranges per dimension
               [Double] -- ^ list of widths (currently all equal in the model)
               (Int, Double) -- ^ (maxIters, precision)
 
+
+-- Private method, only made accessible for unit tests 
 -- | Linear regression with marginal likelihood maximization (ML II)
-bayesLinReg :: M.MatrixXd -> M.MatrixXd -> M.MatrixXd -> (Int, Double) -> IO (M.MatrixXd {-m-}, M.MatrixXd {-S-}, Double {-alpha-}, Double {-beta-}, Double {-margLik-})
-bayesLinReg y sumPhi sumyPhi (maxIters, precision) = do
+rbfMLII :: M.MatrixXd -> M.MatrixXd -> M.MatrixXd -> (Int, Double) -> IO (M.MatrixXd {-m-}, M.MatrixXd {-S-}, Double {-alpha-}, Double {-beta-}, Double {-margLik-})
+rbfMLII y sumPhi sumyPhi (maxIters, precision) = do
     let
         numBases = M.rows sumyPhi
         b = fromIntegral $ numBases
@@ -41,8 +43,8 @@ bayesLinReg y sumPhi sumyPhi (maxIters, precision) = do
                 else calc (i + 1) alpha beta margLik
     calc 1 1 1 (minValue)
 
-fitMLII :: Data -> Method -> IO (AnalyticData RBF {-mean estimate-}, ([Double] -> Double) {-varFunc-})
-fitMLII dat (MethodRBF numCentres ranges lambdas opts) = do
+linRegWithMLII :: Data -> Method -> IO (AnalyticData RBF {-mean estimate-}, ([Double] -> Double) {-varFunc-})
+linRegWithMLII dat (MethodRBF numCentres ranges lambdas opts) = do
     let
         ys = M.fromList (map (\y -> [y]) (V.toList (D.ys dat)))
     results <- mapM (\lambda -> do
@@ -61,7 +63,7 @@ fitMLII dat (MethodRBF numCentres ranges lambdas opts) = do
                         in
                             (sPhi `M.add` (phi `M.mul` phi'), syPhi `M.add` (M.map (*y) phi))
                     ) (M.zero numCentres numCentres, M.zero numCentres 1) (D.values dat)
-            (m, s, alpha, beta, margLik) <- bayesLinReg ys sumPhi sumyPhi opts
+            (m, s, alpha, beta, margLik) <- rbfMLII ys sumPhi sumyPhi opts
             return (centresLambdas, m, s, alpha, beta, margLik)
         ) lambdas
     let
