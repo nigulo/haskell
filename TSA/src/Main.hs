@@ -49,6 +49,7 @@ import TSA.GUI.Preferences
 import TSA.GUI.Log
 import TSA.GUI.TaskManager
 import TSA.GUI.Markers
+import TSA.GUI.Bayes
 
 import GUI.Widget
 
@@ -185,10 +186,7 @@ main = do
     on selectionAct actionActivated (selectionDialog stateRef)
 
     ----------------------------------------------------------------------------
-    analyzeAct <- actionNew "AnalyzeAction" "Analyze" Nothing Nothing
-
-    lsqAct <- actionNew "LsqAction" "Least squares... " Nothing Nothing
-    on lsqAct actionActivated (Lsq.paramsDialog stateRef)
+    transformAct <- actionNew "TransformAction" "Transform" Nothing Nothing
 
     interpAct <- actionNew "InterpolateAction" "Interpolate... " Nothing Nothing
     on interpAct actionActivated (Interpolate.paramsDialog stateRef)
@@ -206,7 +204,16 @@ main = do
     on localPhaseAct actionActivated (localPhaseDialog stateRef)
 
     ----------------------------------------------------------------------------
-    searchAct <- actionNew "SearchAction" "Search" Nothing Nothing
+    regressionAct <- actionNew "RegressionAction" "Regression" Nothing Nothing
+
+    lsqAct <- actionNew "LsqAction" "Least squares regression... " Nothing Nothing
+    on lsqAct actionActivated (Lsq.paramsDialog stateRef)
+
+    bayesLinRegAct <- actionNew "BayesLinRegAction" "Bayesian linear regression... " Nothing Nothing
+    on bayesLinRegAct actionActivated (TSA.GUI.Bayes.linRegWithMLIIDialog stateRef)
+
+    ----------------------------------------------------------------------------
+    analyzeAct <- actionNew "AnalyzeAction" "Analyze" Nothing Nothing
 
     findPeriodAct <- actionNew "FindPeriodAction" "Find period... " Nothing Nothing
     on findPeriodAct actionActivated (findPeriodDialog stateRef)
@@ -292,7 +299,7 @@ main = do
     
     ----------------------------------------------------------------------------
     standardGroup <- actionGroupNew "standard"
-    mapM_ (actionGroupAddAction standardGroup) [fileAct, dataAct, analyzeAct, searchAct,  graphAct, windowAct]
+    mapM_ (actionGroupAddAction standardGroup) [fileAct, dataAct, transformAct, regressionAct, analyzeAct,  graphAct, windowAct]
     mapM_ (actionGroupAddAction standardGroup)
       [newAct,
        loadAct,
@@ -312,12 +319,14 @@ main = do
        sampleAct,
        selectionAct,
        ----------- 
-       lsqAct,
        interpAct,
        envelopeAct, 
        fftAct,
        asAct,
        localPhaseAct,
+       ----------- 
+       lsqAct,
+       bayesLinRegAct,
        ----------- 
        findPeriodAct,
        d2Act,

@@ -4,13 +4,23 @@ cabal-version:       >= 1.2
 build-type:          Simple
 license:             AllRightsReserved
 license-file:        ""
-copyright:           maintainer:          stability:           homepage:            package-url:         bug-reports:         synopsis:            description:         .
+copyright:           
+maintainer:          
+stability:           
+homepage:            
+package-url:         
+bug-reports:         
+synopsis:            
+description:         .
 category:            
-            author:              tested-with:         data-files:
+author:              
+tested-with:         
+data-files:
             tsa.ico,
             ui.xml
 data-dir:            res
-extra-source-files:  extra-tmp-files:
+extra-source-files:  
+extra-tmp-files:
 
 executable TSA
   build-depends:   
@@ -47,7 +57,7 @@ executable TSA
   extensions:      
                DoAndIfThenElse,
                ScopedTypeVariables
-  other-modules: 
+  other-modules:
 
 executable Bootstrap
   build-depends:   

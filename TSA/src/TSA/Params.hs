@@ -7,6 +7,7 @@ module TSA.Params (
     SplineParams(..),
     HarmonicParams(..),
     LsqParams (..), 
+    BayesLinRegParams (..), 
     EnvParams (..), 
     SubDataParams (..),
     DataParams (..),
@@ -181,6 +182,43 @@ instance Xml.XmlElement LsqParams where
                 Just count -> read count
                 Nothing -> 0
         }
+
+data BayesLinRegParams = BayesLinRegParams {
+    bayesLinRegData :: Maybe DataParams,
+    bayesLinRegAlgo :: Int,
+    bayesLinRegMethod :: Int,
+    bayesLinRegCommonParams :: CommonParams
+} deriving (Show, Read)
+
+instance Xml.XmlElement BayesLinRegParams where
+
+    toElement params = Xml.element "bayeslinregparams" 
+        [("algo", show (bayesLinRegAlgo params)),
+         ("method", show (bayesLinRegMethod params))
+        ]
+        (
+            case bayesLinRegData params of
+                Just dataParams -> [Left (Xml.toElement dataParams)]
+                Nothing -> []
+            ++ [Left (Xml.toElement (bayesLinRegCommonParams params))]
+        )
+        
+    fromElement e = 
+        BayesLinRegParams {
+            bayesLinRegData =
+                case Xml.contentElements e "dataparams" of
+                    [dataParams] -> Just $ Xml.fromElement dataParams
+                    otherwise -> Nothing
+                ,
+            bayesLinRegAlgo = case Xml.maybeAttrValue e "algo" of
+                Just algo -> read algo
+                Nothing -> 0,
+            bayesLinRegMethod = case Xml.maybeAttrValue e "method" of
+                Just method -> read method
+                Nothing -> 0,
+            bayesLinRegCommonParams = Xml.fromElement (Xml.contentElement e commonParamsXmlElementName)
+        }
+
 
 data EnvParams = EnvParams {
     envUpperParams :: CommonParams,
@@ -806,6 +844,7 @@ instance Xml.XmlElement BootstrapParams where
 data Params = Params {
     dataParams :: [DataParams],
     lsqParams :: LsqParams,
+    bayesLinRegParams :: BayesLinRegParams,
     envParams :: EnvParams,
     fftParams :: FftParams,
     asParams :: AnalyticSignalParams,
@@ -828,6 +867,7 @@ instance Xml.XmlElement Params where
     toElement state = Xml.element "tsaparams" [("version", "1")] 
         ((map (\dp -> Left (Xml.toElement dp)) (dataParams state)) ++ 
         [Left (Xml.toElement (lsqParams state)),
+         Left (Xml.toElement (bayesLinRegParams state)),
          Left (Xml.toElement (envParams state)),
          Left (Xml.toElement (fftParams state)),
          Left (Xml.toElement (asParams state)),
@@ -853,6 +893,7 @@ instance Xml.XmlElement Params where
             Params {
                 dataParams = map Xml.fromElement $ Xml.contentElements e "dataparams",
                 lsqParams = Xml.fromElement $ Xml.contentElement e "lsqparams",
+                bayesLinRegParams = Xml.fromElement $ Xml.contentElement e "bayeslinregparams",
                 envParams = Xml.fromElement $ Xml.contentElement e "envparams",
                 fftParams = Xml.fromElement $ Xml.contentElement e "fftparams",
                 asParams = Xml.fromElement $ Xml.contentElement e "analyticsignalparams",
@@ -945,6 +986,7 @@ instance Show Params where
         "1\n" ++ --version 
         (show (dataParams s)) ++ "\n" ++
         (show (lsqParams s)) ++ "\n" ++
+        (show (bayesLinRegParams s)) ++ "\n" ++
         (show (envParams s)) ++ "\n" ++
         (show (fftParams s)) ++ "\n" ++
         (show (asParams s)) ++ "\n" ++
@@ -1017,6 +1059,7 @@ newParams =
                 lsqFitParams = newFitParams "LsqFit" 3 3 0, 
                 lsqBootstrapCount = 0
                 },
+            bayesLinRegParams = newBayesLinReg,
             envParams = newEnv,
             fftParams = FftParams {
                 fftDirection = True,
@@ -1057,6 +1100,17 @@ newParams =
             buildParams = newBuild,
             interpolateParams = newInterpolate,
             statisticParams = [newStatistic Nothing Nothing]
+    }
+
+newBayesLinReg :: BayesLinRegParams
+newBayesLinReg = BayesLinRegParams {
+    bayesLinRegData = Nothing, 
+    bayesLinRegAlgo = 0, 
+    bayesLinRegMethod = 0, 
+    bayesLinRegCommonParams = CommonParams {
+        commonName = "BayesLinReg",
+        commonNo = 1
+        }
     }
 
 newEnv :: EnvParams

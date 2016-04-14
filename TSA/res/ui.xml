@@ -24,15 +24,18 @@
       <menuitem action="SampleAction"/>
       <menuitem action="SelectionAction"/>
     </menu>
-    <menu name="Analyze" action="AnalyzeAction">
-      <menuitem action="LsqAction"/>
+    <menu name="Transform" action="TransformAction">
       <menuitem action="InterpolateAction"/>
       <menuitem action="EnvelopeAction"/>
       <menuitem action="FftAction"/>
       <menuitem action="AsAction"/>
       <menuitem action="LocalPhaseAction"/>
     </menu>
-    <menu name="Search" action="SearchAction">
+    <menu name="Regression" action="RegressionAction">
+      <menuitem action="LsqAction"/>
+      <menuitem action="BayesLinRegAction"/>
+    </menu>
+    <menu name="Analyze" action="AnalyzeAction">
       <menuitem action="FindPeriodAction"/>
       <menuitem action="D2Action"/>
       <menuitem action="FindSpecificPointsAction"/>
