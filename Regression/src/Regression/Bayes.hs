@@ -13,7 +13,7 @@ import Regression.AnalyticData
 data Method = MethodLinear Int | 
     MethodRBF Int  -- ^ number of centres (currently same in all dimensions)
               [(Double, Double)] -- ^ ranges per dimension
-              [Double] -- ^ list of widths (currently all equal in the model)
+              [Double] -- ^ list of trial widths (currently all equal in the model)
               (Int, Double) -- ^ (maxIters, precision)
 
 
