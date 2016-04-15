@@ -29,10 +29,10 @@ bootstrapSplines bootstrapCount fitFunc spline dat progressUpdateFunc = do
     splinesRef <- newMVar []
     stdGen <- getStdGen
     let 
-        Left diff = U.binaryOp F.subtr (Left dat) (Right (Left spline)) True stdGen
+        Left diff = U.binaryOp F.subtr (Left dat) (Right spline) True stdGen
     mapM_ (\i -> forkOn (i `mod` numCapabilities) $ 
         do
-            bsData <- U.bootstrap (Left spline) dat diff
+            bsData <- U.bootstrap spline dat diff
             bsSpline <- fitFunc bsData (\percent -> progressUpdateFunc (percent * fromIntegral i / fromIntegral bootstrapCount))
             modifyMVar_ splinesRef (\splines -> return (splines ++ [bsSpline]))
             SSem.signal sem
@@ -45,7 +45,7 @@ bootstrapSplines bootstrapCount fitFunc spline dat progressUpdateFunc = do
 
 bootstrapSpline :: Int -> (Data -> IO Spline) -> Spline -> Data -> Data -> IO (Spline)
 bootstrapSpline i fitFunc spline dat diff = do
-    bsData <- U.bootstrap (Left spline) dat diff
+    bsData <- U.bootstrap spline dat diff
     bsSpline <- fitFunc bsData
     return bsSpline    
 

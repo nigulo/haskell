@@ -35,7 +35,7 @@ import qualified Statistics.Sample as Sample
 import System.Random
 import System.Random.MWC
 
-binaryOp :: RandomGen g => F.Function Double -> Either Data (Either S.Spline FS.Functions) -> Either Data (Either S.Spline FS.Functions) -> Bool -> g -> Either Data (Either S.Spline FS.Functions)
+binaryOp :: (F.Fn d, RandomGen g) => F.Function Double -> Either Data (AD.AnalyticData d) -> Either Data (AD.AnalyticData d) -> Bool -> g -> Either Data (AD.AnalyticData d)
 binaryOp op (Left d1) (Left d2) yOrx g = 
     let 
         xs2 = xs1 d2
@@ -54,13 +54,10 @@ binaryOp op (Left d1) (Left d2) yOrx g =
 --            Spectrum _ -> Left $ spectrum1 vs
             Data2 _ -> Left $ data1 vs
             Spectrum2 _ -> Left $ spectrum1 vs
-binaryOp op (Left d) (Right s) yOrx g = 
+binaryOp op (Left d) (Right ad) yOrx g = 
     let 
         (g1, g2) = System.Random.split g
-        ys =
-            case s of
-                Left spline -> AD.getValues (xs d) (mkStdGen 1) spline
-                Right fs -> AD.getValues (xs d) g1 fs
+        ys = AD.getValues (xs d) g1 ad
             
         vs = 
             if yOrx
@@ -68,18 +65,11 @@ binaryOp op (Left d) (Right s) yOrx g =
             else zipWith (\(x1, y1, w1) (x, g) -> (F.getValue [x1, x] [] g op, y1, w1)) (V.toList (values1 d)) (zip (V.toList (xs1 d)) (randomGens g2))
     in
         case d of 
---            Data _ -> Left $ data1 $ V.fromList vs
---            Spectrum _ -> Left $ spectrum1 $ V.fromList vs
             Data2 _ -> Left $ data1 $ V.fromList vs
             Spectrum2 _ -> Left $ spectrum1 $ V.fromList vs
-binaryOp op (Right (Left s1)) (Right (Left s2)) _ g = 
-    if op == F.add 
-        then Right (Left (S.splineSum s1 s2)) 
-        else if op == F.subtr 
-            then Right (Left (S.splineDiff s1 s2))
-        else Right (Left (AD.AnalyticData [([0], [0], (P.unitPolynom 0))]))
+binaryOp op (Right ad1) (Right ad2) _ g = Right $ F.binaryOp op ad1 ad2
 
-constantOp :: RandomGen g => F.Function Double -> Either Data (Either S.Spline FS.Functions) -> Double -> Bool -> g -> Either Data (Either S.Spline FS.Functions)
+constantOp :: (F.Fn d, RandomGen g) => F.Function Double -> Either Data (AD.AnalyticData d) -> Double -> Bool -> g -> Either Data (AD.AnalyticData d)
 constantOp op (Left d) k yOrx g = 
     let 
         vs = 
@@ -92,11 +82,7 @@ constantOp op (Left d) k yOrx g =
 --            Spectrum _ -> Left $ spectrum1 vs
             Data2 _ -> Left $ data1 vs
             Spectrum2 _ -> Left $ spectrum1 vs
-constantOp op (Right s) k _ _ = 
-    case s of
-        Left spline -> Right $ Left $ F.constantOp op spline k
-        Right fs -> Right $ Right $ F.constantOp op fs k
-    
+constantOp op (Right ad) k _ _ = Right $ F.constantOp op ad k
 
 
 -- | Converts a given analytic data to data of specified number of samples
@@ -150,38 +136,28 @@ sample2dAnalyticData s (num, size, count) g =
     in 
         D.data1' $ V.fromList vals
 
-getValues :: RandomGen g => [[Double]] -> Either D.Data (Either S.Spline FS.Functions) -> g -> [([Double], Double)]
+getValues :: (F.Fn d, RandomGen g) => [[Double]] -> Either D.Data (AD.AnalyticData d) -> g -> [([Double], Double)]
 getValues xs (Left dat) _ = zip xs (D.interpolatedValues xs dat)
-getValues xs (Right (Left spline)) g = 
+getValues xs (Right ad) g = 
     let
-        filteredXs = filterXs spline xs
+        filteredXs = filterXs ad xs
     in
-        zip filteredXs (zipWith (\x g -> F.getValue_ x g spline) filteredXs (randomGens g))
-getValues xs (Right (Right fns)) g = 
-    let
-        filteredXs = filterXs fns xs
-    in
-        zip filteredXs (zipWith (\x g -> F.getValue_ x g fns) filteredXs (randomGens g))
+        zip filteredXs (zipWith (\x g -> F.getValue_ x g ad) filteredXs (randomGens g))
 
 filterXs ad = filter (\xs1 -> all (\(x1, xMin, xMax) -> x1 >= xMin && x1 <= xMax) (zip3 xs1 (AD.xMins ad) (AD.xMaxs ad)))
 
-getValues1 :: RandomGen g => V.Vector Double -> Either D.Data (Either S.Spline FS.Functions) -> g -> V.Vector (Double, Double)
+getValues1 :: (F.Fn d, RandomGen g) => V.Vector Double -> Either D.Data (AD.AnalyticData d) -> g -> V.Vector (Double, Double)
 getValues1 xs (Left dat) _ = V.zip xs (D.interpolatedValues1 xs dat)
-getValues1 xs (Right (Left spline)) g = 
+getValues1 xs (Right ad) g = 
     let
-        filteredXs = filterXs1 spline xs
+        filteredXs = filterXs1 ad xs
     in
-        V.zip filteredXs (applyToVectorWithRandomGen (\x g -> F.getValue_ [x] g spline) filteredXs g)
-getValues1 xs (Right (Right fns)) g = 
-    let
-        filteredXs = filterXs1 fns xs
-    in
-        V.zip filteredXs (applyToVectorWithRandomGen (\x g -> F.getValue_ [x] g fns) filteredXs g)
+        V.zip filteredXs (applyToVectorWithRandomGen (\x g -> F.getValue_ [x] g ad) filteredXs g)
 
 filterXs1 ad = V.filter (\x -> x >= AD.xMin1 ad && x <= AD.xMax1 ad)
 
 -- | returns a bootstrap version of the data based on statistical model given as analytical data
-bootstrap :: (Either S.Spline FS.Functions) -> Data -> Data -> IO Data
+bootstrap :: (F.Fn d) => (AD.AnalyticData d) -> Data -> Data -> IO Data
 bootstrap ad d diff = do
     stdGen <- getStdGen
     rndVect :: V.Vector Int <- withSystemRandom . asGenST $ \gen -> uniformVector gen (dataLength d)
@@ -204,7 +180,7 @@ bootstrap ad d diff = do
     return bsData
 
 -- | Returns variance of data set against the other data set
-var :: Data -> Either Data (Either S.Spline FS.Functions) -> Double
+var :: (F.Fn d) => Data -> Either Data (AD.AnalyticData d) -> Double
 var dat1 (Left dat2) = 
     -- Both data sets must have the same x coordinates and weights
     Sample.varianceWeighted (V.zip (V.zipWith (\y1 y2 -> (y1 - y2)) ys1 ys2) ws1) where
@@ -214,25 +190,20 @@ var dat1 (Left dat2) =
 var dat (Right ad) = 
     Sample.varianceWeighted (V.fromList (zip (zipWith (\y y1 -> (y - y1)) ys adValues) ws)) where
         (xs, ys, ws) = unzip3 $ D.values dat
-        adValues = 
-            case ad of
-                Left spline -> AD.getValues_ xs spline
-                Right fs -> AD.getValues_ xs fs
+        adValues = AD.getValues_ xs ad
         
 
 -- | Returns standard deviation of data set against the other data set
-stdev :: Data -> Either Data (Either S.Spline FS.Functions) -> Double
+stdev :: (F.Fn d) => Data -> Either Data (AD.AnalyticData d) -> Double
 stdev dat d = sqrt $ var dat d
 
-format :: Either Data (Either S.Spline FS.Functions) -> String
+format :: (F.Fn d, Show d) => Either Data (AD.AnalyticData d) -> String
 format (Left d) = concatMap (\(xs, y, w) -> (concatMap (\x -> show x ++ " ") xs) ++ show y ++ " " ++ show w ++ "\n") (D.values d)
-format (Right (Left s)) = show s 
-format (Right (Right f)) = show f 
+format (Right ad) = show ad 
 
-dataRange :: Either D.Data (Either S.Spline FS.Functions) -> ([Double], [Double])
+dataRange :: (F.Fn d) => Either D.Data (AD.AnalyticData d) -> ([Double], [Double])
 dataRange (Left d) = (D.xMins d, D.xMaxs d)
-dataRange (Right (Left s)) = (AD.xMins s, AD.xMaxs s)
-dataRange (Right (Right f)) = (AD.xMins f, AD.xMaxs f)
+dataRange (Right ad) = (AD.xMins ad, AD.xMaxs ad)
 
 -- | reshuffle the data set (without replacements)
 reshuffleData :: Data -> IO Data

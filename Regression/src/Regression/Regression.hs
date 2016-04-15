@@ -310,7 +310,7 @@ envelope upper rank knots sdev strictExtremaDetection dat puFunc splineFunc weig
                         fitWithSpline_ rank knots dat2 2 puFunc
                 splineFunc spline
                 let 
-                    newSdev = stdev dat (Right (Left spline))
+                    newSdev = stdev dat (Right spline)
 
                 if strictExtremaDetection || newSdev <= sdev 
                     then 

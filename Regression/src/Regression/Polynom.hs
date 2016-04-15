@@ -86,25 +86,32 @@ instance F.Fn Polynom where
         in 
             Polynom (p1 ++ p2s)
 
-    --------------------------------------------------------------------------------
-    -- | Binary operation between polynom coeficients. Both polynoms must
-    --   have same modulating function and same number of sub-polynomes
-    --   NB! this is not a real binary operation between two polynomes, the binary
-    --   operation is only applied between the coefficients of both polynomes having
-    --   the same indices. If you need to get a product of two polynomes use the
-    --   the function `product` function under this module instead.
-    binaryOp op pol1@(Polynom [(coefs1, f1, d1)]) pol2@(Polynom [(coefs2, f2, d2)]) = 
-        let indices = (fst (unzip coefs1)) `union` (fst (unzip coefs2));
-            f i = setCoef (i, F.getValue_ [getCoef i pol1, getCoef i pol2] (mkStdGen 1234) op)
-        in
-            List.foldl' (\pol i -> f i pol) (Polynom [([], getModulator pol1, getModulatorDeriv pol1)]) indices
-    binaryOp op pol1@(Polynom (p1:ps1)) pol2@(Polynom (p2:ps2)) = 
-        let 
-            Polynom p12 = F.binaryOp op (Polynom [p1]) (Polynom [p2])
-            Polynom ps12 = F.binaryOp op (Polynom ps1) (Polynom ps2)
-        in
-            Polynom (p12 ++ ps12)
-
+    binaryOp op pol1 pol2 = 
+        if op == F.add then polynomSum pol1 pol2
+        else if op == F.subtr then polynomDiff pol1 pol2 
+        else if op == F.mult then polynomProduct pol1 pol2
+        else
+            let
+                --------------------------------------------------------------------------------
+                -- | The rest of the implementations are binary operations between polynom coeficients. Both polynoms must
+                --   have same modulating function and same number of sub-polynomes
+                --   NB! this is not a real binary operation between two polynomes, the binary
+                --   operation is only applied between the coefficients of both polynomes having
+                --   the same indices. If you need to get a product of two polynomes use the
+                --   the function `product` function under this module instead.
+                binaryOp' op pol1@(Polynom [(coefs1, f1, d1)]) pol2@(Polynom [(coefs2, f2, d2)]) = 
+                    let indices = (fst (unzip coefs1)) `union` (fst (unzip coefs2));
+                        f i = setCoef (i, F.getValue_ [getCoef i pol1, getCoef i pol2] (mkStdGen 1234) op)
+                    in
+                        List.foldl' (\pol i -> f i pol) (Polynom [([], getModulator pol1, getModulatorDeriv pol1)]) indices
+                binaryOp' op pol1@(Polynom (p1:ps1)) pol2@(Polynom (p2:ps2)) = 
+                    let 
+                        Polynom p12 = F.binaryOp op (Polynom [p1]) (Polynom [p2])
+                        Polynom ps12 = F.binaryOp op (Polynom ps1) (Polynom ps2)
+                    in
+                        Polynom (p12 ++ ps12)
+            in
+                binaryOp' op pol1 pol2
 
 
 instance Xml.XmlElement Polynom where
