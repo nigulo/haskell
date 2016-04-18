@@ -55,8 +55,10 @@ import qualified Data.Map.Strict as Map
 import Debug.Trace
 import Regression.Data as D
 import Regression.Spline as S
+import Regression.RBF as RBF
 import Regression.Functions as F
-import Regression.AnalyticData as A
+import Math.Function as Fn
+import Regression.AnalyticData as AD
 import Regression.Utils as U
 import Regression.Statistic
 import Utils.Misc
@@ -306,7 +308,14 @@ instance Xml.XmlElement FftParams where
         }
 
 
-data SubData = SD1 D.Data | SD2 S.Spline | SD3 F.Functions | SD4 RBF.RBF deriving (Show, Read)
+data SubData = SD1 D.Data | SD2 S.Spline | SD3 F.Functions | SD4 RBF.RBFs deriving (Show, Read)
+
+mapSubData :: Fn.Fn ad => (Either D.Data (AD.AnalyticData ad) -> b) -> SubData -> b
+mapSubData fn (SD1 d) = fn (Left d)
+mapSubData fn (SD2 s) = fn (Right s)
+mapSubData fn (SD3 f) = fn (Right f)
+mapSubData fn (SD4 rbf) = fn (Right rbf)
+
 
 data SubDataParams = SubDataParams {
     subDataRange :: ([Double], [Double]),
@@ -316,18 +325,20 @@ data SubDataParams = SubDataParams {
 
 instance Xml.XmlElement SubDataParams where
     toElement params = Xml.element "subdataparams" 
-        [("version", "1"), ("range", show (subDataRange params))]
+        [("range", show (subDataRange params))]
         ([Left (Xml.element "data" [] [
             case subData params of
                 SD1 d -> Left (Xml.toElement d) 
                 SD2 s -> Left (Xml.toElement s)
                 SD3 f -> Left (Xml.toElement f)
+                SD4 rbf -> Left (Xml.toElement rbf)
                 ])] ++
             [Left (Xml.element "bootstrapset" [] (map (\ds ->
                         case ds of
-                            Left d -> Left (Xml.toElement d) 
-                            Right (Left s) -> Left (Xml.toElement s)
-                            Right (Right e) -> Left (Xml.toElement e)
+                                SD1 d -> Left (Xml.toElement d) 
+                                SD2 s -> Left (Xml.toElement s)
+                                SD3 f -> Left (Xml.toElement f)
+                                SD4 rbf -> Left (Xml.toElement rbf)
                             ) (subDataBootstrapSet params)))]
         )
 
@@ -337,20 +348,20 @@ instance Xml.XmlElement SubDataParams where
                 Just r -> read r
                 Nothing -> ([0], [0]),
             subData =
-                case Xml.maybeAttrValue e "version" of
-                    Just "1" ->
-                        let 
-                            Left dataSetElem = head $ Xml.contents $ Xml.contentElement e "data" 
-                        in
-                            if Xml.name dataSetElem == D.xmlElementName then Left $ Xml.fromElement dataSetElem
-                            else if Xml.name dataSetElem == S.xmlElementName then Right $ Left $ Xml.fromElement dataSetElem
-                            else Right $ Right $ Xml.fromElement dataSetElem,
+                let 
+                    Left dataSetElem = head $ Xml.contents $ Xml.contentElement e "data" 
+                in
+                    if Xml.name dataSetElem == D.xmlElementName then SD1 $ Xml.fromElement dataSetElem
+                    else if Xml.name dataSetElem == S.xmlElementName then SD2 $ Xml.fromElement dataSetElem
+                    else if Xml.name dataSetElem == F.xmlElementName then SD3 $ Xml.fromElement dataSetElem
+                    else SD4 $ Xml.fromElement dataSetElem,
             subDataBootstrapSet =
                 case Xml.maybeContentElement e "bootstrapset" of
                     Just elem -> map (\(Left dataSetElem) ->
-                            if Xml.name dataSetElem == D.xmlElementName then Left $ Xml.fromElement dataSetElem
-                            else if Xml.name dataSetElem == S.xmlElementName then Right $ Left $ Xml.fromElement dataSetElem
-                            else Right $ Right $ Xml.fromElement dataSetElem
+                            if Xml.name dataSetElem == D.xmlElementName then SD1 $ Xml.fromElement dataSetElem
+                            else if Xml.name dataSetElem == S.xmlElementName then SD2 $ Xml.fromElement dataSetElem
+                            else if Xml.name dataSetElem == F.xmlElementName then SD3 $ Xml.fromElement dataSetElem
+                            else SD4 $ Xml.fromElement dataSetElem
                         ) (Xml.contents elem)
                     Nothing -> []
         }
@@ -378,14 +389,14 @@ instance Xml.XmlElement DataParams where
                         Just "1" ->
                             map (\(Left elem) -> Xml.fromElement elem) (Xml.contents (Xml.contentElement e "dataset"))
                         Nothing -> 
-                            [SubDataParams {subDataRange = U.dataRange sd, subDataBootstrapSet = []}] where
+                            [SubDataParams {subDataRange = mapSubData U.dataRange sd, subData = sd, subDataBootstrapSet = []}] where
                                 sd =
                                     let 
                                         Left dataSetElem = head $ Xml.contents $ Xml.contentElement e "dataset" 
                                     in
-                                        if Xml.name dataSetElem == D.xmlElementName then Left $ Xml.fromElement dataSetElem
-                                        else if Xml.name dataSetElem == S.xmlElementName then Right $ Left $ Xml.fromElement dataSetElem
-                                        else Right $ Right $ Xml.fromElement dataSetElem
+                                        if Xml.name dataSetElem == D.xmlElementName then SD1 $ Xml.fromElement dataSetElem -- Data
+                                        else if Xml.name dataSetElem == S.xmlElementName then SD2 $ Xml.fromElement dataSetElem -- Spline
+                                        else SD3 $ Xml.fromElement dataSetElem -- Functions
                 
         }
         
