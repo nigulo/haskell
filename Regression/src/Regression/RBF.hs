@@ -4,15 +4,36 @@ module Regression.RBF (RBF(..), values) where
 import qualified Math.Function as F
 import qualified Data.Eigen.Matrix as M
 import System.Random
+import qualified Utils.Xml as Xml
+import Data.List
+import Data.Maybe
 
-newtype RBF = RBF [(Double {-weight-}, M.MatrixXd {-centre-}, Double {-lambda-})]
-
+newtype RBF = RBF [(Double {-weight-}, M.MatrixXd {-centre-}, Double {-lambda-})] 
 
 values :: M.MatrixXd -> [(M.MatrixXd {-centre-}, Double {-lambda-})] -> [Double]
 values x rbf = map (\(centre, lambda) -> exp(-M.squaredNorm (x - centre) / lambda)) rbf
 
 value :: M.MatrixXd -> RBF -> Double
 value x (RBF rbf) = sum $ map (\(weight, centre, lambda) -> weight * exp(-M.squaredNorm (x - centre) / lambda)) rbf
+
+-- NB show and read are untested!
+instance Show RBF where
+    show (RBF rbf) = "RBF" ++ concatMap (\(weight, centre, lambda) -> "(" ++ show weight ++ "," ++ show (M.toList centre) ++ "," ++ show lambda ++ ")\n") rbf
+
+instance Read (RBF) where
+    readsPrec _ = \s ->
+        case take 3 s of
+            "RBF" -> [(RBF (map (\line -> 
+                    let
+                        Just i = elemIndex ',' line
+                        weight = take i line
+                        line1 = drop (i + 1) line
+                        i1 = length line1 - (fromJust (elemIndex ',' (reverse line1)))
+                        centre = take i1 line1
+                        lambda = drop (i1 + 1) line1
+                    in
+                        (read weight, M.fromList (read centre), read lambda)
+                ) (lines (drop 3 s))), "")]
 
 instance F.Fn RBF where
 
@@ -26,52 +47,16 @@ instance F.Fn RBF where
     -- | Binary opration between the weights only
     binaryOp op (RBF rbf1) (RBF rbf2) = RBF (zipWith (\(weight1, centre1, lambda1) (weight2, centre2, lambda2) -> (F.getValue_ [weight1, weight2] (mkStdGen 1234) op, centre1, lambda1)) rbf1 rbf2)
 
-{-
-instance Xml.XmlElement Polynom where
-    toElement p@(RBF rbf) = Xml.element xmlElementName [] (map mapOp pol) where
-        mapOp (coefs, f, d) =
-            Left $ Xml.element "polynom" [("version", "1")]
-            [
-                Left (Xml.element "coeficients" [] (map (\coef -> Right (show coef)) coefs)),
-                Left (Xml.element "modulatorfunc" [] (
-                    case f of 
-                        Just expression -> [Left $ Xml.toElement expression]
-                        otherwise -> []
-                )), 
-                Left (Xml.element "modulatorderiv" [] ( 
-                    case d of 
-                        Just expression -> [Left $ Xml.toElement expression]
-                        otherwise -> []
-                ))
-            ]
+
+instance Xml.XmlElement RBF where
+    toElement p@(RBF rbf) = Xml.element xmlElementName [] (map mapOp rbf) where
+        mapOp (weight, centre, lambda) =
+            Left $ Xml.element "rbf" [("weight", show weight), ("lambda", show lambda)]
+            [Right (show (M.toList centre))]
 
     fromElement e = 
-        Polynom (map mapOp (Xml.contents e)) where
-            mapOp (Left e) =     
-                let 
-                    name = Xml.name e
-                    attrs = Xml.attrs e
-                    version = case Xml.maybeAttrValue e "version" of
-                        Just v -> v
-                        Nothing -> "1"
-                    coefs = Xml.contents $ head $ Xml.contentElements e "coeficients"
-                    f = Xml.contents $ head $ Xml.contentElements e "modulatorfunc"
-                    d = Xml.contents $ head $ Xml.contentElements e "modulatorderiv"
-                in
-                    (
-                        map (\(Right coef) -> read coef) coefs,
-                        (case f of 
-                            [] -> Nothing
-                            otherwise ->
-                                Just $ head $ map (\(Left e) -> Xml.fromElement e) f
-                            ),
-                        (case d of 
-                            [] -> Nothing
-                            otherwise -> 
-                                Just $ head $ map (\(Left e) -> Xml.fromElement e) d
-                            )
-                    )
+        RBF (map mapOp (Xml.contents e)) where
+            mapOp (Left e) = (read (Xml.attrValue e "weight"), M.fromList (read (head (Xml.contentTexts e))), read (Xml.attrValue e "lambda"))
 
 xmlElementName :: String
-xmlElementName = "rbf"
--}
+xmlElementName = "rbfs"
