@@ -1,39 +1,28 @@
 -- | Radial basis functions
-module Regression.RBF (RBF(..), values) where
+module Regression.RBF (RBF(..), RBFs, values, xmlElementName) where
 
+import Regression.AnalyticData
 import qualified Math.Function as F
-import qualified Data.Eigen.Matrix as M
+import qualified Data.Eigen.Matrix as M hiding (Show (M.MatrixXd))
 import System.Random
 import qualified Utils.Xml as Xml
 import Data.List
 import Data.Maybe
 
-newtype RBF = RBF [(Double {-weight-}, M.MatrixXd {-centre-}, Double {-lambda-})] 
+-- NB! Read is not not implemented for matrix
+instance Read (M.MatrixXd) where
+    readsPrec _ = \s -> [(M.empty, "")]
+
+
+newtype RBF = RBF [(Double {-weight-}, M.MatrixXd {-centre-}, Double {-lambda-})] deriving (Show, Read)
+
+type RBFs = AnalyticData RBF
 
 values :: M.MatrixXd -> [(M.MatrixXd {-centre-}, Double {-lambda-})] -> [Double]
 values x rbf = map (\(centre, lambda) -> exp(-M.squaredNorm (x - centre) / lambda)) rbf
 
 value :: M.MatrixXd -> RBF -> Double
 value x (RBF rbf) = sum $ map (\(weight, centre, lambda) -> weight * exp(-M.squaredNorm (x - centre) / lambda)) rbf
-
--- NB show and read are untested!
-instance Show RBF where
-    show (RBF rbf) = "RBF" ++ concatMap (\(weight, centre, lambda) -> "(" ++ show weight ++ "," ++ show (M.toList centre) ++ "," ++ show lambda ++ ")\n") rbf
-
-instance Read (RBF) where
-    readsPrec _ = \s ->
-        case take 3 s of
-            "RBF" -> [(RBF (map (\line -> 
-                    let
-                        Just i = elemIndex ',' line
-                        weight = take i line
-                        line1 = drop (i + 1) line
-                        i1 = length line1 - (fromJust (elemIndex ',' (reverse line1)))
-                        centre = take i1 line1
-                        lambda = drop (i1 + 1) line1
-                    in
-                        (read weight, M.fromList (read centre), read lambda)
-                ) (lines (drop 3 s))), "")]
 
 instance F.Fn RBF where
 
@@ -57,6 +46,19 @@ instance Xml.XmlElement RBF where
     fromElement e = 
         RBF (map mapOp (Xml.contents e)) where
             mapOp (Left e) = (read (Xml.attrValue e "weight"), M.fromList (read (head (Xml.contentTexts e))), read (Xml.attrValue e "lambda"))
+
+instance Xml.XmlElement (AnalyticData RBF) where
+    toElement (AnalyticData rbfs) = Xml.element xmlElementName [] (map mapOp rbfs) where
+        mapOp (xMin, xMax, rbf) = Left $ Xml.element "node" [("left", show (head xMin)), ("right", show (head xMax))] [Left (Xml.toElement rbf)]
+
+    fromElement e = 
+        AnalyticData (map mapOp (Xml.contents e)) where 
+            mapOp (Left e) =
+                let 
+                    xMin = read $ head $ Xml.attrValues e "left" 
+                    xMax = read $ head $ Xml.attrValues e "right"
+                    rbf = Xml.fromElement $ head $ Xml.contentElements e xmlElementName
+                in ([xMin], [xMax], rbf)
 
 xmlElementName :: String
 xmlElementName = "rbfs"
