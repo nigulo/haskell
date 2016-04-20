@@ -56,8 +56,8 @@ import System.Random.MWC
 isAnalytic :: DataParams -> Bool
 isAnalytic dp =
     case subData (head (dataSet dp)) of 
-             Left _ -> False
-             Right _ -> True
+             SD1 _ -> False
+             otherwise -> True
 
 isContinuous :: DataParams -> Bool
 isContinuous = isAnalytic
@@ -65,15 +65,16 @@ isContinuous = isAnalytic
 isDiscrete :: DataParams -> Bool
 isDiscrete dp =
     case subData (head (dataSet dp)) of 
-             Left _ -> True
-             Right _ -> False
+             SD1 _ -> True
+             otherwise -> False
 
 is2d :: DataParams -> Bool
 is2d dp =
     case subData (head (dataSet dp)) of 
-             Left d -> D.is2d d
-             Right (Left s) -> AD.is2d s
-             Right (Right f) -> AD.is2d f
+             SD1 d -> D.is2d d
+             SD2 s -> AD.is2d s
+             SD3 f -> AD.is2d f
+             SD4 rbf -> AD.is2d rbf
 
 merge :: String -> DataParams -> DataParams -> DataParams
 merge name dp1 dp2 = 
@@ -83,7 +84,7 @@ merge name dp1 dp2 =
             dataSet = (dataSet dp1) ++ (dataSet dp2)
         }
 
-applyToData :: (Int {- subdata no-} -> Maybe Int {- bootstrap no -} -> Either D.Data (Either S.Spline FS.Functions) -> (Double -> IO ()) -> IO [Either D.Data (Either S.Spline FS.Functions)]) 
+applyToData :: (Int {- subdata no-} -> Maybe Int {- bootstrap no -} -> SubData -> (Double -> IO ()) -> IO [SubData]) 
         -> DataParams 
         -> [String] 
         -> TaskEnv
@@ -119,7 +120,7 @@ applyToData func dp names taskEnv = do
                 }) (dataSet dp) results bootstrapResults
         }) names (transpose results) (transpose bootstrapResults)
 
-applyToData1 :: (Int -> Maybe Int -> Either D.Data (Either S.Spline FS.Functions) -> (Double -> IO ()) -> IO (Either D.Data (Either S.Spline FS.Functions))) 
+applyToData1 :: (Int -> Maybe Int -> SubData -> (Double -> IO ()) -> IO (SubData)) 
         -> DataParams 
         -> String 
         -> TaskEnv
@@ -131,30 +132,31 @@ calculateWeights :: DataParams -> Bool -> DataParams
 calculateWeights dp dropBootstrapData = dp {dataSet = map mapOp (dataSet dp)} where
         mapOp sdp =
             case subData sdp of
-                Left d ->
+                SD1 d ->
                     if length (subDataBootstrapSet sdp) > 0
                         then
                         let
                             vals = D.values1 d
                             bootstrap = (subDataBootstrapSet sdp)
-                            bsData = lefts bootstrap 
+                            bsData = map (\(SD1 sd) -> sd) bootstrap 
                             len = length bsData
                             vars = foldl1' (\ys1 ys2 -> V.zipWith (\y1 y2 -> y1 + y2) ys1 ys2) $ map (\bsd -> V.zipWith (\(_, yb, _) (_, y, _) -> (y - yb) * (y - yb) / fromIntegral len) (D.values1 bsd) vals) bsData
                             newValues = V.zipWith (\(x, y, _) var -> (x, y, 1 / var)) vals vars
                           in
-                            sdp {subData = Left (D.data1 newValues), subDataBootstrapSet = if dropBootstrapData then [] else bootstrap}
+                            sdp {subData = SD1 (D.data1 newValues), subDataBootstrapSet = if dropBootstrapData then [] else bootstrap}
                       else sdp
                 otherwise -> sdp 
 
 getDataType :: DataParams -> String
 getDataType dp =
     case subData (head (dataSet dp)) of 
-        Left d -> 
+        SD1 d -> 
             if D.isData d then "Data" else "Spectrum"
-        Right (Left _) -> "Spline"
-        Right (Right _) -> "Function"
+        SD2 _ -> "Modulated spline"
+        SD3 _ -> "Analytic function"
+        SD4 _ -> "Radial basis functions"
 
-getSubDataAt :: DataParams -> Int -> Either D.Data (Either S.Spline FS.Functions)
+getSubDataAt :: DataParams -> Int -> SubData
 getSubDataAt dp i = subData (dataSet dp !! i)
 
 createDataParams :: String -> String -> [SubDataParams] -> DataParams
@@ -169,8 +171,8 @@ createDataParams_ :: String -> [SubDataParams] -> DataParams
 createDataParams_ name = createDataParams name name
 
 createSubDataParams :: ([Double], [Double]) 
-    -> Either D.Data (Either S.Spline FS.Functions) 
-    -> [Either D.Data (Either S.Spline FS.Functions)]
+    -> SubData 
+    -> [SubData]
     -> SubDataParams
 createSubDataParams range dat bootstrapSet =
     SubDataParams {
@@ -179,12 +181,12 @@ createSubDataParams range dat bootstrapSet =
         subDataBootstrapSet = bootstrapSet
     }
 
-createSubDataParams_ :: Either D.Data (Either S.Spline FS.Functions) 
-    -> [Either D.Data (Either S.Spline FS.Functions)]
+createSubDataParams_ :: SubData
+    -> [SubData]
     -> SubDataParams
-createSubDataParams_ dat = createSubDataParams (U.dataRange dat) dat
+createSubDataParams_ dat = createSubDataParams (U.dataRange (unboxSubData dat)) dat
 
-createSubDataParams__ :: Either D.Data (Either S.Spline FS.Functions) 
+createSubDataParams__ :: SubData 
     -> SubDataParams
-createSubDataParams__ dat = createSubDataParams (U.dataRange dat) dat []
+createSubDataParams__ dat = createSubDataParams (U.dataRange (unboxSubData dat)) dat []
 

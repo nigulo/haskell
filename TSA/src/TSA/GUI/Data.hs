@@ -298,14 +298,15 @@ onlySpectrum = dataFilter False
 dataAndSpectrum :: DataFilter
 dataAndSpectrum dp = 
     case subData (head (dataSet dp)) of 
-        Left _ -> True
-        _ -> False
+        SD1 _ -> True
+        otherwise -> False
 
 splineAndSpectrum :: DataFilter
 splineAndSpectrum dp = 
     case subData (head (dataSet dp)) of 
-        Left _ -> onlySpectrum dp
-        Right _ -> True
+        SD1 _ -> onlySpectrum dp
+        SD2 _ -> True
+        otherwise -> False
 
 onlyAnalytic :: DataFilter
 onlyAnalytic = TSA.Data.isAnalytic
@@ -443,13 +444,17 @@ addOrUpdateDataParams dp tabIndex update state =
                                 graphParms = graphTabGraphs graphTabParms !! graphIndex
                                 (pointSize, lineWidth) = 
                                     case subData (head (dataSet dp)) of
-                                        Left dat ->
+                                        SD1 dat ->
                                             if D.is3d dat
                                                 then (0, 0)
                                                 else
                                                     if D.isSpectrum dat then (0, 1) else (1, 0)
-                                        Right (Left spline) -> (0, 1)
-                                        Right (Right ad) ->
+                                        SD2 spline -> (0, 1)
+                                        SD3 ad ->
+                                            if AD.is3d ad
+                                                then (0, 0)
+                                                else (0, 1)
+                                        SD4 ad ->
                                             if AD.is3d ad
                                                 then (0, 0)
                                                 else (0, 1)

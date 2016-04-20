@@ -21,6 +21,7 @@ import qualified Regression.Polynom as P
 import qualified Regression.Spline as S
 import qualified Regression.Functions as FS
 import qualified Regression.AnalyticData as AD
+import qualified Regression.AnalyticDataWrapper as ADW
 import qualified Math.Function as F
 import qualified Math.Expression as E
 
@@ -201,9 +202,10 @@ format :: (F.Fn d, Show d) => Either Data (AD.AnalyticData d) -> String
 format (Left d) = concatMap (\(xs, y, w) -> (concatMap (\x -> show x ++ " ") xs) ++ show y ++ " " ++ show w ++ "\n") (D.values d)
 format (Right ad) = show ad 
 
-dataRange :: (F.Fn d) => Either D.Data (AD.AnalyticData d) -> ([Double], [Double])
+dataRange :: Either D.Data (ADW.AnalyticDataWrapper) -> ([Double], [Double])
 dataRange (Left d) = (D.xMins d, D.xMaxs d)
-dataRange (Right ad) = (AD.xMins ad, AD.xMaxs ad)
+dataRange (Right ad) = (ADW.xMins ad, ADW.xMaxs ad)
+
 
 -- | reshuffle the data set (without replacements)
 reshuffleData :: Data -> IO Data

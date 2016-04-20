@@ -10,6 +10,7 @@ module TSA.Params (
     BayesLinRegParams (..), 
     EnvParams (..), 
     SubDataParams (..),
+    SubData (..),
     DataParams (..),
     FftParams (..),
     LocalPhaseParams (..),
@@ -39,6 +40,7 @@ module TSA.Params (
     updateLsqParams,
     updateEnvParams,
     readParams,
+    unboxSubData,
 
     TaskEnv (..),
     defaultTaskEnv,
@@ -59,6 +61,7 @@ import Regression.RBF as RBF
 import Regression.Functions as F
 import Math.Function as Fn
 import Regression.AnalyticData as AD
+import Regression.AnalyticDataWrapper as ADW
 import Regression.Utils as U
 import Regression.Statistic
 import Utils.Misc
@@ -310,11 +313,11 @@ instance Xml.XmlElement FftParams where
 
 data SubData = SD1 D.Data | SD2 S.Spline | SD3 F.Functions | SD4 RBF.RBFs deriving (Show, Read)
 
-mapSubData :: Fn.Fn ad => (Either D.Data (AD.AnalyticData ad) -> b) -> SubData -> b
-mapSubData fn (SD1 d) = fn (Left d)
-mapSubData fn (SD2 s) = fn (Right s)
-mapSubData fn (SD3 f) = fn (Right f)
-mapSubData fn (SD4 rbf) = fn (Right rbf)
+unboxSubData :: SubData -> Either D.Data ADW.AnalyticDataWrapper
+unboxSubData (SD1 d) = Left d
+unboxSubData (SD2 s) = Right (ADW.analyticDataWrapper s)
+unboxSubData (SD3 f) = Right (ADW.analyticDataWrapper f)
+unboxSubData (SD4 rbf) = Right (ADW.analyticDataWrapper rbf)
 
 
 data SubDataParams = SubDataParams {
@@ -389,7 +392,7 @@ instance Xml.XmlElement DataParams where
                         Just "1" ->
                             map (\(Left elem) -> Xml.fromElement elem) (Xml.contents (Xml.contentElement e "dataset"))
                         Nothing -> 
-                            [SubDataParams {subDataRange = mapSubData U.dataRange sd, subData = sd, subDataBootstrapSet = []}] where
+                            [SubDataParams {subDataRange = U.dataRange (unboxSubData sd), subData = sd, subDataBootstrapSet = []}] where
                                 sd =
                                     let 
                                         Left dataSetElem = head $ Xml.contents $ Xml.contentElement e "dataset" 

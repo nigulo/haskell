@@ -145,7 +145,7 @@ conjugatedCarrierFit (DataUpdateFunc dataUpdateFunc) dataParams precision id = d
     g <- getStdGen 
     let 
         sdp = head $ dataSet dataParams
-        Right (Left (AnalyticData pols)) = subData sdp
+        SD2 (AnalyticData pols) = subData sdp
         s = AnalyticData (map (\(xMin, xMax, pol)-> (xMin, xMax, swapFuncAndDeriv pol)) pols) where
         swapFuncAndDeriv pol = 
             let 
