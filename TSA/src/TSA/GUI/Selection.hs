@@ -136,19 +136,25 @@ doSelectionOp op (x1, x2, y1, y2) dp =
                     sdp {
                         subData = 
                             case subData sdp of
-                                Left d -> Left (selectData1 (x1, x2) (y1, y2) op d)
-                                Right (Left ad@(AnalyticData [(_, _, s)])) ->
+                                SD1 d -> SD1 (selectData1 (x1, x2) (y1, y2) op d)
+                                SD2 ad@(AnalyticData [(_, _, s)]) ->
                                     let 
                                         xMin = AD.xMin1 ad 
                                         xMax = AD.xMin1 ad
                                     in 
-                                        Right $ Left (if op then AnalyticData [([x1], [x2], s)] else AnalyticData [([xMin], [x1], s), ([x2], [xMax], s)])
-                                Right (Right ad@(AnalyticData [(_, _, f)])) -> 
+                                        SD2 (if op then AnalyticData [([x1], [x2], s)] else AnalyticData [([xMin], [x1], s), ([x2], [xMax], s)])
+                                SD3 ad@(AnalyticData [(_, _, f)]) -> 
                                     let 
                                         xMin = AD.xMin1 ad 
                                         xMax = AD.xMin1 ad
                                     in 
-                                        Right $ Right (if op then AnalyticData [([x1], [x2], f)] else AnalyticData [([xMin], [x1], f), ([x2], [xMax], f)])
+                                        SD3 (if op then AnalyticData [([x1], [x2], f)] else AnalyticData [([xMin], [x1], f), ([x2], [xMax], f)])
+                                SD4 ad@(AnalyticData [(_, _, rbf)]) -> 
+                                    let 
+                                        xMin = AD.xMin1 ad 
+                                        xMax = AD.xMin1 ad
+                                    in 
+                                        SD4 (if op then AnalyticData [([x1], [x2], rbf)] else AnalyticData [([xMin], [x1], rbf), ([x2], [xMax], rbf)])
                     }
                 ) (dataSet dp)
         }

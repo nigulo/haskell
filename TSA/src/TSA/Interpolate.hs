@@ -8,6 +8,6 @@ import TSA.Data
 interpolate :: Int -> String -> DataParams -> TaskEnv -> IO DataParams
 interpolate method fitName dat taskEnv = do
     let 
-        func i j (Left dat) _ = interpolateWithSpline dat >>= \spline -> return $ Right $ Left spline
+        func i j (SD1 dat) _ = interpolateWithSpline dat >>= \spline -> return $ SD2 spline
     applyToData1 func dat fitName taskEnv
 

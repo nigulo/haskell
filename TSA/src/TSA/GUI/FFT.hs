@@ -105,10 +105,10 @@ paramsDialog stateRef = do
                     fftPhaseShift = phaseShift,
                     fftRealData = case selectedRealSpec of 
                         Nothing -> Nothing
-                        Just s -> Just $ left $ subData $ head $ dataSet s,
+                        Just s -> Just $ left $ unboxSubData $ subData $ head $ dataSet s,
                     fftImagData = case selectedImagSpec of 
                         Nothing -> Nothing
-                        Just s -> Just $ left $ subData $ head $ dataSet s
+                        Just s -> Just $ left $ unboxSubData $ subData $ head $ dataSet s
                 }}
                 
                 forkOS $ fft stateRef name

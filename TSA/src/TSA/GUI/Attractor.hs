@@ -88,7 +88,7 @@ findAttractor stateRef dataParams dimension =
             graphTabParms = (graphTabs state) !! currentGraphTab
             selectedGraph = graphTabSelection graphTabParms
 
-            Left dat = subData $ head $ dataSet dataParams
+            SD1 dat = subData $ head $ dataSet dataParams
             vals = D.ys dat
 
             attractorData =
@@ -96,7 +96,7 @@ findAttractor stateRef dataParams dimension =
                     2 -> D.data1' $ V.zip (V.init vals) (V.tail vals)
                     3 -> D.data2' $ V.zip3 (V.init (V.init vals)) (V.init (V.tail vals)) (V.tail (V.tail vals))
             
-        modifyState stateRef $ addData (Left attractorData) ((dataName dataParams) ++ "_attractor" ++ show dimension) (Just (currentGraphTab, selectedGraph))
+        modifyState stateRef $ addData (SD1 attractorData) ((dataName dataParams) ++ "_attractor" ++ show dimension) (Just (currentGraphTab, selectedGraph))
 
 
 

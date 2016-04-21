@@ -119,7 +119,7 @@ leastSquares dat period =
                                 freq = 2 * pi / period
                 fitWithSpline (modulatedUnitPolynoms templates) 1 dat 2 (\_ -> return ())
         let
-            Left residue = binaryOp (F.subtr) (Left dat) (Right (Left spline)) True g
+            Left residue = binaryOp (F.subtr) (Left dat) (Right spline) True g
             vals = values1 residue
             (disp, norm) = V.foldl' (\(sum, wSum) (_, y, w) -> (sum + y * y * w, wSum + w)) (0, 0) vals
         return $ disp / norm

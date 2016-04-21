@@ -289,7 +289,7 @@ dataDialog stateRef = do
                     setErrorBarsEnabled enabled = do
                         widgetSetSensitive errorBars enabled
                 case subData (head (dataSet dataParams)) of
-                    Left dat ->
+                    SD1 dat ->
                         if D.is3d dat
                             then
                                 do
@@ -307,12 +307,25 @@ dataDialog stateRef = do
                                         else 
                                             setSymbolSettingsEnabled True
                                     setErrorBarsEnabled True
-                    Right (Left spline) -> do
+                    SD2 spline -> do
                         setSymbolSettingsEnabled False
                         setLineSettingsEnabled True
                         setColorSettingsEnabled True
                         setErrorBarsEnabled False
-                    Right (Right ad) ->
+                    SD3 ad ->
+                        do 
+                            setSymbolSettingsEnabled False
+                            setErrorBarsEnabled False
+                            if AD.is3d ad
+                                then
+                                    do
+                                        setLineSettingsEnabled False
+                                        setColorSettingsEnabled False
+                                else
+                                    do
+                                        setLineSettingsEnabled True
+                                        setColorSettingsEnabled True
+                    SD4 ad ->
                         do 
                             setSymbolSettingsEnabled False
                             setErrorBarsEnabled False
@@ -923,7 +936,7 @@ getPlotData graphArea graphDataParams dataParams period (w, h) randomGen =
                         }
             mapOp sdp = 
                 case subData sdp of
-                    Left d ->
+                    SD1 d ->
                         case D.dim d of
                             1 -> if D.isData d
                                 -- 2D data
@@ -953,13 +966,25 @@ getPlotData graphArea graphDataParams dataParams period (w, h) randomGen =
                                 PlotData3d {
                                     plotDataValues3d = get3dData d
                                 }
-                    Right (Left s) -> 
+                    SD2 s -> 
                             PlotData {
                                 plotDataValues = sample2dData s,
                                 plotDataLineAttributes = lineAttributes,
                                 plotDataPointAttributes = Nothing
                             }                 
-                    Right (Right f) ->
+                    SD3 f ->
+                        if AD.is2d f 
+                        then 
+                            PlotData {
+                                plotDataValues = sample2dData f,
+                                plotDataLineAttributes = lineAttributes,
+                                plotDataPointAttributes = Nothing
+                            }                 
+                        else
+                            PlotData3d {
+                                plotDataValues3d = sample3dData f
+                            }
+                    SD4 f ->
                         if AD.is2d f 
                         then 
                             PlotData {
@@ -991,8 +1016,10 @@ getGraphArea state tabIndex graphIndex g =
                                 then U.sampleAnalyticData_ d [100, 100] g
                                 else U.sampleAnalyticData_ d [1000] g
                     
-                    getData (Left d) = d
-                    getData (Right s) = either sample sample s 
+                    getData (SD1 d) = d
+                    getData (SD2 s) = sample s 
+                    getData (SD3 f) = sample f 
+                    getData (SD4 f) = sample f 
                         
                     f xyz minOrMax = 
                         let 

@@ -7,7 +7,7 @@ import Regression.Polynom as P
 import Regression.Spline as S
 import Regression.Regression as R
 import Regression.Data as D
-import Regression.AnalyticData as AD
+import Regression.AnalyticDataWrapper as ADW
 import Regression.Utils
 
 import TSA.Params
@@ -51,7 +51,7 @@ findZeroCrossings :: DataParams -> Int  -> String -> TaskEnv -> IO DataParams
 findZeroCrossings dataParams precision name taskEnv = do
     g <- getStdGen 
     let 
-        findZCFunc i j (Left d) puFunc = do
+        findZCFunc i j (SD1 d) puFunc = do
             let
                 zc = D.getZeroCrossings d
             return [Left $ D.data1 (V.map (\x -> (x, 0, 1)) zc)] 

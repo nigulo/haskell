@@ -83,8 +83,8 @@ buildDialog stateRef = do
                 let
                     mapOp sdp1 sdp2 =
                         let
-                            Left d1 = subData sdp1
-                            Left d2 = subData sdp2
+                            SD1 d1 = subData sdp1
+                            SD1 d2 = subData sdp2
                             xs = case t1 of
                                 "x" -> D.xs1 d1
                                 "y" -> D.ys d1
@@ -92,7 +92,7 @@ buildDialog stateRef = do
                                 "x" -> D.xs1 d2
                                 "y" -> D.ys d2
                         in
-                            createSubDataParams__ (Left (D.data1' (V.zip xs ys )))
+                            createSubDataParams__ (SD1 (D.data1' (V.zip xs ys )))
                     result = zipWith mapOp (dataSet selectedData1) (dataSet selectedData2) 
                     
                     graphTabParms = (graphTabs state) !! currentGraphTab

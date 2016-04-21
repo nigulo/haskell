@@ -141,5 +141,5 @@ d2 stateRef dataParams periodStart periodEnd minCorrLen maxCorrLen methodNo prec
         hPutStr handle (show corrLen ++ " " ++ show freq ++ " " ++ show disp ++ "\n")
         ) $ D.values2 dispersions
     hClose handle
-    modifyState stateRef $ addDataParams (createDataParams_ name [createSubDataParams__ (Left dispersions)]) (Just (currentGraphTab, selectedGraph))
+    modifyState stateRef $ addDataParams (createDataParams_ name [createSubDataParams__ (SD1 dispersions)]) (Just (currentGraphTab, selectedGraph))
     (progressUpdateFunc tEnv) 1

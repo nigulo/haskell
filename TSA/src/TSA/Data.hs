@@ -25,6 +25,7 @@ import Debug.Trace
 
 import qualified Regression.Data as D
 import qualified Regression.AnalyticData as AD
+import qualified Regression.AnalyticDataWrapper as ADW
 import Regression.Functions as FS
 import Regression.Spline as S
 import Regression.Utils as U

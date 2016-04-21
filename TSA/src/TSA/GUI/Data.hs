@@ -99,7 +99,7 @@ infoDialog stateRef = do
                 addWidgetToBox (Just "Components:") componentCountLabel PackNatural dataPage
                 if (TSA.Data.isDiscrete dp) 
                     then do
-                        numPointsLabel <- labelNew $ Just $ show (sum (map (\sdp -> let Left d = subData sdp in D.dataLength d) (dataSet dp)))
+                        numPointsLabel <- labelNew $ Just $ show (sum (map (\sdp -> let SD1 d = subData sdp in D.dataLength d) (dataSet dp)))
                         addWidgetToBox (Just "Number of points:") numPointsLabel PackNatural dataPage
                     else
                         return ()
@@ -189,9 +189,10 @@ showInfo dp = do
         let
             (rangeStart, rangeEnd) = subDataRange sdp
             (left, right, n, (mean, var)) = case subData sdp of
-                Left d -> (formatRangeBound rangeStart, formatRangeBound rangeEnd, D.dataLength d, meanVarianceUnb (D.ys d))
-                Right (Left s) -> (formatRangeBound rangeStart, formatRangeBound rangeEnd, 0, (0, 0))
-                Right (Right f) -> (formatRangeBound rangeStart, formatRangeBound rangeEnd, 0, (0, 0))  
+                SD1 d -> (formatRangeBound rangeStart, formatRangeBound rangeEnd, D.dataLength d, meanVarianceUnb (D.ys d))
+                SD2 s -> (formatRangeBound rangeStart, formatRangeBound rangeEnd, 0, (0, 0))
+                SD3 f -> (formatRangeBound rangeStart, formatRangeBound rangeEnd, 0, (0, 0))  
+                SD4 rbf -> (formatRangeBound rangeStart, formatRangeBound rangeEnd, 0, (0, 0))  
         in
             (show i) ++ ": " ++ left ++ " - " ++ right ++ (if TSA.Data.isDiscrete dp then " " ++ (show n ++ " " ++ show mean ++ " " ++ show var) else "") ++ "\n"
         ) $ zip (dataSet dp) [1, 2 ..])
@@ -213,7 +214,6 @@ showInfo dp = do
     widgetShowAll win
     windowResize win 640 480
 
-
 showData :: DataParams -> IO ()
 showData dp = do
     textBuffer <- textBufferNew Nothing
@@ -223,11 +223,17 @@ showData dp = do
     textBufferSetText textBuffer $ concatMap (\(sdp, i) ->
         let
             (rangeStart, rangeEnd) = subDataRange sdp
+            
+            format :: SubData -> String
+            format (SD1 d) = concatMap (\(xs, y, w) -> (concatMap (\x -> show x ++ " ") xs) ++ show y ++ " " ++ show w ++ "\n") (D.values d)
+            format (SD2 ad) = show ad
+            format (SD3 ad) = show ad
+            format (SD4 ad) = show ad
         in     
             (if useSegmentPrefix 
                 then "Segment " ++ show i ++ " (" ++ formatRangeBound rangeStart ++ " - " ++ formatRangeBound rangeEnd ++ ")\n" 
                 else ""
-            ) ++ U.format (subData sdp) ++ "\n"
+            ) ++ format (subData sdp) ++ "\n"
         ) $ zip (dataSet dp) [1, 2 ..]
 
     textView <- textViewNewWithBuffer textBuffer
@@ -277,16 +283,17 @@ type DataFilter = DataParams -> Bool
 only2d :: DataFilter
 only2d dp = 
     case subData (head (dataSet dp)) of 
-        Left d -> D.is2d d
-        Right (Left s) -> AD.is2d s
-        Right (Right ad) -> AD.is2d ad
+        SD1 d -> D.is2d d
+        SD2 s -> AD.is2d s
+        SD3 ad -> AD.is2d ad
+        SD4 ad -> AD.is2d ad
 
 dataFilter :: Bool -> DataFilter
 dataFilter trueFalse dp =
     case subData (head (dataSet dp)) of 
-        Left (Data2 _) -> trueFalse
-        Left (Data3 _) -> trueFalse
-        Left (Spectrum2 _) -> not trueFalse
+        SD1 (Data2 _) -> trueFalse
+        SD1 (Data3 _) -> trueFalse
+        SD1 (Spectrum2 _) -> not trueFalse
         _ -> False
 
 onlyData :: DataFilter
@@ -484,27 +491,27 @@ addOrUpdateDataParams dp tabIndex update state =
 addDataParams :: DataParams -> Maybe (Int, Int) -> State -> State
 addDataParams dp tabIndex state = addOrUpdateDataParams dp tabIndex False state 
 
-addOrUpdateSegmentedData :: [Either D.Data (Either S.Spline FS.Functions)] -> String -> Maybe (Int, Int) -> Bool -> State -> State
+addOrUpdateSegmentedData :: [SubData] -> String -> Maybe (Int, Int) -> Bool -> State -> State
 addOrUpdateSegmentedData ds name tabIndex update state = 
     addOrUpdateDataParams (TSA.Data.createDataParams_ name (map (\d -> TSA.Data.createSubDataParams__ d) ds)) tabIndex update state
 
-addSegmentedData :: [Either D.Data (Either S.Spline FS.Functions)] -> String -> Maybe (Int, Int) -> State -> State
+addSegmentedData :: [SubData] -> String -> Maybe (Int, Int) -> State -> State
 addSegmentedData ds name tabIndex = addOrUpdateSegmentedData ds name tabIndex False
 
-addOrUpdateData :: Either D.Data (Either S.Spline FS.Functions) -> String -> Maybe (Int, Int) -> Bool -> State -> State
+addOrUpdateData :: SubData -> String -> Maybe (Int, Int) -> Bool -> State -> State
 addOrUpdateData d = addOrUpdateSegmentedData [d]
 
-addData :: Either D.Data (Either S.Spline FS.Functions) -> String -> Maybe (Int, Int) -> State -> State
+addData :: SubData -> String -> Maybe (Int, Int) -> State -> State
 addData d name tabIndex = addOrUpdateSegmentedData [d] name tabIndex False
 
 addSpline :: S.Spline -> String -> Maybe (Int, Int) -> State -> State
-addSpline s = addData (Right (Left s))
+addSpline s = addData (SD2 s)
 
 addFunction :: FS.Functions -> String -> Maybe (Int, Int) -> State -> State
-addFunction f = addData (Right (Right f))
+addFunction f = addData (SD3 f)
 
 addDiscreteData :: D.Data -> String -> Maybe (Int, Int) -> State -> State
-addDiscreteData d name tabIndex state = addData (Left d) name tabIndex state
+addDiscreteData d name tabIndex state = addData (SD1 d) name tabIndex state
 
 getDataByName :: String -> State -> DataParams
 getDataByName name state = 

@@ -249,11 +249,7 @@ statisticDialog stateRef = do
                                                                 widgetDestroy messageDialog
                                                         else return ()
                                                         let
-                                                            mapOp i dp =
-                                                                case subData $ dataSet dp !! i of
-                                                                    Left d -> Left d
-                                                                    Right (Left s) -> Right (analyticDataWrapper s)
-                                                                    Right (Right f) -> Right (analyticDataWrapper f)
+                                                            mapOp i dp = unboxSubData $ dataSet dp !! i
                                                             segments = List.map (\i -> List.map (mapOp i) dataParams) [0 .. minSegments - 1]
                                                         results <- calcConcurrently (\dataSets puFunc -> S.getValues dataSets varValDefs (mkStdGen 1) puFunc (taskInitializer tEnv) (taskFinalizer tEnv) statistic) (progressUpdateFunc tEnv) (taskInitializer tEnv) (taskFinalizer tEnv) segments
                                                         modifyMVar_ stateRef $ \state -> 

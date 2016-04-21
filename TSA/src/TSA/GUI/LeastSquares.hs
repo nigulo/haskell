@@ -125,11 +125,11 @@ fit stateRef dataParams fitName = do
         lsqParms = lsqParams (params state)
         bootstrapCount = lsqBootstrapCount lsqParms
         
-        func i maybeJ (Left dat) puFunc = do 
+        func i maybeJ (SD1 dat) puFunc = do 
             spline <- fitData (lsqFitParams lsqParms) dat tEnv
             g <- getStdGen 
             let
-                Left diff = U.binaryOp (F.subtr) (Left dat) (Right (Left spline)) True g
+                Left diff = U.binaryOp (F.subtr) (Left dat) (Right spline) True g
                 Left squareDiff = U.binaryOp (F.subtr) (Left diff) (Left diff) True g
                 diffVals = D.values1 diff
                 datVals = D.values1 dat
@@ -162,8 +162,8 @@ fit stateRef dataParams fitName = do
             mapM_ (\(i, fitParams, dataParams)  ->
                     do
                         let
-                            Right (Left spline) = subData fitParams
-                            Left dat = subData dataParams
+                            SD2 spline = subData fitParams
+                            SD1 dat = subData dataParams
                         Xml.renderToFile (Xml.toDocument spline) ("spline" ++ show i)
                         Xml.renderToFile (Xml.toDocument dat) ("data" ++ show i)
                 ) (zip3 [1, 2 ..] (dataSet fitDataParams) (dataSet dataParams))

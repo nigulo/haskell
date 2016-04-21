@@ -630,7 +630,7 @@ modifyDialog stateRef = do
                                                 func i j d _ = 
                                                     do
                                                         let
-                                                            Left dat = d 
+                                                            SD1 dat = d 
                                                             (maxVal, minVal) = if (opType == Y) then (D.yMax dat, D.yMin dat) else (D.xMax1 dat, D.xMin1 dat)
                                                             f = F.function ("(x-" ++ show minVal ++")*" ++ show constant ++ "/(" ++ show (maxVal - minVal) ++ ")")
                                                         return $ constantOp f d 0 (opType == Y) g
@@ -656,7 +656,7 @@ modifyDialog stateRef = do
                                                 func i j d _ = 
                                                     do
                                                         let
-                                                            Left dat = d 
+                                                            SD1 dat = d 
                                                             newVals = zipWith (\(x, y, w) r -> if (opType == Y) then (x, y + r, w) else (x + r, y, w)) (V.toList (D.values1 dat)) (randomRs (-constant, constant) g)
                                                         return $ Left (D.data1 (V.fromList newVals))
                                             result <- applyToData1 func selectedData1 name tEnv
@@ -670,7 +670,7 @@ modifyDialog stateRef = do
                                                 func i j d _ = 
                                                     do
                                                         let
-                                                            Left dat = d 
+                                                            SD1 dat = d 
                                                             xVals = D.xs1 dat
                                                             xMin = D.xMin1 dat
                                                             xMax = D.xMax1 dat
@@ -690,7 +690,7 @@ modifyDialog stateRef = do
                                                 func i j d _ = 
                                                     do
                                                         let
-                                                            Left dat = d 
+                                                            SD1 dat = d 
                                                             vals = D.values1 dat
                                                             filteredVals = V.filter (\(_, y, _) -> y /= constant) vals
                                                             (xMin, _, _) = V.head filteredVals
@@ -710,7 +710,7 @@ modifyDialog stateRef = do
                                                 func i j d _ = 
                                                     do
                                                         let
-                                                            Left dat = d
+                                                            SD1 dat = d
                                                             dataCreateFunc = case typeNo of
                                                                 0 -> D.spectrum1
                                                                 1 -> D.data1
@@ -727,7 +727,7 @@ modifyDialog stateRef = do
                                                 func i j d _ = 
                                                     do
                                                         let
-                                                            Left dat = d
+                                                            SD1 dat = d
                                                             (vals, minVal, maxVal) = if opType == Y 
                                                                 then (D.ys dat, D.yMin dat, D.yMax dat) 
                                                                 else (D.xs1 dat, D.xMin1 dat, D.xMax1 dat)

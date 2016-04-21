@@ -374,9 +374,10 @@ doPlot state grphTabParams plotFunc =
 
                     dataSets2d = filter (\(dataSet, _) -> 
                             case dataSet  of
-                                Left d -> D.is2d d
-                                Right (Left s) -> True
-                                Right (Right f) -> AD.is2d f
+                                SD1 d -> D.is2d d
+                                SD2 s -> True
+                                SD3 f -> AD.is2d f
+                                SD4 f -> AD.is2d f
                         ) $ concat $ map (\gdp -> 
                                 let 
                                     dp = getDataByName (graphDataParamsName gdp) state
@@ -399,7 +400,7 @@ doPlot state grphTabParams plotFunc =
                             settings@(title, color, pointType, pointSize, (dash1, dash2), lineWidth, errorBars) = getSettings gdp 
                         in
                             case dataSet of
-                                Left d ->
+                                SD1 d ->
                                     if isData d
                                         then
                                             case pointType of
@@ -429,14 +430,16 @@ doPlot state grphTabParams plotFunc =
                                         else
                                             (fmap (Graph2D.lineSpec (((LineSpec.lineWidth lineWidth) . (LineSpec.lineColor color) . (LineSpec.lineType dash1) . (LineSpec.title title)) LineSpec.deflt)) 
                                                 (Plot2D.list (Graph2D.lines) (V.toList (D.xys1 d))))
-                                Right (Left s) -> adMap s settings
-                                Right (Right f) -> adMap f settings
+                                SD2 s -> adMap s settings
+                                SD3 f -> adMap f settings
+                                SD4 f -> adMap f settings
                             ) dataSets2d
                     dataSets3d = filter (\(_, _, dataSet) -> 
                         case dataSet of
-                            Left d -> is3d d
-                            Right (Left s) -> False
-                            Right (Right f) -> AD.is3d f
+                            SD1 d -> is3d d
+                            SD2 s -> False
+                            SD3 f -> AD.is3d f
+                            SD4 rbf -> AD.is3d rbf
                         ) (concat $ map (\gdp ->
                                 let 
                                     name = graphDataParamsName gdp
@@ -450,8 +453,9 @@ doPlot state grphTabParams plotFunc =
                         let 
                             d = 
                                 case dataSet of
-                                    Right (Right f) -> sampleAnalyticData f [plotAreaLeft grphArea, plotAreaBottom grphArea] [plotAreaRight grphArea, plotAreaTop grphArea] [200, 100] g
-                                    Left dat -> dat
+                                    SD3 f -> sampleAnalyticData f [plotAreaLeft grphArea, plotAreaBottom grphArea] [plotAreaRight grphArea, plotAreaTop grphArea] [200, 100] g
+                                    SD4 f -> sampleAnalyticData f [plotAreaLeft grphArea, plotAreaBottom grphArea] [plotAreaRight grphArea, plotAreaTop grphArea] [200, 100] g
+                                    SD1 dat -> dat
                             group [] = [[]]
                             group xys =
                                 let
