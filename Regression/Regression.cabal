@@ -85,7 +85,8 @@ test-suite RegressionTests
   extensions:      
                    FlexibleInstances,
                    ScopedTypeVariables,
-                   TypeSynonymInstances
+                   TypeSynonymInstances,
+                   ExistentialQuantification
 
 executable GradientAscent
   build-depends:   base >= 4,

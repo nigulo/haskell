@@ -10,7 +10,6 @@ module Regression.Utils (
     bootstrap,
     var,
     stdev,
-    format,
     dataRange,
     reshuffleData,
     bootstrapSample    
@@ -137,7 +136,7 @@ sample2dAnalyticData s (num, size, count) g =
     in 
         D.data1' $ V.fromList vals
 
-getValues :: (F.Fn d, RandomGen g) => [[Double]] -> Either D.Data (AD.AnalyticData d) -> g -> [([Double], Double)]
+getValues :: (RandomGen g) => [[Double]] -> Either D.Data (ADW.AnalyticDataWrapper) -> g -> [([Double], Double)]
 getValues xs (Left dat) _ = zip xs (D.interpolatedValues xs dat)
 getValues xs (Right ad) g = 
     let
@@ -145,9 +144,9 @@ getValues xs (Right ad) g =
     in
         zip filteredXs (zipWith (\x g -> F.getValue_ x g ad) filteredXs (randomGens g))
 
-filterXs ad = filter (\xs1 -> all (\(x1, xMin, xMax) -> x1 >= xMin && x1 <= xMax) (zip3 xs1 (AD.xMins ad) (AD.xMaxs ad)))
+filterXs ad = filter (\xs1 -> all (\(x1, xMin, xMax) -> x1 >= xMin && x1 <= xMax) (zip3 xs1 (ADW.xMins ad) (ADW.xMaxs ad)))
 
-getValues1 :: (F.Fn d, RandomGen g) => V.Vector Double -> Either D.Data (AD.AnalyticData d) -> g -> V.Vector (Double, Double)
+getValues1 :: (RandomGen g) => V.Vector Double -> Either D.Data (ADW.AnalyticDataWrapper) -> g -> V.Vector (Double, Double)
 getValues1 xs (Left dat) _ = V.zip xs (D.interpolatedValues1 xs dat)
 getValues1 xs (Right ad) g = 
     let
@@ -155,7 +154,7 @@ getValues1 xs (Right ad) g =
     in
         V.zip filteredXs (applyToVectorWithRandomGen (\x g -> F.getValue_ [x] g ad) filteredXs g)
 
-filterXs1 ad = V.filter (\x -> x >= AD.xMin1 ad && x <= AD.xMax1 ad)
+filterXs1 ad = V.filter (\x -> x >= ADW.xMin1 ad && x <= ADW.xMax1 ad)
 
 -- | returns a bootstrap version of the data based on statistical model given as analytical data
 bootstrap :: (F.Fn d) => (AD.AnalyticData d) -> Data -> Data -> IO Data
@@ -197,10 +196,6 @@ var dat (Right ad) =
 -- | Returns standard deviation of data set against the other data set
 stdev :: (F.Fn d) => Data -> Either Data (AD.AnalyticData d) -> Double
 stdev dat d = sqrt $ var dat d
-
-format :: (F.Fn d, Show d) => Either Data (AD.AnalyticData d) -> String
-format (Left d) = concatMap (\(xs, y, w) -> (concatMap (\x -> show x ++ " ") xs) ++ show y ++ " " ++ show w ++ "\n") (D.values d)
-format (Right ad) = show ad 
 
 dataRange :: Either D.Data (ADW.AnalyticDataWrapper) -> ([Double], [Double])
 dataRange (Left d) = (D.xMins d, D.xMaxs d)
