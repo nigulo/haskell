@@ -9,6 +9,7 @@ import Regression.Spline as S
 import Regression.Regression as R
 import Regression.Data as D
 import Regression.AnalyticData as AD
+import Regression.AnalyticDataWrapper as ADW
 import Regression.Functions as FS
 import Regression.Utils as U
 
@@ -133,14 +134,13 @@ localPhaseDialog stateRef = do
             do
                 widgetDestroy dialog
 
-calcStatistics :: Double -> Double -> Int -> StdGen -> Int -> Maybe Int -> Either D.Data (Either S.Spline FS.Functions) -> (Double -> IO ()) -> IO [Either D.Data (Either S.Spline FS.Functions)]
+calcStatistics :: Double -> Double -> Int -> StdGen -> Int -> Maybe Int -> SubData -> (Double -> IO ()) -> IO [SubData]
 calcStatistics period epoch precision g no bsNo dataSet puFunc = do 
     let
         (mins, maxs) =
-            case dataSet of
+            case unboxSubData dataSet of
                 Left s -> D.getExtrema s False
-                Right (Left s) -> AD.getExtrema (round ((AD.xMax1 s - AD.xMin1 s) / period) * precision) (Just period) g s
-                Right (Right f) -> AD.getExtrema (round ((AD.xMax1 f - AD.xMin1 f) / period) * precision) (Just period) g f
+                Right ad -> ADW.getExtrema (round ((AD.xMax1 s - AD.xMin1 s) / period) * precision) (Just period) g ad
         
         minx = {-min (D.xMin1 detailedSpec) -} epoch
         mapOp = \(x, y) -> (x, snd (properFraction ((x - minx) / period)), 1)
@@ -156,7 +156,7 @@ calcStatistics period epoch precision g no bsNo dataSet puFunc = do
             in
                 ((x, (xMin2 - xMin1) / (fromIntegral numCycles), 1), (x, (abs (yMax - yMin1)) / 2, 1), (x, (yMax + yMin1) / 2 , 1))
             )
-    return [Left (data1 periods), Left (data1 amplitudes), Left (data1 means), Left minima, Left maxima]
+    return [SD1 (data1 periods), SD1 (data1 amplitudes), SD1 (data1 means), SD1 minima, SD1 maxima]
         
 localPhase :: StateRef -> DataParams -> Double -> Double -> Double -> Int -> String -> Bool -> Maybe D.Data -> Bool -> Int -> Bool -> IO ()
 localPhase stateRef dataParams period maxPeriod epoch precision name calculateColorMap barCodeData calculatePhaseDispersion avgOverCycles normalize = do
