@@ -12,7 +12,7 @@ import Debug.Trace
 
 import Regression.Data as D
 import Regression.Spline as S
-import qualified Regression.AnalyticData as AD
+import qualified Regression.AnalyticDataWrapper as ADW
 import Regression.Utils as U
 
 import TSA.Params
@@ -373,11 +373,9 @@ doPlot state grphTabParams plotFunc =
                             (title, color, pointType, pointSize, (round dash1, round dash2), lineWidth, errorBars)
 
                     dataSets2d = filter (\(dataSet, _) -> 
-                            case dataSet  of
-                                SD1 d -> D.is2d d
-                                SD2 s -> True
-                                SD3 f -> AD.is2d f
-                                SD4 f -> AD.is2d f
+                            case unboxSubData dataSet of
+                                Left d -> D.is2d d
+                                Right ad -> ADW.is2d ad
                         ) $ concat $ map (\gdp -> 
                                 let 
                                     dp = getDataByName (graphDataParamsName gdp) state
@@ -393,14 +391,14 @@ doPlot state grphTabParams plotFunc =
                             xsWithOffset = [xMin + offset, xMin + offset + (xMax - xMin) / 1000 .. xMax + offset]
                         in
                             (fmap (Graph2D.lineSpec (((LineSpec.lineWidth lineWidth) . (LineSpec.lineColor color) . (LineSpec.lineType dash1) . (LineSpec.title title)) LineSpec.deflt)) 
-                                (Plot2D.list (Graph2D.lines) (zip xsWithOffset (AD.getValues (map (\x ->  [x]) xs) g ad))))
+                                (Plot2D.list (Graph2D.lines) (zip xsWithOffset (ADW.getValues (map (\x ->  [x]) xs) g ad))))
                     dat2d = map (\(dataSet, gdp) ->
                         let
                             -- note that we are using dash1 as line type  
                             settings@(title, color, pointType, pointSize, (dash1, dash2), lineWidth, errorBars) = getSettings gdp 
                         in
-                            case dataSet of
-                                SD1 d ->
+                            case unboxSubData dataSet of
+                                Left d ->
                                     if isData d
                                         then
                                             case pointType of
@@ -430,16 +428,12 @@ doPlot state grphTabParams plotFunc =
                                         else
                                             (fmap (Graph2D.lineSpec (((LineSpec.lineWidth lineWidth) . (LineSpec.lineColor color) . (LineSpec.lineType dash1) . (LineSpec.title title)) LineSpec.deflt)) 
                                                 (Plot2D.list (Graph2D.lines) (V.toList (D.xys1 d))))
-                                SD2 s -> adMap s settings
-                                SD3 f -> adMap f settings
-                                SD4 f -> adMap f settings
+                                Right ad -> adMap ad settings
                             ) dataSets2d
                     dataSets3d = filter (\(_, _, dataSet) -> 
-                        case dataSet of
-                            SD1 d -> is3d d
-                            SD2 s -> False
-                            SD3 f -> AD.is3d f
-                            SD4 rbf -> AD.is3d rbf
+                        case unboxSubData dataSet of
+                            Left d -> D.is3d d
+                            Right ad -> ADW.is3d ad
                         ) (concat $ map (\gdp ->
                                 let 
                                     name = graphDataParamsName gdp
@@ -452,10 +446,9 @@ doPlot state grphTabParams plotFunc =
                     dat3d = map (\(name, title, dataSet) ->
                         let 
                             d = 
-                                case dataSet of
-                                    SD3 f -> sampleAnalyticData f [plotAreaLeft grphArea, plotAreaBottom grphArea] [plotAreaRight grphArea, plotAreaTop grphArea] [200, 100] g
-                                    SD4 f -> sampleAnalyticData f [plotAreaLeft grphArea, plotAreaBottom grphArea] [plotAreaRight grphArea, plotAreaTop grphArea] [200, 100] g
-                                    SD1 dat -> dat
+                                case unboxSubData dataSet of
+                                    Left d -> d
+                                    Right ad -> sampleAnalyticData ad [plotAreaLeft grphArea, plotAreaBottom grphArea] [plotAreaRight grphArea, plotAreaTop grphArea] [200, 100] g
                             group [] = [[]]
                             group xys =
                                 let

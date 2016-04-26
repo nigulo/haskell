@@ -26,7 +26,7 @@ import qualified Data.Char as C
 import Regression.Data as D
 import Regression.Spline as S
 import Regression.Functions as F
-import Regression.AnalyticData as AD
+import Regression.AnalyticDataWrapper as ADW
 import qualified Regression.Utils as U
 
 import TSA.Params
@@ -288,8 +288,8 @@ dataDialog stateRef = do
                         widgetSetSensitive color enabled
                     setErrorBarsEnabled enabled = do
                         widgetSetSensitive errorBars enabled
-                case subData (head (dataSet dataParams)) of
-                    SD1 dat ->
+                case unboxSubData $ subData (head (dataSet dataParams)) of
+                    Left dat ->
                         if D.is3d dat
                             then
                                 do
@@ -307,29 +307,11 @@ dataDialog stateRef = do
                                         else 
                                             setSymbolSettingsEnabled True
                                     setErrorBarsEnabled True
-                    SD2 spline -> do
-                        setSymbolSettingsEnabled False
-                        setLineSettingsEnabled True
-                        setColorSettingsEnabled True
-                        setErrorBarsEnabled False
-                    SD3 ad ->
+                    Right ad ->
                         do 
                             setSymbolSettingsEnabled False
                             setErrorBarsEnabled False
-                            if AD.is3d ad
-                                then
-                                    do
-                                        setLineSettingsEnabled False
-                                        setColorSettingsEnabled False
-                                else
-                                    do
-                                        setLineSettingsEnabled True
-                                        setColorSettingsEnabled True
-                    SD4 ad ->
-                        do 
-                            setSymbolSettingsEnabled False
-                            setErrorBarsEnabled False
-                            if AD.is3d ad
+                            if ADW.is3d ad
                                 then
                                     do
                                         setLineSettingsEnabled False
@@ -916,7 +898,7 @@ getPlotData graphArea graphDataParams dataParams period (w, h) randomGen =
                         xStep = (xRight - xLeft) / w
                     --errors = foldr1 (\ys1 ys2 -> zipWith (\y1 y2 -> y1 + y1) ys1 ys2) $ map (AD.getValues (map (\x -> [x]) xs) randomGen) bsData
                 in
-                    V.fromList $ zipWith (\x y -> ((x, 0), (y, 0))) xs (AD.getValues (map (\x -> [x]) xs) randomGen d)
+                    V.fromList $ zipWith (\x y -> ((x, 0), (y, 0))) xs (ADW.getValues (map (\x -> [x]) xs) randomGen d)
             sample3dData d = 
                 let
                     (xLeft, xRight) = (plotAreaLeft graphArea, plotAreaRight graphArea)
@@ -935,8 +917,8 @@ getPlotData graphArea graphDataParams dataParams period (w, h) randomGen =
                             plotLineColor = getRGBA $ graphDataParamsColor graphDataParams
                         }
             mapOp sdp = 
-                case subData sdp of
-                    SD1 d ->
+                case unboxSubData $ subData sdp of
+                    Left d ->
                         case D.dim d of
                             1 -> if D.isData d
                                 -- 2D data
@@ -966,35 +948,17 @@ getPlotData graphArea graphDataParams dataParams period (w, h) randomGen =
                                 PlotData3d {
                                     plotDataValues3d = get3dData d
                                 }
-                    SD2 s -> 
-                            PlotData {
-                                plotDataValues = sample2dData s,
-                                plotDataLineAttributes = lineAttributes,
-                                plotDataPointAttributes = Nothing
-                            }                 
-                    SD3 f ->
-                        if AD.is2d f 
+                    Right ad ->
+                        if ADW.is2d ad 
                         then 
                             PlotData {
-                                plotDataValues = sample2dData f,
+                                plotDataValues = sample2dData ad,
                                 plotDataLineAttributes = lineAttributes,
                                 plotDataPointAttributes = Nothing
                             }                 
                         else
                             PlotData3d {
-                                plotDataValues3d = sample3dData f
-                            }
-                    SD4 f ->
-                        if AD.is2d f 
-                        then 
-                            PlotData {
-                                plotDataValues = sample2dData f,
-                                plotDataLineAttributes = lineAttributes,
-                                plotDataPointAttributes = Nothing
-                            }                 
-                        else
-                            PlotData3d {
-                                plotDataValues3d = sample3dData f
+                                plotDataValues3d = sample3dData ad
                             }
     in
         map mapOp (dataSet dataParams)
@@ -1010,23 +974,19 @@ getGraphArea state tabIndex graphIndex g =
         if graphAreaAutomatic graphParms && length (graphData graphParms) > 0
             then 
                 let
-                    sample d =
+                    sample (Left d) = d
+                    sample (Right ad) =
                         D.filterData (\(_, y, _) -> not (isNaN y) && not (isInfinite y)) $
-                            if AD.is3d d
-                                then U.sampleAnalyticData_ d [100, 100] g
-                                else U.sampleAnalyticData_ d [1000] g
+                            if ADW.is3d ad
+                                then U.sampleAnalyticData_ ad [100, 100] g
+                                else U.sampleAnalyticData_ ad [1000] g
                     
-                    getData (SD1 d) = d
-                    getData (SD2 s) = sample s 
-                    getData (SD3 f) = sample f 
-                    getData (SD4 f) = sample f 
-                        
                     f xyz minOrMax = 
                         let 
                             vals = concat $
                                 map (\dp -> map (\sdp ->
                                     let
-                                        d = getData (subData sdp)
+                                        d = sample $ unboxSubData (subData sdp)
                                     in
                                         case xyz of
                                             0 ->

@@ -451,11 +451,9 @@ exportData state = do
                             then (take (length f - 4) f) 
                             else f 
                     isdaState = encode d where
-                        d = case subData (head (dataSet (fromJust selectedData))) of
-                            SD1 dataOrSpec -> dataOrSpec
-                            SD2 s -> sampleAnalyticData_ s [round precision] g
-                            SD3 f -> sampleAnalyticData_ f [round precision] g
-                            SD4 rbf -> sampleAnalyticData_ rbf [round precision] g
+                        d = case unboxSubData $ subData (head (dataSet (fromJust selectedData))) of
+                            Left dataOrSpec -> dataOrSpec
+                            Right ad -> sampleAnalyticData_ ad [round precision] g
                 writeStateToFile fileName isdaState
         else 
             widgetDestroy dialog

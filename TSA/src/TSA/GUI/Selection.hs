@@ -131,7 +131,7 @@ doSelectionOp op (x1, x2, y1, y2) dp =
         dp {
             dataSet = filter (\sdp ->
                 case subData sdp of
-                    Left dat -> D.dataLength dat > 0
+                    SD1 dat -> D.dataLength dat > 0
                     otherwise -> True) $ map (\sdp -> 
                     sdp {
                         subData = 

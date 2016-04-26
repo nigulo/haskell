@@ -161,7 +161,7 @@ fft stateRef name =
         --modifyState stateRef $ addDiscreteData imagSpec (name ++ "_Imag") (Just (currentGraphTab, selectedGraph))
         g <- getStdGen 
         let
-            Left powerSpec = U.binaryOp (F.function "sqrt(x*x + y*y)") (Left realSpec) (Left imagSpec) True g
+            powerSpec = U.dataToDataOp (F.function "sqrt(x*x + y*y)") realSpec imagSpec True g
             -- shift it to zero
             yMax = D.yMax powerSpec
             xMax = D.xMax1 powerSpec

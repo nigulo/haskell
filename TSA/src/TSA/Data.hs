@@ -18,7 +18,9 @@ module TSA.Data (
     createDataParams_,
     createSubDataParams,
     createSubDataParams_,
-    createSubDataParams__
+    createSubDataParams__,
+    subDataBinaryOp,
+    subDataConstantOp
     ) where
 
 import Debug.Trace
@@ -30,6 +32,7 @@ import Regression.Functions as FS
 import Regression.Spline as S
 import Regression.Utils as U
 import Math.Expression as E
+import Math.Function as F
 
 
 import TSA.Params
@@ -191,3 +194,20 @@ createSubDataParams__ :: SubData
     -> SubDataParams
 createSubDataParams__ dat = createSubDataParams (U.dataRange (unboxSubData dat)) dat []
 
+subDataBinaryOp :: (RandomGen g) => F.Function Double -> SubData -> SubData -> Bool -> g -> SubData
+subDataBinaryOp op (SD1 d1) (SD1 d2) yOrx g = SD1 (U.dataToDataOp op d1 d2 yOrx g)
+subDataBinaryOp op (SD1 d1) d2 yOrx g =
+    let
+        Right ad = unboxSubData d2
+    in 
+        SD1 (U.dataToADOp op d1 ad yOrx g)
+subDataBinaryOp op (SD2 d1) (SD2 d2) _ _ = SD2 (F.binaryOp op d1 d2)
+subDataBinaryOp op (SD3 d1) (SD3 d2) _ _ = SD3 (F.binaryOp op d1 d2)
+subDataBinaryOp op (SD4 d1) (SD4 d2) _ _ = SD4 (F.binaryOp op d1 d2)
+        
+
+subDataConstantOp :: (RandomGen g) => F.Function Double -> SubData -> Double -> Bool -> g -> SubData
+subDataConstantOp op (SD1 d) k yOrx g = SD1 (U.dataConstantOp op d k yOrx g)
+subDataConstantOp op (SD2 d) k _ _ = SD2 (F.constantOp op d k)
+subDataConstantOp op (SD3 d) k _ _ = SD3 (F.constantOp op d k)
+subDataConstantOp op (SD4 d) k _ _ = SD4 (F.constantOp op d k)

@@ -123,7 +123,7 @@ localPhaseDialog stateRef = do
                     barCodeData = case barCode of 
                         Just dataParams -> 
                             let
-                                Left d = subData $ head $ dataSet dataParams
+                                SD1 d = subData $ head $ dataSet dataParams
                             in
                                 Just d
                         Nothing -> Nothing
@@ -140,7 +140,7 @@ calcStatistics period epoch precision g no bsNo dataSet puFunc = do
         (mins, maxs) =
             case unboxSubData dataSet of
                 Left s -> D.getExtrema s False
-                Right ad -> ADW.getExtrema (round ((AD.xMax1 s - AD.xMin1 s) / period) * precision) (Just period) g ad
+                Right ad -> ADW.getExtrema (round ((ADW.xMax1 ad - ADW.xMin1 ad) / period) * precision) (Just period) g ad
         
         minx = {-min (D.xMin1 detailedSpec) -} epoch
         mapOp = \(x, y) -> (x, snd (properFraction ((x - minx) / period)), 1)
@@ -192,7 +192,7 @@ localPhase stateRef dataParams period maxPeriod epoch precision name calculateCo
                         Just d -> map (\grp -> V.map (\(x, f, y, w) -> (x, f, if f < -0.3 then getBarCodeValue d x else y, w)) grp) expandedGroups
                         Nothing -> expandedGroups
                 in
-                    createSubDataParams__ (Left (Data3 $ foldl' (\res v -> res V.++ v) V.empty expandedGroupsWithBarCode))
+                    createSubDataParams__ (SD1 (Data3 $ foldl' (\res v -> res V.++ v) V.empty expandedGroupsWithBarCode))
             ) (dataSet dataParams)
 
     if calculatePhaseDispersion
@@ -209,15 +209,14 @@ localPhase stateRef dataParams period maxPeriod epoch precision name calculateCo
                         let
                                 dat = subData sdp
                                 sampledDat = 
-                                    case dat of 
-                                        Left s -> s
-                                        Right (Left s) -> sampleAnalyticData_ s [200000] g
-                                        Right (Right f) ->  sampleAnalyticData_ f [200000] g
+                                    case unboxSubData dat of 
+                                        Left d -> d
+                                        Right ad -> sampleAnalyticData_ ad [200000] g
                                 bootstrapSet = subDataBootstrapSet sdp
-                        phaseDispersions <- calcConcurrently_ (\period -> return (period, calcPhaseDispersion (Left sampledDat) period epoch 10 avgOverCycles True g)) periods
+                        phaseDispersions <- calcConcurrently_ (\period -> return (period, calcPhaseDispersion (SD1 sampledDat) period epoch 10 avgOverCycles True g)) periods
                         bsPhaseDispersions <- mapM (\dat -> calcConcurrently_ (\period -> return (period, calcPhaseDispersion dat period epoch 10 avgOverCycles True g)) periods) bootstrapSet 
                         let
-                            Right (Left s) = dat
+                            SD2 s = dat
                             xmin = AD.xMin1 s
                             xmax = AD.xMin1 s
                             minByFunc (_, (d1, ng1)) (_, (d2, ng2)) = compare (d1 / (fromIntegral ng1 - 1)) (d2 / (fromIntegral ng2 - 1))
@@ -230,8 +229,8 @@ localPhase stateRef dataParams period maxPeriod epoch precision name calculateCo
                             sortedBSDispersions = map (\phaseDispersions -> V.map (\(period, (d, g)) -> (period, d / (fromIntegral g - 1))) phaseDispersions) globalBSDispersions
                         appendLog stateRef ("Minimum Phase dispersion for " ++ name ++ " " ++ show no ++ ", period = " ++ (show minPhaseDispersionPeriod) ++ ": " ++ (show minPhaseDispersion))
                         return $ (createSubDataParams_ 
-                                    (Left (data1' sortedDispersions)) 
-                                    (map (\sortedDispersions -> Left (data1' sortedDispersions)) sortedBSDispersions), 
+                                    (SD1 (data1' sortedDispersions)) 
+                                    (map (\sortedDispersions -> SD1 (data1' sortedDispersions)) sortedBSDispersions), 
                                 ((xmax + xmin) / 2, minPhaseDispersionPeriod), 
                                 (map (\(minPhaseDispersionPeriod, _) -> ((xmax + xmin) / 2, minPhaseDispersionPeriod)) minBSPeriodsAndDispersions),
                                 globalDispersions, 
@@ -255,7 +254,7 @@ localPhase stateRef dataParams period maxPeriod epoch precision name calculateCo
                             ) (transpose globalDispersions)
                         (minGlobalPhaseDispersionPeriod, minGlobalPhaseDispersion) = minimumBy (\(_, d1) (_, d2) -> compare d1 d2) globalPersAndDisps
                 appendLog stateRef ("Minimum Global Phase dispersion for " ++ name ++ ", period = " ++ (show minGlobalPhaseDispersionPeriod) ++ ": " ++ (show minGlobalPhaseDispersion))
-                modifyState stateRef $ addDataParams (createDataParams_ (name ++ "_gdisp") [createSubDataParams__ (Left (data1' (V.fromList globalPersAndDisps)))]) (Just (currentGraphTab, selectedGraph))
+                modifyState stateRef $ addDataParams (createDataParams_ (name ++ "_gdisp") [createSubDataParams__ (SD1 (data1' (V.fromList globalPersAndDisps)))]) (Just (currentGraphTab, selectedGraph))
                 --modifyState stateRef $ addDataParams (DataParams {dataName = name ++ "_disp", dataSet = phaseDispersions}) (Just (currentGraphTab, selectedGraph))
                 --modifyState stateRef $ addDataParams (calculateWeights (DataParams {dataName = name ++ "_periods", 
                 --        dataSet = [SubDataParams {
@@ -277,7 +276,7 @@ localPhase stateRef dataParams period maxPeriod epoch precision name calculateCo
             do
                 mapM_ (\(i, sdp) -> do
                     let 
-                        (Left d) = subData sdp
+                        (SD1 d) = subData sdp
                         vals = V.toList $ D.xys2 d
                         (minX, _, _) = head vals
                         toStr (x1, x2, y) = show (x1 - minX) ++ " " ++ show x2 ++ " " ++ show y ++ "\n"
@@ -295,14 +294,13 @@ localPhase stateRef dataParams period maxPeriod epoch precision name calculateCo
     return ()
 
     
-calcPhaseDispersion :: (RandomGen g) => Either D.Data (Either S.Spline FS.Functions) -> Double -> Double -> Int -> Int -> Bool -> g -> (Double, Int)
+calcPhaseDispersion :: (RandomGen g) => SubData -> Double -> Double -> Int -> Int -> Bool -> g -> (Double, Int)
 calcPhaseDispersion dat period epoch precision avgOverCycles normalize g =
     let 
         (range, weightFact) = 
-            case dat of
-                Left s -> (D.xMax1 s - D.xMin1 s, 1 / period)
-                Right (Left s) -> (AD.xMax1 s - AD.xMin1 s, 1)
-                Right (Right f) -> (AD.xMax1 f - AD.xMin1 f, 1)
+            case unboxSubData dat of
+                Left d -> (D.xMax1 d - D.xMin1 d, 1 / period)
+                Right ad -> (ADW.xMax1 ad - ADW.xMin1 ad, 1)
         normalizedGroups = getNormalizedGroups dat period epoch precision (round (range / period)) normalize g
         avgGroups groups = 
             if length groups >= avgOverCycles 
@@ -320,16 +318,15 @@ calcPhaseDispersion dat period epoch precision avgOverCycles normalize g =
      in
         func (avgGroups normalizedGroups)
 
-getNormalizedGroups :: (RandomGen g) => Either D.Data (Either S.Spline FS.Functions) -> Double -> Double -> Int -> Int -> Bool -> g -> [V.Vector (Double, Double, Double, Double)]
+getNormalizedGroups :: (RandomGen g) => SubData -> Double -> Double -> Int -> Int -> Bool -> g -> [V.Vector (Double, Double, Double, Double)]
 getNormalizedGroups dat period epoch numSamplesPerCycle numCycles normalize g =
     let 
         minx = {-min (D.xMin1 detailedSpec) -} epoch
         -- Calculate color map (using less precision)
         spec = 
-            case dat of
-                Left s -> s
-                Right (Left s) -> sample2dAnalyticData s (numSamplesPerCycle, period, numCycles) g
-                Right (Right f) -> sample2dAnalyticData f (numSamplesPerCycle, period, numCycles) g
+            case unboxSubData dat of
+                Left d -> d
+                Right ad -> sample2dAnalyticData ad (numSamplesPerCycle, period, numCycles) g
 
         --minx = min (D.xMin1 spec) epoch
         vals = {-trace ("vals: " ++ show (D.xys1 spec))-} (D.xys1 spec) 
