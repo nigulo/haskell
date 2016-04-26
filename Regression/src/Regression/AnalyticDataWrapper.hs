@@ -6,6 +6,9 @@ module Regression.AnalyticDataWrapper (
     xMaxs,
     xMin1,
     xMax1,
+    is2d,
+    is3d,
+    dim,
     getValues,
     getValues_,
     getValue,
@@ -54,6 +57,22 @@ xMin1 = head.xMins
 
 xMax1 :: AnalyticDataWrapper -> Double
 xMax1 = head.xMaxs
+
+is2d :: AnalyticDataWrapper -> Bool
+is2d ad = 
+    case xMins ad of
+        _:[] -> True
+        otherwise -> False
+
+is3d :: AnalyticDataWrapper -> Bool
+is3d ad = 
+    case xMins ad of
+        _:_:[] -> True
+        otherwise -> False
+
+-- | return number of independent ordinal values this data set is defined on
+dim :: AnalyticDataWrapper -> Int
+dim ad = length $ xMins ad
 
 -- | Returns y-values for given array of x-values
 getValues :: RandomGen g => [[Double]] -> g -> AnalyticDataWrapper -> [Double]

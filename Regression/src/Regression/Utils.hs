@@ -1,7 +1,8 @@
 
 module Regression.Utils (
-    binaryOp,
-    constantOp,
+    dataToDataOp,
+    dataToADOp,
+    dataConstantOp,
     sampleAnalyticData,
     sampleAnalyticData_,
     sample2dAnalyticData,
@@ -35,8 +36,8 @@ import qualified Statistics.Sample as Sample
 import System.Random
 import System.Random.MWC
 
-binaryOp :: (F.Fn d, RandomGen g) => F.Function Double -> Either Data (AD.AnalyticData d) -> Either Data (AD.AnalyticData d) -> Bool -> g -> Either Data (AD.AnalyticData d)
-binaryOp op (Left d1) (Left d2) yOrx g = 
+dataToDataOp :: (RandomGen g) => F.Function Double -> Data -> Data -> Bool -> g -> Data
+dataToDataOp op d1 d2 yOrx g = 
     let 
         xs2 = xs1 d2
         xs21 = V.filter (\x -> x >= V.minimum xs2 && x <= V.maximum xs2) (xs1 d1)
@@ -50,14 +51,14 @@ binaryOp op (Left d1) (Left d2) yOrx g =
                 V.zipWith (\(x1, y1, w1) (x2, _, w2) -> (F.getValue_ [x1, x2] g op, y1, w1)) (values1 d1') (values1 d2')
     in
         case d1 of 
---            Data _ -> Left $ data1 vs
---            Spectrum _ -> Left $ spectrum1 vs
-            Data2 _ -> Left $ data1 vs
-            Spectrum2 _ -> Left $ spectrum1 vs
-binaryOp op (Left d) (Right ad) yOrx g = 
+            Data2 _ -> data1 vs
+            Spectrum2 _ -> spectrum1 vs
+
+dataToADOp :: (RandomGen g) => F.Function Double -> Data -> ADW.AnalyticDataWrapper -> Bool -> g -> Data
+dataToADOp op d ad yOrx g = 
     let 
         (g1, g2) = System.Random.split g
-        ys = AD.getValues (xs d) g1 ad
+        ys = ADW.getValues (xs d) g1 ad
             
         vs = 
             if yOrx
@@ -65,12 +66,11 @@ binaryOp op (Left d) (Right ad) yOrx g =
             else zipWith (\(x1, y1, w1) (x, g) -> (F.getValue [x1, x] [] g op, y1, w1)) (V.toList (values1 d)) (zip (V.toList (xs1 d)) (randomGens g2))
     in
         case d of 
-            Data2 _ -> Left $ data1 $ V.fromList vs
-            Spectrum2 _ -> Left $ spectrum1 $ V.fromList vs
-binaryOp op (Right ad1) (Right ad2) _ g = Right $ F.binaryOp op ad1 ad2
+            Data2 _ -> data1 $ V.fromList vs
+            Spectrum2 _ -> spectrum1 $ V.fromList vs
 
-constantOp :: (F.Fn d, RandomGen g) => F.Function Double -> Either Data (AD.AnalyticData d) -> Double -> Bool -> g -> Either Data (AD.AnalyticData d)
-constantOp op (Left d) k yOrx g = 
+dataConstantOp :: (RandomGen g) => F.Function Double -> Data -> Double -> Bool -> g -> Data
+dataConstantOp op d k yOrx g = 
     let 
         vs = 
             if yOrx
@@ -78,51 +78,52 @@ constantOp op (Left d) k yOrx g =
             else V.map (\(x, y, w) -> (F.getValue_ [x, k] g op, y, w)) (values1 d)
     in
         case d of 
---            Data _ -> Left $ data1 vs
---            Spectrum _ -> Left $ spectrum1 vs
-            Data2 _ -> Left $ data1 vs
-            Spectrum2 _ -> Left $ spectrum1 vs
-constantOp op (Right ad) k _ _ = Right $ F.constantOp op ad k
+            Data2 _ -> data1 vs
+            Spectrum2 _ -> spectrum1 vs
 
 
 -- | Converts a given analytic data to data of specified number of samples
-sampleAnalyticData :: (F.Fn d, RandomGen g) => AD.AnalyticData d -> [Double] -> [Double] -> [Int] -> g -> Data
+sampleAnalyticData :: (RandomGen g) => ADW.AnalyticDataWrapper -> [Double] -> [Double] -> [Int] -> g -> Data
 
--- 2d analytic data sampling
-sampleAnalyticData s@(AD.AnalyticData (((_:[]), _, _):_)) [minx] [maxx] [num] g =
-    let 
-        step = if num <= 1 then 0
-                else (maxx - minx) / (fromIntegral num - 1)
-    in 
-        Spectrum2 ((minx, step),
-            V.zip (V.fromList (AD.getValues (map (\x ->  [x]) [minx, minx + step .. maxx]) g s)) (V.replicate num 1))
+sampleAnalyticData s minxs maxxs nums g =
+    case ADW.xMins s of
+        _:[] ->
+            -- 2d analytic data sampling
+            let 
+                [minx] = minxs 
+                [maxx] = maxxs 
+                [num] = nums 
+                step = if num <= 1 then 0
+                        else (maxx - minx) / (fromIntegral num - 1)
+            in 
+                Spectrum2 ((minx, step),
+                    V.zip (V.fromList (ADW.getValues (map (\x ->  [x]) [minx, minx + step .. maxx]) g s)) (V.replicate num 1))
+        _:_:[] ->
+            -- 3d analytic data sampling
+            let 
+                xs =
+                    zipWith3 (\minx maxx num ->  
+                        let step = if num <= 1 then maxx - minx else (maxx - minx) / (fromIntegral num - 1)
+                        in [minx, minx + step .. maxx]
+                    ) minxs maxxs nums
+                
+                xss = sequence xs
+                ys = ADW.getValues xss g s
+            in 
+                data2 $ V.fromList $ zipWith (\[x1, x2] y -> (x1, x2, y, 1)) xss ys
 
--- 3d analytic data sampling
-sampleAnalyticData s@(AD.AnalyticData (((_:_:[]), _, _):_)) minxs@[_, _] maxxs@[_, _] nums@[_, _] g =
-    let 
-        xs =
-            zipWith3 (\minx maxx num ->  
-                let step = if num <= 1 then maxx - minx else (maxx - minx) / (fromIntegral num - 1)
-                in [minx, minx + step .. maxx]
-            ) minxs maxxs nums
-        
-        xss = sequence xs
-        ys = AD.getValues xss g s
-    in 
-        data2 $ V.fromList $ zipWith (\[x1, x2] y -> (x1, x2, y, 1)) xss ys
-
-sampleAnalyticData_ :: (F.Fn d, RandomGen g) => AD.AnalyticData d -> [Int] -> g -> Data
-sampleAnalyticData_ s = sampleAnalyticData s (AD.xMins s) (AD.xMaxs s) 
+sampleAnalyticData_ :: (RandomGen g) => ADW.AnalyticDataWrapper -> [Int] -> g -> Data
+sampleAnalyticData_ s = sampleAnalyticData s (ADW.xMins s) (ADW.xMaxs s) 
  
 -- more detailed 2d analytic data sampling
-sample2dAnalyticData :: (F.Fn d, RandomGen g) => 
-    AD.AnalyticData d -- ^ Data to sample 
+sample2dAnalyticData :: (RandomGen g) => 
+    ADW.AnalyticDataWrapper -- ^ Data to sample 
     -> (Int, Double, Int) -- ^ Number of samples within one piece, length of the piece, number of pieces
     -> g -> Data
 sample2dAnalyticData s (num, size, count) g = 
     let 
-        minx = size * fromIntegral (floor (AD.xMin1 s / size))
-        maxx = size * fromIntegral (ceiling (AD.xMax1 s / size))
+        minx = size * fromIntegral (floor (ADW.xMin1 s / size))
+        maxx = size * fromIntegral (ceiling (ADW.xMax1 s / size))
         shift = size * (max 1 (fromIntegral (floor ((maxx - minx) / (fromIntegral count) / size))))
         newCount = if shift > size then count else floor ((maxx - minx) / size) -- in case too much precision is requested
         minxs = filter (< maxx) [minx + (fromIntegral i) * shift | i <- [0 .. newCount - 1]]
@@ -131,7 +132,7 @@ sample2dAnalyticData s (num, size, count) g =
             let 
                 xs = [left + (fromIntegral i) * step | i <- [0 .. num - 1]]
             in
-                zip xs (AD.getValues (map (\x ->  [x]) xs) g s)
+                zip xs (ADW.getValues (map (\x ->  [x]) xs) g s)
             ) minxs
     in 
         D.data1' $ V.fromList vals
@@ -157,7 +158,7 @@ getValues1 xs (Right ad) g =
 filterXs1 ad = V.filter (\x -> x >= ADW.xMin1 ad && x <= ADW.xMax1 ad)
 
 -- | returns a bootstrap version of the data based on statistical model given as analytical data
-bootstrap :: (F.Fn d) => (AD.AnalyticData d) -> Data -> Data -> IO Data
+bootstrap :: ADW.AnalyticDataWrapper -> Data -> Data -> IO Data
 bootstrap ad d diff = do
     stdGen <- getStdGen
     rndVect :: V.Vector Int <- withSystemRandom . asGenST $ \gen -> uniformVector gen (dataLength d)
@@ -176,11 +177,11 @@ bootstrap ad d diff = do
             then
                 D.data1 newVals
             else D.spectrum1 newVals
-        Left bsData = binaryOp F.add (Left bsDiffData) (Right ad) True stdGen1
+        bsData = dataToADOp F.add bsDiffData ad True stdGen1
     return bsData
 
 -- | Returns variance of data set against the other data set
-var :: (F.Fn d) => Data -> Either Data (AD.AnalyticData d) -> Double
+var :: Data -> Either Data ADW.AnalyticDataWrapper -> Double
 var dat1 (Left dat2) = 
     -- Both data sets must have the same x coordinates and weights
     Sample.varianceWeighted (V.zip (V.zipWith (\y1 y2 -> (y1 - y2)) ys1 ys2) ws1) where
@@ -190,11 +191,11 @@ var dat1 (Left dat2) =
 var dat (Right ad) = 
     Sample.varianceWeighted (V.fromList (zip (zipWith (\y y1 -> (y - y1)) ys adValues) ws)) where
         (xs, ys, ws) = unzip3 $ D.values dat
-        adValues = AD.getValues_ xs ad
+        adValues = ADW.getValues_ xs ad
         
 
 -- | Returns standard deviation of data set against the other data set
-stdev :: (F.Fn d) => Data -> Either Data (AD.AnalyticData d) -> Double
+stdev :: Data -> Either Data ADW.AnalyticDataWrapper -> Double
 stdev dat d = sqrt $ var dat d
 
 dataRange :: Either D.Data (ADW.AnalyticDataWrapper) -> ([Double], [Double])
