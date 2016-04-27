@@ -1,6 +1,7 @@
 module Main (main) where
 
 import TSA.D2
+import TSA.CommonParams
 import TSA.Params
 import qualified Utils.Xml as Xml
 import Regression.Data as D

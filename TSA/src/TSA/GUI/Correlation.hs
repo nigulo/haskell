@@ -8,6 +8,7 @@ import Regression.AnalyticData as AD
 import qualified Math.Function as F
 import Utils.Concurrent
 
+import TSA.CommonParams
 import TSA.Params
 import TSA.GUI.State
 import TSA.GUI.Data

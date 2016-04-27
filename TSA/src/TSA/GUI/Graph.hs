@@ -29,6 +29,7 @@ import Regression.Functions as F
 import Regression.AnalyticDataWrapper as ADW
 import qualified Regression.Utils as U
 
+import TSA.CommonParams
 import TSA.Params
 import TSA.GUI.State
 import TSA.GUI.Dialog

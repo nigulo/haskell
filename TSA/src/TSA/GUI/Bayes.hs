@@ -5,6 +5,8 @@ import Graphics.UI.Gtk hiding (addWidget, Plus)
 import qualified Regression.Bayes as B
 import Regression.Data as D
 
+import TSA.CommonParams
+import TSA.RegressionParams
 import TSA.Params
 import TSA.GUI.State
 import TSA.GUI.Data

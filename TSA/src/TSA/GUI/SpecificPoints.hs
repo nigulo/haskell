@@ -10,6 +10,7 @@ import Regression.Data as D
 import Regression.AnalyticData as AD
 import Regression.Utils
 
+import TSA.CommonParams
 import TSA.Params
 import qualified TSA.SpecificPoints
 import TSA.GUI.State

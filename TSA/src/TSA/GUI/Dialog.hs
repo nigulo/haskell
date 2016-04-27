@@ -12,11 +12,10 @@ module TSA.GUI.Dialog (
 
 import Graphics.UI.Gtk hiding (addWidget)
 import Graphics.UI.Gtk.Layout.VBox
---import Debug.Trace
---import qualified Data.Map as M
 
---import Regression.Data as D
 import TSA.GUI.State
+import TSA.CommonParams
+import TSA.RegressionParams
 import TSA.Params
 import Control.Concurrent.MVar
 import Control.Applicative

@@ -13,6 +13,7 @@ import Regression.Utils as U
 import qualified Math.Function as F
 import qualified Math.Expression as E
 
+import TSA.CommonParams
 import TSA.Params
 import TSA.GUI.State
 import TSA.GUI.Data

@@ -2,6 +2,7 @@ module TSA.Interpolate (interpolate) where
 
 import Regression.Regression as R
 
+import TSA.CommonParams
 import TSA.Params
 import TSA.Data
 

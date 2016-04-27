@@ -3,6 +3,7 @@ module Main (main) where
 import Regression.Data as D
 import TSA.Correlation
 import TSA.Data
+import TSA.CommonParams
 import TSA.Params
 import Utils.IO
 

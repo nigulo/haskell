@@ -12,6 +12,7 @@ import Regression.Utils as U
 import Regression.AnalyticData as AD
 import Regression.Bootstrap as B
 
+import TSA.RegressionParams
 import TSA.Params
 
 import Utils.Misc

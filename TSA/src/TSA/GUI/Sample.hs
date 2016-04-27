@@ -12,6 +12,7 @@ import qualified Math.Function as F
 import qualified Math.Expression as E
 import qualified Data.Vector.Unboxed as V
 
+import TSA.CommonParams
 import TSA.Params
 import TSA.GUI.State
 import TSA.GUI.Data

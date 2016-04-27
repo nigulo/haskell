@@ -1,18 +1,6 @@
 
 module TSA.Params (
     Params (..), 
-    CommonParams(..),
-    FitParams (..),
-    FitType(..), 
-    SplineParams(..),
-    HarmonicParams(..),
-    LsqParams (..), 
-    BayesLinRegMethodParams (..),
-    BayesLinRegParams (..), 
-    EnvParams (..), 
-    SubDataParams (..),
-    SubData (..),
-    DataParams (..),
     FftParams (..),
     LocalPhaseParams (..),
     FindPeriodParams (..),
@@ -37,7 +25,6 @@ module TSA.Params (
     newParams,
     newFitParams,
     getNameWithNo,
-    updateCommonParams,
     updateLsqParams,
     updateEnvParams,
     readParams,
@@ -48,246 +35,28 @@ module TSA.Params (
     DataUpdateFunc (..)
     ) where
 
---import Graphics.UI.Gtk hiding (addWidget, Plus, Cross, Circle)
+import TSA.CommonParams
+import TSA.RegressionParams
+import Math.Function as Fn
+import Regression.Data as D
+import Regression.Statistic
+import Utils.Misc
+import Utils.List
+
 import Control.Concurrent.MVar
 import Data.List
 import Data.Word
 import Data.Array
 import Data.Maybe
-import Data.Either
 import qualified Data.Map.Strict as Map
 import Debug.Trace
-import Regression.Data as D
-import Regression.Spline as S
-import Regression.RBF as RBF
-import Regression.Functions as F
-import Math.Function as Fn
-import Regression.AnalyticData as AD
-import Regression.AnalyticDataWrapper as ADW
-import Regression.Utils as U
-import Regression.Statistic
-import Utils.Misc
-import Utils.List
 import System.Random
-
 import Control.Concurrent
 import qualified Utils.Xml as Xml
 
 
 import Utils.Str
 import Utils.Misc
-
-data CommonParams = CommonParams {
-    commonName :: String,
-    commonNo :: Int
-} deriving (Show, Read)
-
-commonParamsXmlElementName :: String
-commonParamsXmlElementName = "commonparams"
-
-instance Xml.XmlElement CommonParams where
-    toElement params = Xml.element commonParamsXmlElementName [
-        ("name", commonName params), 
-        ("no", show (commonNo params))
-        ] []
-        
-    fromElement e =
-        CommonParams {
-            commonName = Xml.attrValue e "name",
-            commonNo = read $ Xml.attrValue e "no"
-        }
-
-data FitType = FitTypeSpline | FitTypeHarmonic deriving (Show, Read)
-
-data SplineParams = 
-    SplineParams {
-        splineNumNodes :: Int
-    } deriving (Show, Read)
-
-instance Xml.XmlElement SplineParams where
-    toElement params = Xml.element "splineparams" [
-        ("numnodes", show (splineNumNodes params))
-        ] []
-        
-    fromElement e =
-        SplineParams {
-            splineNumNodes = read (Xml.attrValue e "numnodes")
-        }
-    
-data HarmonicParams = HarmonicParams {
-    harmonicCoverageFactor :: Double,
-    harmonicCount :: Int
-} deriving (Show, Read) 
-
-instance Xml.XmlElement HarmonicParams where
-    toElement params = Xml.element "harmonicparams" [
-        ("coveragefactor", show (harmonicCoverageFactor params)),
-        ("count", show (harmonicCount params))
-        ] []
-        
-    fromElement e =
-        HarmonicParams {
-            harmonicCoverageFactor = read $
-                case Xml.maybeAttrValue e "coveragefactor" of
-                    Just u -> u
-                    Nothing -> 
-                        case Xml.maybeAttrValue e "period" of
-                            Just u -> u
-                            Nothing -> 
-                                case Xml.maybeAttrValue e "upper" of
-                                    Just u -> u,
-            harmonicCount = read (Xml.attrValue e "count")
-        }
-
-data FitParams = FitParams {
-    fitPolynomRank :: Int,
-    fitPeriod :: Double,
-    fitNumHarmonics :: Int,
-    fitCommonParams :: CommonParams,
-    fitType :: FitType,
-    fitSplineParams :: SplineParams,
-    fitHarmonicParams :: HarmonicParams
-} deriving (Show, Read) {-! derive : XmlContent !-} -- this line is for DrIFT
-
-instance Xml.XmlElement FitParams where
-    toElement params = Xml.element "fitparams" [
-        ("type", show (fitType params)),
-        ("polynomdegree", show (fitPolynomRank params)),
-        ("period", show (fitPeriod params)),
-        ("numharmonics", show (fitNumHarmonics params))
-        ] 
-        [Left (Xml.toElement (fitCommonParams params)), 
-        Left (Xml.toElement (fitSplineParams params)),
-        Left (Xml.toElement (fitHarmonicParams params))
-        ]
-        
-    fromElement e =
-        FitParams {
-            fitType = read (Xml.attrValue e "type"),
-            fitPolynomRank = read (Xml.attrValue e "polynomdegree"),
-            fitPeriod = read (Xml.attrValue e "period"),
-            fitNumHarmonics = read (Xml.attrValue e "numharmonics"),
-            fitCommonParams = Xml.fromElement (Xml.contentElement e commonParamsXmlElementName),
-            fitSplineParams = Xml.fromElement (Xml.contentElement e "splineparams"),
-            fitHarmonicParams = Xml.fromElement (Xml.contentElement e "harmonicparams")
-        }
-
-data LsqParams = LsqParams {
-    lsqFitParams :: FitParams,
-    lsqBootstrapCount :: Int
-} deriving (Show, Read)
-
-instance Xml.XmlElement LsqParams where
-    toElement params = Xml.element "lsqparams" 
-        [("bootstrapcount", show (lsqBootstrapCount params))] 
-        [Left (Xml.toElement (lsqFitParams params))]
-
-    fromElement e = 
-        LsqParams {
-            lsqFitParams = Xml.fromElement (Xml.contentElement e "fitparams"),
-            lsqBootstrapCount = case Xml.maybeAttrValue e "bootstrapcount" of
-                Just count -> read count
-                Nothing -> 0
-        }
-
-
-data BayesLinRegMethodParams = RBFParams {
-    rbfNumCentres :: Int,
-    rbfNumLambdas :: Int
-} deriving (Show, Read)
-
-
-instance Xml.XmlElement BayesLinRegMethodParams where
-
-    toElement (RBFParams numCentres numLambdas) = Xml.element "rbfparams" 
-        [("numcentres", show numCentres),
-         ("numlambdas", show numLambdas)
-        ] 
-        []
-        
-    fromElement e = 
-        case Xml.name e of
-            "rbfparams" ->
-                RBFParams {
-                    rbfNumCentres = read $ Xml.attrValue e "numcentres",
-                    rbfNumLambdas = read $ Xml.attrValue e "numlambdas"
-                }
-
-data BayesLinRegParams = BayesLinRegParams {
-    bayesLinRegData :: Maybe DataParams,
-    bayesLinRegAlgo :: Int,
-    bayesLinRegMethod :: Int,
-    bayesLinRegMethodParams :: [BayesLinRegMethodParams],
-    bayesLinRegCommonParams :: CommonParams
-} deriving (Show, Read)
-
-instance Xml.XmlElement BayesLinRegParams where
-
-    toElement params = Xml.element "bayeslinregparams" 
-        [("algo", show (bayesLinRegAlgo params)), 
-         ("method", show (bayesLinRegMethod params))]
-        (
-            [Left (Xml.element "methodparams" [] (map (Left . Xml.toElement) (bayesLinRegMethodParams params)))]
-            ++ case bayesLinRegData params of
-                Just dataParams -> [Left (Xml.toElement dataParams)]
-                Nothing -> []
-            ++ [Left (Xml.toElement (bayesLinRegCommonParams params))]
-        )
-        
-    fromElement e = 
-        BayesLinRegParams {
-            bayesLinRegData =
-                case Xml.contentElements e "dataparams" of
-                    [dataParams] -> Just $ Xml.fromElement dataParams
-                    otherwise -> Nothing
-                ,
-            bayesLinRegAlgo = read $ Xml.attrValue e "algo",
-            bayesLinRegMethod = read $ Xml.attrValue e "method",
-            bayesLinRegMethodParams = map Xml.fromElement (lefts (Xml.contents (Xml.contentElement e "methodparams"))),
-            bayesLinRegCommonParams = Xml.fromElement (Xml.contentElement e commonParamsXmlElementName)
-        }
-
-
-data EnvParams = EnvParams {
-    envUpperParams :: CommonParams,
-    envLowerParams :: CommonParams,
-    envMeanParams :: CommonParams,
-    envMethod :: Bool,
-    envStartExtrema :: Int,
-    envData :: Maybe DataParams
-} deriving (Show, Read)
-
-instance Xml.XmlElement EnvParams where
-    toElement params = Xml.element "envparams" 
-        [("version", "1"),
-         ("method", show (envMethod params)),
-         ("startextrema", show (envStartExtrema params)) 
-        ]
-        (
-            [Left (Xml.element "upper" [] [Left (Xml.toElement (envUpperParams params))]), 
-            Left (Xml.element "lower" [] [Left (Xml.toElement (envLowerParams params))])] ++
-            [Left (Xml.element "meanparams" [] [Left (Xml.toElement (envMeanParams params))])] ++
-            [Left (Xml.element "data" [] (
-                case envData params of
-                    Just dataParams -> [Left (Xml.toElement dataParams)]
-                    otherwise -> []
-            ))]
-        )
-    
-    fromElement e = case Xml.maybeAttrValue e "version" of
-        Nothing -> newEnv
-        Just _ -> 
-            EnvParams {
-                envUpperParams = Xml.fromElement $ Xml.contentElement (Xml.contentElement e "upper") commonParamsXmlElementName,
-                envLowerParams = Xml.fromElement $ Xml.contentElement (Xml.contentElement e "lower") commonParamsXmlElementName,
-                envMeanParams = Xml.fromElement (Xml.contentElement (Xml.contentElement e "meanparams") commonParamsXmlElementName),
-                envMethod = read $ Xml.attrValue e "method",
-                envStartExtrema = read $ Xml.attrValue e "startextrema",
-                envData =
-                    case Xml.contents $ Xml.contentElement e "data" of
-                        [Left envDataElem] -> Just $ Xml.fromElement envDataElem
-                        otherwise -> Nothing
-            }
 
 data FftParams = FftParams {
     fftDirection :: Bool,
@@ -331,99 +100,6 @@ instance Xml.XmlElement FftParams where
                 case Xml.contents $ Xml.contentElement e "imagdata" of
                     [Left dataElem] -> Just $ Xml.fromElement dataElem
                     otherwise -> Nothing
-        }
-
-
-data SubData = SD1 D.Data | SD2 S.Spline | SD3 F.Functions | SD4 RBF.RBFs deriving (Show, Read)
-
-unboxSubData :: SubData -> Either D.Data ADW.AnalyticDataWrapper
-unboxSubData (SD1 d) = Left d
-unboxSubData (SD2 s) = Right (ADW.analyticDataWrapper s)
-unboxSubData (SD3 f) = Right (ADW.analyticDataWrapper f)
-unboxSubData (SD4 rbf) = Right (ADW.analyticDataWrapper rbf)
-
-
-data SubDataParams = SubDataParams {
-    subDataRange :: ([Double], [Double]),
-    subData :: SubData,
-    subDataBootstrapSet :: [SubData]
-} deriving (Show, Read)
-
-instance Xml.XmlElement SubDataParams where
-    toElement params = Xml.element "subdataparams" 
-        [("range", show (subDataRange params))]
-        ([Left (Xml.element "data" [] [
-            case subData params of
-                SD1 d -> Left (Xml.toElement d) 
-                SD2 s -> Left (Xml.toElement s)
-                SD3 f -> Left (Xml.toElement f)
-                SD4 rbf -> Left (Xml.toElement rbf)
-                ])] ++
-            [Left (Xml.element "bootstrapset" [] (map (\ds ->
-                        case ds of
-                                SD1 d -> Left (Xml.toElement d) 
-                                SD2 s -> Left (Xml.toElement s)
-                                SD3 f -> Left (Xml.toElement f)
-                                SD4 rbf -> Left (Xml.toElement rbf)
-                            ) (subDataBootstrapSet params)))]
-        )
-
-    fromElement e = 
-        SubDataParams {
-            subDataRange = case Xml.maybeAttrValue e "range" of
-                Just r -> read r
-                Nothing -> ([0], [0]),
-            subData =
-                let 
-                    Left dataSetElem = head $ Xml.contents $ Xml.contentElement e "data" 
-                in
-                    if Xml.name dataSetElem == D.xmlElementName then SD1 $ Xml.fromElement dataSetElem
-                    else if Xml.name dataSetElem == S.xmlElementName then SD2 $ Xml.fromElement dataSetElem
-                    else if Xml.name dataSetElem == F.xmlElementName then SD3 $ Xml.fromElement dataSetElem
-                    else SD4 $ Xml.fromElement dataSetElem,
-            subDataBootstrapSet =
-                case Xml.maybeContentElement e "bootstrapset" of
-                    Just elem -> map (\(Left dataSetElem) ->
-                            if Xml.name dataSetElem == D.xmlElementName then SD1 $ Xml.fromElement dataSetElem
-                            else if Xml.name dataSetElem == S.xmlElementName then SD2 $ Xml.fromElement dataSetElem
-                            else if Xml.name dataSetElem == F.xmlElementName then SD3 $ Xml.fromElement dataSetElem
-                            else SD4 $ Xml.fromElement dataSetElem
-                        ) (Xml.contents elem)
-                    Nothing -> []
-        }
-
-data DataParams = DataParams {
-    dataName :: String,
-    dataDesc :: String,
-    dataSet :: [SubDataParams]
-} deriving (Show, Read)
-
-instance Xml.XmlElement DataParams where
-    toElement params = Xml.element "dataparams" 
-        [("version", "1"), ("name", dataName params), ("description", dataDesc params)]
-        [Left (Xml.element "dataset" [] (map (\d -> Left (Xml.toElement d)) (dataSet params)))]
-
-
-    fromElement e = 
-        DataParams {
-            dataName = Xml.attrValue e "name",
-            dataDesc = case Xml.maybeAttrValue e "description" of
-                Just desc -> desc
-                Nothing -> Xml.attrValue e "name",
-            dataSet = 
-                    case Xml.maybeAttrValue e "version" of
-                        Just "1" ->
-                            map (\(Left elem) -> Xml.fromElement elem) (Xml.contents (Xml.contentElement e "dataset"))
-                        Nothing -> 
-                            [SubDataParams {subDataRange = U.dataRange (unboxSubData sd), subData = sd, subDataBootstrapSet = []}] where
-                                sd =
-                                    let 
-                                        Left dataSetElem = head $ Xml.contents $ Xml.contentElement e "dataset" 
-                                    in
-                                        if Xml.name dataSetElem == D.xmlElementName then SD1 $ Xml.fromElement dataSetElem -- Data
-                                        else if Xml.name dataSetElem == S.xmlElementName then SD2 $ Xml.fromElement dataSetElem -- Spline
-                                        else SD3 $ Xml.fromElement dataSetElem -- Functions
-                
         }
         
 data AnalyticSignalParams = AnalyticSignalParams {
@@ -1147,37 +823,6 @@ newParams =
             statisticParams = [newStatistic Nothing Nothing]
     }
 
-newBayesLinReg :: BayesLinRegParams
-newBayesLinReg = BayesLinRegParams {
-    bayesLinRegData = Nothing, 
-    bayesLinRegAlgo = 0, 
-    bayesLinRegMethod = 0, 
-    bayesLinRegMethodParams = [RBFParams {rbfNumCentres = 10, rbfNumLambdas = 100}], 
-    bayesLinRegCommonParams = CommonParams {
-        commonName = "BayesLinReg",
-        commonNo = 1
-        }
-    }
-
-newEnv :: EnvParams
-newEnv = EnvParams {
-    envUpperParams = CommonParams {
-        commonName = "UpperEnv",
-        commonNo = 1
-    },
-    envLowerParams = CommonParams {
-        commonName = "LowerEnv",
-        commonNo = 1
-    }, 
-    envMethod = False,
-    envStartExtrema = 1,
-    envData = Nothing,
-    envMeanParams = CommonParams {
-        commonName = "EnvMean",
-        commonNo = 1
-    }
-}
-
 newFindPeriod :: FindPeriodParams
 newFindPeriod = FindPeriodParams {
     findPeriodData = Nothing, 
@@ -1344,38 +989,9 @@ newStatistic maybeName maybeDefinition =
             }
         }
 
-newFitParams :: String -> Int -> Int -> Double -> FitParams
-newFitParams name numNodes polynomRank period = 
-    FitParams {
-        fitPolynomRank = polynomRank, 
-        fitPeriod = period,
-        fitNumHarmonics = 1,
-        fitCommonParams = CommonParams {
-            commonName = name,
-            commonNo = 1
-        },
-        fitType = FitTypeSpline,
-        fitSplineParams = SplineParams numNodes,
-        fitHarmonicParams = HarmonicParams 1.2 0
-    }
-
 getNameWithNo :: CommonParams -> String
 getNameWithNo commonParams = commonName commonParams ++ (show (commonNo commonParams))
 
-updateCommonParams :: String -> CommonParams -> CommonParams
-updateCommonParams name commonParams =
-    let 
-        no = commonNo commonParams
-        (newName, newNo) = 
-            if name == (commonName commonParams) ++ (show no) 
-            then (commonName commonParams, no + 1) 
-            else (name, no)
-    in
-        commonParams {
-            commonName = newName,
-            commonNo = newNo
-        }
-  
 updateLsqParams :: LsqParams -> Params -> Params
 updateLsqParams lsqParms state = 
     state {lsqParams = lsqParms}

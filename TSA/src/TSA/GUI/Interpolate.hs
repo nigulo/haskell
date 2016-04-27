@@ -11,6 +11,7 @@ import Regression.Data as D hiding (interpolate)
 
 import System.Random
 
+import TSA.CommonParams
 import TSA.Params
 import qualified TSA.Interpolate as I
 import TSA.GUI.State

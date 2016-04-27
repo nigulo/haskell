@@ -15,6 +15,7 @@ import Regression.Spline as S
 import qualified Regression.AnalyticDataWrapper as ADW
 import Regression.Utils as U
 
+import TSA.CommonParams
 import TSA.Params
 import TSA.GUI.State
 import TSA.GUI.Dialog

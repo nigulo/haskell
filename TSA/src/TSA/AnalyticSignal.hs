@@ -13,6 +13,7 @@ import Regression.FFT
 import qualified Math.Function as F
 import qualified Regression.Functions as FS
 
+import TSA.CommonParams
 import TSA.Params
 import TSA.Data
 

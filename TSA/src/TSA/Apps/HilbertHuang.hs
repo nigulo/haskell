@@ -8,6 +8,8 @@ import Regression.Regression as R
 import TSA.LeastSquares
 import TSA.SpecificPoints
 import TSA.AnalyticSignal
+import TSA.CommonParams
+import TSA.RegressionParams
 import TSA.Params
 import TSA.Data
 import Utils.IO

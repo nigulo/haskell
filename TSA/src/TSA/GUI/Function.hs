@@ -3,6 +3,8 @@ module TSA.GUI.Function (functionDialog) where
 
 import Graphics.UI.Gtk hiding (addWidget)
 import Graphics.UI.Gtk.Layout.VBox
+
+import TSA.CommonParams
 import TSA.Params
 import TSA.GUI.State
 import TSA.GUI.Dialog

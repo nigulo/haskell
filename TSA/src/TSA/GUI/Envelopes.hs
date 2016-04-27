@@ -11,6 +11,8 @@ import Regression.Data as D
 import Regression.Utils as U
 import qualified Math.Function as F
 
+import TSA.CommonParams
+import TSA.RegressionParams
 import TSA.Params
 import TSA.Data
 import TSA.GUI.State

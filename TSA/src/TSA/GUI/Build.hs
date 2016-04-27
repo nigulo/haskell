@@ -7,6 +7,7 @@ import Graphics.UI.Gtk.Layout.VBox
 
 import Regression.Data as D
 
+import TSA.CommonParams
 import TSA.Params
 import TSA.GUI.State
 import TSA.GUI.Data 

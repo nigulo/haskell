@@ -15,6 +15,8 @@ import Regression.Utils as U
 import Regression.AnalyticData as AD
 import Regression.Bootstrap as B
 
+import TSA.CommonParams
+import TSA.RegressionParams
 import TSA.Params
 import TSA.LeastSquares
 import TSA.GUI.State

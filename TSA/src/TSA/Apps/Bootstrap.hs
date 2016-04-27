@@ -7,6 +7,7 @@ import Regression.Utils as U
 import Regression.Bootstrap as B
 import TSA.LeastSquares
 import TSA.SpecificPoints
+import TSA.CommonParams
 import TSA.Params
 import TSA.Data
 
