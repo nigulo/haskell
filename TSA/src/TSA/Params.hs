@@ -7,6 +7,7 @@ module TSA.Params (
     SplineParams(..),
     HarmonicParams(..),
     LsqParams (..), 
+    BayesLinRegMethodParams (..),
     BayesLinRegParams (..), 
     EnvParams (..), 
     SubDataParams (..),
@@ -53,6 +54,7 @@ import Data.List
 import Data.Word
 import Data.Array
 import Data.Maybe
+import Data.Either
 import qualified Data.Map.Strict as Map
 import Debug.Trace
 import Regression.Data as D
@@ -188,21 +190,45 @@ instance Xml.XmlElement LsqParams where
                 Nothing -> 0
         }
 
+
+data BayesLinRegMethodParams = RBFParams {
+    rbfNumCentres :: Int,
+    rbfNumLambdas :: Int
+} deriving (Show, Read)
+
+
+instance Xml.XmlElement BayesLinRegMethodParams where
+
+    toElement (RBFParams numCentres numLambdas) = Xml.element "rbfparams" 
+        [("numcentres", show numCentres),
+         ("numlambdas", show numLambdas)
+        ] 
+        []
+        
+    fromElement e = 
+        case Xml.name e of
+            "rbfparams" ->
+                RBFParams {
+                    rbfNumCentres = read $ Xml.attrValue e "numcentres",
+                    rbfNumLambdas = read $ Xml.attrValue e "numlambdas"
+                }
+
 data BayesLinRegParams = BayesLinRegParams {
     bayesLinRegData :: Maybe DataParams,
     bayesLinRegAlgo :: Int,
     bayesLinRegMethod :: Int,
+    bayesLinRegMethodParams :: [BayesLinRegMethodParams],
     bayesLinRegCommonParams :: CommonParams
 } deriving (Show, Read)
 
 instance Xml.XmlElement BayesLinRegParams where
 
     toElement params = Xml.element "bayeslinregparams" 
-        [("algo", show (bayesLinRegAlgo params)),
-         ("method", show (bayesLinRegMethod params))
-        ]
+        [("algo", show (bayesLinRegAlgo params)), 
+         ("method", show (bayesLinRegMethod params))]
         (
-            case bayesLinRegData params of
+            [Left (Xml.element "methodparams" [] (map (Left . Xml.toElement) (bayesLinRegMethodParams params)))]
+            ++ case bayesLinRegData params of
                 Just dataParams -> [Left (Xml.toElement dataParams)]
                 Nothing -> []
             ++ [Left (Xml.toElement (bayesLinRegCommonParams params))]
@@ -215,12 +241,9 @@ instance Xml.XmlElement BayesLinRegParams where
                     [dataParams] -> Just $ Xml.fromElement dataParams
                     otherwise -> Nothing
                 ,
-            bayesLinRegAlgo = case Xml.maybeAttrValue e "algo" of
-                Just algo -> read algo
-                Nothing -> 0,
-            bayesLinRegMethod = case Xml.maybeAttrValue e "method" of
-                Just method -> read method
-                Nothing -> 0,
+            bayesLinRegAlgo = read $ Xml.attrValue e "algo",
+            bayesLinRegMethod = read $ Xml.attrValue e "method",
+            bayesLinRegMethodParams = map Xml.fromElement (lefts (Xml.contents (Xml.contentElement e "methodparams"))),
             bayesLinRegCommonParams = Xml.fromElement (Xml.contentElement e commonParamsXmlElementName)
         }
 
@@ -911,7 +934,11 @@ instance Xml.XmlElement Params where
             Params {
                 dataParams = map Xml.fromElement $ Xml.contentElements e "dataparams",
                 lsqParams = Xml.fromElement $ Xml.contentElement e "lsqparams",
-                bayesLinRegParams = Xml.fromElement $ Xml.contentElement e "bayeslinregparams",
+                bayesLinRegParams = 
+                    (case Xml.maybeContentElement e "bayeslinregparams" of
+                        Just e1 -> Xml.fromElement e1
+                        Nothing -> newBayesLinReg
+                        ),
                 envParams = Xml.fromElement $ Xml.contentElement e "envparams",
                 fftParams = Xml.fromElement $ Xml.contentElement e "fftparams",
                 asParams = Xml.fromElement $ Xml.contentElement e "analyticsignalparams",
@@ -1125,6 +1152,7 @@ newBayesLinReg = BayesLinRegParams {
     bayesLinRegData = Nothing, 
     bayesLinRegAlgo = 0, 
     bayesLinRegMethod = 0, 
+    bayesLinRegMethodParams = [RBFParams {rbfNumCentres = 10, rbfNumLambdas = 100}], 
     bayesLinRegCommonParams = CommonParams {
         commonName = "BayesLinReg",
         commonNo = 1

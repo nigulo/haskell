@@ -13,6 +13,8 @@ import TSA.GUI.Dialog
 import TSA.GUI.Common
 import TSA.GUI.Log
 
+import Utils.List
+
 import GUI.Widget
 
 import Control.Concurrent.MVar
@@ -32,14 +34,41 @@ linRegWithMLIIDialog stateRef = do
     nameEntry `entrySetText` (getNameWithNo commonParams)
     addWidget (Just "Name: ") nameEntry dialog
 
+    algoCombo <- createComboBox ["ML-II"]
+    comboBoxSetActive algoCombo (bayesLinRegAlgo parms)
+    addWidget (Just "Algorithm: ") algoCombo dialog
+
     methodCombo <- createComboBox ["RBF"]
+    comboBoxSetActive methodCombo (bayesLinRegMethod parms)
     addWidget (Just "Method: ") methodCombo dialog
+
+    -----------------------------------------
+    let
+        rbfParams = head (bayesLinRegMethodParams parms)
+    rbfNumCentresAdjustment <- adjustmentNew (fromIntegral (rbfNumCentres rbfParams)) 1 (2**52) 1 1 1
+    rbfNumCentresSpin <- spinButtonNew rbfNumCentresAdjustment 1 0
+    (Just rbfNumCentresLabel, _) <- addWidget (Just "Num. centres: ") rbfNumCentresSpin dialog
+
+    rbfNumLambdasAdjustment <- adjustmentNew (fromIntegral (rbfNumLambdas rbfParams)) 1 (2**52) 1 1 1
+    rbfNumLambdasSpin <- spinButtonNew rbfNumLambdasAdjustment 1 0
+    (Just rbfNumLambdasLabel, _) <- addWidget (Just "Num. lambdas: ") rbfNumLambdasSpin dialog
+    -----------------------------------------
 
     dataSetCombo <- dataSetComboNew onlyData state
     addWidget (Just "Data set: ") (getComboBox dataSetCombo) dialog
-    
-    let 
-        toggleFitButton :: IO ()
+
+
+    let
+        updateWidgets =
+            do
+                methodNo <- comboBoxGetActive methodCombo
+                case methodNo of
+                    0 -> do
+                        rbfNumCentresSpin `set`  [widgetVisible := True]
+                        rbfNumCentresLabel `set` [widgetVisible := True]
+                        rbfNumLambdasSpin `set`  [widgetVisible := True]
+                        rbfNumLambdasLabel `set` [widgetVisible := True]
+
         toggleFitButton = 
             do
                 selectedData <- getSelectedData dataSetCombo
@@ -50,9 +79,12 @@ linRegWithMLIIDialog stateRef = do
                                                     else return True
                         Nothing -> return False
                 fitButton `widgetSetSensitivity` sensitivity
+        
                         
     on (getComboBox dataSetCombo) changed toggleFitButton
     on (castToEditable nameEntry) editableChanged toggleFitButton
+    after dialog realize updateWidgets
+    on methodCombo changed updateWidgets
     
     
     widgetShowAll dialog
@@ -61,24 +93,43 @@ linRegWithMLIIDialog stateRef = do
     if response == ResponseOk 
         then
             do
+                let
+                    getMethodParams 0 = do
+                        numCentres <- spinButtonGetValue rbfNumCentresSpin
+                        numLambdas <- spinButtonGetValue rbfNumLambdasSpin
+                        return RBFParams {
+                            rbfNumCentres = round numCentres,
+                            rbfNumLambdas = round numLambdas
+                        }
+
                 name <- entryGetString nameEntry
-                Just method <- comboBoxGetActiveString methodCombo
+                --Just method <- comboBoxGetActiveString methodCombo
                 methodNo <- comboBoxGetActive methodCombo
                 Just selectedData <- getSelectedData dataSetCombo
                 widgetDestroy dialog
+                methodParams <- getMethodParams methodNo
                 
-                modifyStateParams stateRef $ \params -> params {bayesLinRegParams = BayesLinRegParams {
-                        bayesLinRegCommonParams = updateCommonParams name commonParams
-                    }}
+                modifyStateParams stateRef $ \params -> 
+                    let
+                        bayesLinRegParms = bayesLinRegParams params 
+                    in
+                        params {bayesLinRegParams = bayesLinRegParms {
+                                bayesLinRegData = Just selectedData,
+                                bayesLinRegAlgo = 0,
+                                bayesLinRegMethod = methodNo,
+                                bayesLinRegMethodParams = Utils.List.updateAt methodNo methodParams (bayesLinRegMethodParams bayesLinRegParms),
+                                bayesLinRegCommonParams = updateCommonParams name commonParams
+                            }}
 
-                runTask stateRef "MLII" $ linRegWithMLII stateRef methodNo name selectedData
+                runTask stateRef "ML-II" $ linRegWithMLII stateRef methodNo name selectedData methodParams
                 return ()
         else
             do
                 widgetDestroy dialog
 
-linRegWithMLII :: StateRef -> Int -> String -> DataParams -> IO ()
-linRegWithMLII stateRef method fitName dataParams = do
+
+linRegWithMLII :: StateRef -> Int -> String -> DataParams -> BayesLinRegMethodParams -> IO ()
+linRegWithMLII stateRef method fitName dataParams (RBFParams numCentres numLambdas) = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
     tEnv <- taskEnv stateRef
@@ -86,8 +137,6 @@ linRegWithMLII stateRef method fitName dataParams = do
         graphTabParms = (graphTabs state) !! currentGraphTab
         selectedGraph = graphTabSelection graphTabParms
         dat = dataSet dataParams
-        numCentres = 10
-        numLambdas = 100
         opts = (50, 0.001)
 
         func i j (SD1 dat) _ = do
@@ -97,7 +146,7 @@ linRegWithMLII stateRef method fitName dataParams = do
                 range = maxx - minx
                 lambdaMin = range / 10
                 lambdaMax = range
-            (ad, varFunc) <- B.linRegWithMLII dat (B.MethodRBF 10 [(minx, maxx)] [lambdaMin, lambdaMin + (lambdaMax - lambdaMin) / (numLambdas - 1) .. lambdaMax] opts)
+            (ad, varFunc) <- B.linRegWithMLII dat (B.MethodRBF numCentres [(minx, maxx)] [lambdaMin, lambdaMin + (lambdaMax - lambdaMin) / (fromIntegral numLambdas - 1) .. lambdaMax] opts)
             return $ SD4 ad
     result <- applyToData1 func dataParams fitName tEnv
     modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
