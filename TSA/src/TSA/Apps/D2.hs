@@ -31,7 +31,7 @@ main = do
     dp <- Xml.parseFromFile "data" "data" >>= \doc -> return (Xml.fromDocument doc)
     handle <- openFile ("result") AppendMode
     let
-        Left dat = subData (head (dataSet dp))
+        SD1 dat = subData (head (dataSet dp))
         taskEnv = defaultTaskEnv {logFunc = \str -> hPutStr handle (str ++ "\n")}
     bins <- phaseBins dat (getBinSize freqEnd)
     dispersions <- calcDispersions' bins freqStart freqEnd corrLenStart corrLenEnd method precision (dataName dp ++ "_d2") True df taskEnv

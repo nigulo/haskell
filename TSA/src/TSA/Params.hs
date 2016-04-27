@@ -1375,5 +1375,5 @@ defaultTaskEnv = TaskEnv {
     taskFinalizer = return ()
 } 
 
-newtype (Eq id) => DataUpdateFunc id = DataUpdateFunc (Either D.Data (Either S.Spline F.Functions) -> id -> Bool -> IO ())
+newtype (Eq id) => DataUpdateFunc id = DataUpdateFunc (SubData -> id -> Bool -> IO ())
 

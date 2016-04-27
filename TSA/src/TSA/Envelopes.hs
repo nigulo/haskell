@@ -32,7 +32,7 @@ envelopes params (upperName, lowerName, meanName) taskEnv (DataUpdateFunc dataUp
         g <- getStdGen 
         let
             Just dataParams = envData params
-            Left dat = subData $ head $ dataSet $ dataParams
+            SD1 dat = subData $ head $ dataSet $ dataParams
             puFunc = progressUpdateFunc taskEnv
         
             findExtremaOfOrder minimaDp maximaDp extremaSkipped = do
@@ -45,8 +45,8 @@ envelopes params (upperName, lowerName, meanName) taskEnv (DataUpdateFunc dataUp
         (minimaDp, maximaDp) <- findExtrema dataParams 0 False "extrema" defaultTaskEnv
         (minimaDpOfOrder, maximaDpOfOrder) <- findExtremaOfOrder minimaDp maximaDp 0
         let
-            Left minima = subData $ head $ dataSet minimaDpOfOrder
-            Left maxima = subData $ head $ dataSet maximaDpOfOrder
+            SD1 minima = subData $ head $ dataSet minimaDpOfOrder
+            SD1 maxima = subData $ head $ dataSet maximaDpOfOrder
             numMinima = D.dataLength minima 
             numMaxima = D.dataLength maxima
             numExtrema = min numMinima numMaxima
@@ -75,11 +75,11 @@ envelopes params (upperName, lowerName, meanName) taskEnv (DataUpdateFunc dataUp
                         R.interpolateWithSpline minima]
                 let 
                     envMean = (upperEnv `S.add` lowerEnv) `S.divide` 2
-                    residue = U.binaryOp (F.subtr) (Left dat) (Right (Left envMean)) True g
+                    residue = subDataBinaryOp (F.subtr) (SD1 dat) (SD2 envMean) True g
                             
-                dataUpdateFunc (Right (Left upperEnv)) upperName False
-                dataUpdateFunc (Right (Left lowerEnv)) lowerName False
-                dataUpdateFunc (Right (Left envMean)) meanName False
+                dataUpdateFunc (SD2 upperEnv) upperName False
+                dataUpdateFunc (SD2 lowerEnv) lowerName False
+                dataUpdateFunc (SD2 envMean) meanName False
                 dataUpdateFunc residue ((dataName dataParams) ++ "_r") False
         else        
             return ()

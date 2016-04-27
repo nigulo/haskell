@@ -86,18 +86,19 @@ linRegWithMLII stateRef method fitName dataParams = do
         graphTabParms = (graphTabs state) !! currentGraphTab
         selectedGraph = graphTabSelection graphTabParms
         dat = dataSet dataParams
-        minx = D.xMin1 dat
-        maxx = D.xMax1 dat
-        range = maxx - minx
         numCentres = 10
-        lambdaMin = range / 10
-        lambdaMax = range
         numLambdas = 100
         opts = (50, 0.001)
 
-        func i j (Left dat) _ = do
+        func i j (SD1 dat) _ = do
+            let
+                minx = D.xMin1 dat
+                maxx = D.xMax1 dat
+                range = maxx - minx
+                lambdaMin = range / 10
+                lambdaMax = range
             (ad, varFunc) <- B.linRegWithMLII dat (B.MethodRBF 10 [(minx, maxx)] [lambdaMin, lambdaMin + (lambdaMax - lambdaMin) / (numLambdas - 1) .. lambdaMax] opts)
-            return $ Right $ Left ad
+            return $ SD4 ad
     result <- applyToData1 func dataParams fitName tEnv
     modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
 

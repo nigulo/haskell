@@ -2,7 +2,7 @@ module TSA.Correlation (findCorrelation) where
 
 import Regression.Data as D
 import Regression.Utils as U
-import Regression.AnalyticData as AD
+import Regression.AnalyticDataWrapper as ADW
 import qualified Math.Function as F
 import Utils.Concurrent
 
@@ -30,14 +30,13 @@ findCorrelation taskEnv dataParams1 dataParams2' precision shifts name = do
     g <- getStdGen 
     let 
         getRange dataParams =
-            case subData $ head $ dataSet dataParams of
-                Left dat -> (D.xMin1 dat, D.xMax1 dat) 
-                Right (Left spline) -> (AD.xMin1 spline, AD.xMax1 spline)
-                Right (Right fns) -> (AD.xMin1 fns, AD.xMax1 fns)
+            case unboxSubData $ subData $ head $ dataSet dataParams of
+                Left d -> (D.xMin1 d, D.xMax1 d) 
+                Right ad -> (ADW.xMin1 ad, ADW.xMax1 ad)
         shiftData dataParams 0 = return dataParams
         shiftData dataParams shift = do
             let 
-                func i j d _ = return $ constantOp (F.add) d shift False g
+                func i j d _ = return $ subDataConstantOp (F.add) d shift False g
             applyToData1 func dataParams "" taskEnv
         (xMin1, xMax1) = getRange dataParams1
         mapFunc shift puFunc = do 
@@ -52,7 +51,7 @@ findCorrelation taskEnv dataParams1 dataParams2' precision shifts name = do
                     let
                         maybeYs sdp1 sdp2 = 
                             case (subData sdp1, subData sdp2) of
-                                (Left d1, Left d2) ->
+                                (SD1 d1, SD1 d2) ->
                                     let 
                                         subD1 = D.subSet1 (xMin, xMax) d1  
                                         subD2 = D.subSet1 (xMin, xMax) d2  

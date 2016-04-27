@@ -38,12 +38,12 @@ main = do --mpiWorld $ \size rank ->
     if rank == 0 then
         do
             let 
-                splineParams = createDataParams_ ("spline" ++ show rank) [createSubDataParams__ (Right (Left spline))]
-                Left diff = U.binaryOp F.subtr (Left dat) (Right (Left spline)) True g
+                splineParams = createDataParams_ ("spline" ++ show rank) [createSubDataParams__ (SD2 spline)]
+                SD1 diff = subDataBinaryOp F.subtr (SD1 dat) (SD2 spline) True g
             Xml.renderToFile (Xml.toDocument diff) "diff"
             splineExtrema <- findExtrema splineParams precision False (dataName splineParams) defaultTaskEnv
             let
-                Left minima = subData $ head $ dataSet $ snd splineExtrema
+                SD1 minima = subData $ head $ dataSet $ snd splineExtrema
             Xml.renderToFile (Xml.toDocument minima) "minima"
     else
         return ()
@@ -57,10 +57,10 @@ main = do --mpiWorld $ \size rank ->
     --B.writeFile ("all_minima") byteStr
     
     bsSpline <- B.bootstrapSpline rank (\dat -> fitData fitParams dat defaultTaskEnv) spline dat diff
-    let bsSplineParams = createDataParams_ ("bsSpline" ++ show rank) [createSubDataParams__ (Right (Left bsSpline))]
+    let bsSplineParams = createDataParams_ ("bsSpline" ++ show rank) [createSubDataParams__ (SD2 bsSpline)]
     bsSplineExtrema <- findExtrema bsSplineParams precision False (dataName bsSplineParams) defaultTaskEnv
     let
-        Left bsMinima = subData $ head $ dataSet $ snd bsSplineExtrema
+        SD1 bsMinima = subData $ head $ dataSet $ snd bsSplineExtrema
         xysMinima = D.xys1 minima
         xysBsMinima = D.xys1 bsMinima
     

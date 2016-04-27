@@ -3,6 +3,8 @@ module TSA.AnalyticSignal (analyticSignal) where
 
 import qualified Regression.Polynom as P
 import Regression.AnalyticData as AD
+import Regression.AnalyticDataWrapper as ADW
+import Regression.Utils as U
 import Regression.Spline as S
 import Regression.Regression as R
 import Regression.Data as D
@@ -12,6 +14,7 @@ import qualified Math.Function as F
 import qualified Regression.Functions as FS
 
 import TSA.Params
+import TSA.Data
 
 import Utils.Misc
 
@@ -42,41 +45,37 @@ analyticSignal asParms precision (amplitudeId, phaseId, frequencyId, conjId) tas
         let
             dataParams = fromJust (asRealData asParms)
             rd = subData $ head $ dataSet $ dataParams
-            realData = case rd of
-                Left s -> s
-                Right (Left s) -> sampleAnalyticData_ s [precision] g
-                Right (Right f) -> sampleAnalyticData_ f [precision] g
+            realData = case unboxSubData rd of
+                Left d -> d
+                Right ad -> U.sampleAnalyticData_ ad [precision] g
             
         imagData <- case asImagData asParms of
             Nothing -> 
-                case rd of 
+                case unboxSubData rd of 
                     Left _ -> do
                         fft taskEnv duf dataParams conjId
-                    Right s ->
+                    Right _ ->
                         conjugatedCarrierFit duf dataParams precision conjId
                         
             Just imag -> return $ 
-                case subData $ head $ dataSet imag of
-                    Left s -> s
-                    Right (Left s) -> sampleAnalyticData_ s [precision] g
-                    Right (Right f) -> sampleAnalyticData_ f [precision] g
-            --Just (realSpec@(Spectrum (offset, step, _))) = fftRealData fftParms
-            --reals = D.ys realSpec
+                case unboxSubData $ subData $ head $ dataSet imag of
+                    Left d -> d
+                    Right ad -> U.sampleAnalyticData_ ad [precision] g
 
         let            
             amplitudeOp = F.function "sqrt(u*u+v*v)"
             phaseOp = F.function "atan(v/u)"
 
-            op 0 = binaryOp amplitudeOp (Left realData) (Left imagData) True g
-            op 1 = binaryOp phaseOp (Left realData) (Left imagData) True g
-            op 2 = binaryOp (F.divide) (binaryOp (F.subtr) v'u u'v True g) u2v2 True g where
+            op 0 = subDataBinaryOp amplitudeOp (SD1 realData) (SD1 imagData) True g
+            op 1 = subDataBinaryOp phaseOp (SD1 realData) (SD1 imagData) True g
+            op 2 = subDataBinaryOp (F.divide) (subDataBinaryOp (F.subtr) v'u u'v True g) u2v2 True g where
                 u' = D.getTangent realData
                 v' = D.getTangent imagData
-                v'u = binaryOp (F.mult) (Left v') (Left realData) True g
-                u'v = binaryOp (F.mult) (Left u') (Left imagData) True g
-                u2v2 = binaryOp (F.function "u*u + v*v") (Left realData) (Left imagData) True g
+                v'u = subDataBinaryOp (F.mult) (SD1 v') (SD1 realData) True g
+                u'v = subDataBinaryOp (F.mult) (SD1 u') (SD1 imagData) True g
+                u2v2 = subDataBinaryOp (F.function "u*u + v*v") (SD1 realData) (SD1 imagData) True g
             
-        [Left amplitude, Left phase, Left frequency] <- calcConcurrently__ op [0, 1, 2]  
+        [SD1 amplitude, SD1 phase, SD1 frequency] <- calcConcurrently__ op [0, 1, 2]  
         
         let    
             phaseVals@(val0:_) = V.toList $ D.values1 phase
@@ -97,9 +96,9 @@ analyticSignal asParms precision (amplitudeId, phaseId, frequencyId, conjId) tas
 
             diffVals = zipWith (\(x0, y0, w0) y1 -> (x0, y0 - y1, w0)) newVals primeVals
             newPhase = spectrum1 $ V.fromList diffVals
-        dataUpdateFunc (Left amplitude) amplitudeId False
-        dataUpdateFunc (Left phase) phaseId False
-        dataUpdateFunc (Left frequency) frequencyId False
+        dataUpdateFunc (SD1 amplitude) amplitudeId False
+        dataUpdateFunc (SD1 phase) phaseId False
+        dataUpdateFunc (SD1 frequency) frequencyId False
         return [
             (amplitudeId, Left amplitude), 
             (phaseId, Left phase), 
@@ -110,7 +109,7 @@ fft :: (Eq id, Show id, Read id) => TaskEnv -> DataUpdateFunc id -> DataParams -
 fft taskEnv (DataUpdateFunc dataUpdateFunc) dataParams id = 
     do
         let
-            Left s = subData $ head $ dataSet dataParams
+            SD1 s = subData $ head $ dataSet dataParams
             --Just s@(Spectrum(_, vals)) = D.toSpectrum d
             --s@(Spectrum(offset, step, vals)) = left $ dataSet dataParams
             minX = D.xMin1 s
@@ -137,7 +136,7 @@ fft taskEnv (DataUpdateFunc dataUpdateFunc) dataParams id =
             
             realSpec = spectrum1 $ V.zip3 xs1 (interpolatedValues1 xs1 realSpec1) (V.replicate (V.length xs1) 1.0)
 
-        dataUpdateFunc (Left realSpec) id False
+        dataUpdateFunc (SD1 realSpec) id False
         return realSpec
 
 conjugatedCarrierFit :: (Eq id, Show id, Read id) => DataUpdateFunc id -> DataParams -> Int -> id -> IO Data
@@ -166,6 +165,6 @@ conjugatedCarrierFit (DataUpdateFunc dataUpdateFunc) dataParams precision id = d
                     ) funcs derivs 
             in
                 P.setModulators newFuncs pol
-    dataUpdateFunc (Right (Left s)) id False
-    return $ sampleAnalyticData_ s [precision] g
+    dataUpdateFunc (SD2 s) id False
+    return $ U.sampleAnalyticData_ (analyticDataWrapper s) [precision] g
     

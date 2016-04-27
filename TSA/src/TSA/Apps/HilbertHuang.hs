@@ -113,7 +113,7 @@ calc args = do
                 else
                     return $ zipWith (\(freq1, dat1) (freq2, dat2) -> 
                             let 
-                                Left datSum = U.binaryOp (F.add) (Left dat) (Left dat2) True g
+                                SD1 datSum = subDataBinaryOp (F.add) (SD1 dat) (SD1 dat2) True g
                             in 
                                 (freq1 + freq2, datSum)
                         ) res imfs 
@@ -124,7 +124,7 @@ calc args = do
                 then
                     map (\(freq, dat) ->
                             let 
-                                Left datMean = U.constantOp (F.mult) (Left dat) (1 / count) True g
+                                SD1 datMean = subDataConstantOp (F.mult) (SD1 dat) (1 / count) True g
                             in 
                                 (freq / count, datMean)
                         ) imfSums
@@ -141,7 +141,7 @@ calc args = do
         let 
             recDat = foldl1 (\res dat -> 
                     let 
-                        Left datSum = U.binaryOp (F.add) (Left res) (Left dat) True g
+                        SD1 datSum = subDataBinaryOp (F.add) (SD1 res) (SD1 dat) True g
                     in 
                         datSum
                 ) (map (snd) imfMeans)
@@ -159,7 +159,7 @@ calcAnalyticSignal :: Data -> Int -> Double -> ReaderT Env (IO) (String {-logTex
 calcAnalyticSignal imfDat modeNo freq = do
     let
         asParams = AnalyticSignalParams {
-                asRealData = Just (createDataParams_ "imf" [createSubDataParams__ (Left imfDat)]),
+                asRealData = Just (createDataParams_ "imf" [createSubDataParams__ (SD1 imfDat)]),
                 asImagData = Nothing
             }
     env <- ask
@@ -260,7 +260,7 @@ imf modeNo dat fullSDev = do
                                     fitData fitUpperParams (D.data1' stepMaxima) defaultTaskEnv]
                         let 
                             envMean = (upperEnv `S.add` lowerEnv) `S.divide` 2
-                            Left dat2 = U.binaryOp (F.subtr) (Left stepDat) (Right (Left envMean)) True g
+                            SD1 dat2 = subDataBinaryOp (F.subtr) (SD1 stepDat) (SD2 envMean) True g
                             (datMean, datVar) = Sample.meanVariance $ D.ys dat2 --V.map snd $ filteredVals
                             (minima2, maxima2) = findExtremaOfOrder (findExtrema dat2) 0
                             numLowerNodes2 = ceiling $ (fromIntegral (V.length minima2))

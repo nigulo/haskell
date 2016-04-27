@@ -85,8 +85,8 @@ correlationDialog stateRef = do
                 widgetDestroy dialog
 
                 let
-                    Left d1 = subData $ head $ dataSet selectedData1
-                    Left d2 = subData $ head $ dataSet selectedData2
+                    SD1 d1 = subData $ head $ dataSet selectedData1
+                    SD1 d2 = subData $ head $ dataSet selectedData2
                     graphTabParms = (graphTabs state) !! currentGraphTab
                     selectedGraph = graphTabSelection graphTabParms
                     shifts = if shift == 0 then [shift] else [-shift, -shift + 2 * shift / 100 .. shift]
@@ -99,7 +99,7 @@ correlationDialog stateRef = do
                 runTask stateRef "Find correlation" $ do
                     correlations <- findCorrelation tEnv selectedData1 selectedData2 precision shifts name
                     case correlations of
-                        [corr] -> modifyState stateRef $ addData (Left corr) name (Just (currentGraphTab, selectedGraph))
+                        [corr] -> modifyState stateRef $ addData (SD1 corr) name (Just (currentGraphTab, selectedGraph))
                         otherwise -> return () 
                 return ()
         else

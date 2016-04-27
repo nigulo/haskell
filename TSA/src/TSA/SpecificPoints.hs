@@ -33,16 +33,16 @@ findExtrema :: DataParams -> Int -> Bool -> String
 findExtrema dataParams precision global name taskEnv = do
     g <- getStdGen 
     let 
-        findExtremaFunc i j (Left d) puFunc = do
-            let
-                (minima, maxima) = D.getExtrema d global
-            return [Left $ D.data1' minima, Left $ D.data1' maxima] 
-        findExtremaFunc i j (Right ad) puFunc = do 
-            let
-                (minima, maxima) = case ad of
-                    Left s -> AD.getExtrema precision Nothing g s
-                    Right f -> AD.getExtrema precision Nothing g f
-            return [Left $ D.data1' minima, Left $ D.data1' maxima] 
+        findExtremaFunc i j sd puFunc = 
+            case unboxSubData sd of
+                Left d -> do
+                    let
+                        (minima, maxima) = D.getExtrema d global
+                    return [SD1 $ D.data1' minima, SD1 $ D.data1' maxima]
+                Right ad -> do 
+                    let
+                        (minima, maxima) = ADW.getExtrema precision Nothing g ad
+                    return [SD1 $ D.data1' minima, SD1 $ D.data1' maxima] 
 
     [minima, maxima] <- applyToData findExtremaFunc dataParams [name ++ "_min", name ++ "_max"] taskEnv
     return (minima, maxima)
@@ -51,16 +51,16 @@ findZeroCrossings :: DataParams -> Int  -> String -> TaskEnv -> IO DataParams
 findZeroCrossings dataParams precision name taskEnv = do
     g <- getStdGen 
     let 
-        findZCFunc i j (SD1 d) puFunc = do
-            let
-                zc = D.getZeroCrossings d
-            return [Left $ D.data1 (V.map (\x -> (x, 0, 1)) zc)] 
-        findZCFunc i j (Right ad) puFunc = do 
-            let
-                zc = case ad of
-                    Left s -> AD.getZeroCrossings precision g s
-                    Right f -> AD.getZeroCrossings precision g f
-            return [Left $ D.data1 (V.map (\x -> (x, 0, 1)) zc)] 
+        findZCFunc i j sd puFunc = do
+            case unboxSubData sd of
+                Left d -> do
+                    let
+                        zc = D.getZeroCrossings d
+                    return [SD1 $ D.data1 (V.map (\x -> (x, 0, 1)) zc)] 
+                Right ad -> do 
+                    let
+                        zc = ADW.getZeroCrossings precision g ad
+                    return [SD1 $ D.data1 (V.map (\x -> (x, 0, 1)) zc)] 
 
     [zc] <- applyToData findZCFunc dataParams [name] taskEnv
     return zc

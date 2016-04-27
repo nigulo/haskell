@@ -43,7 +43,7 @@ calcDispersions dataParams periodStart' periodEnd' precision method name bootstr
         step = (freqEnd - freqStart) / (fromIntegral precision)
         puFunc = progressUpdateFunc taskEnv
 
-        findDispersions :: Int -> Either D.Data (Either S.Spline FS.Functions) -> (Double -> IO ()) -> IO (Either D.Data (Either S.Spline FS.Functions)) 
+        findDispersions :: Int -> Either D.Data (Either S.Spline FS.Functions) -> (Double -> IO ()) -> IO SubData 
         findDispersions method (Left dat) puFunc = do
             let
                 mapFunc i puFunc = 
@@ -69,14 +69,14 @@ calcDispersions dataParams periodStart' periodEnd' precision method name bootstr
                         then map (\d -> d / norm) dispersions 
                         else dispersions
                 freqSpec = D.Spectrum2 ((freqStart, step), V.zip (V.fromList normalizedDispersions) (V.replicate (length normalizedDispersions) 1))
-            return $ Left freqSpec
+            return $ SD1 freqSpec
 
     let
         numSubData = length $ dataSet dataParams
     
     subDispersions <- zipWithM (\sdp i -> do
             let
-                Left dat = subData sdp
+                SD1 dat = subData sdp
             dat1 <- if bootstrap then reshuffleData dat else return dat
             disps <- findDispersions method (Left dat1) (\percent -> puFunc (percent * (fromIntegral i / fromIntegral numSubData)))
             puFunc $ fromIntegral i / fromIntegral numSubData
@@ -85,7 +85,7 @@ calcDispersions dataParams periodStart' periodEnd' precision method name bootstr
     let
         dispersions = createDataParams_ name (map (\sd -> createSubDataParams__ sd) subDispersions)
             
-    bestPeriods <- mapM (\(i, SubDataParams _ (Left periodSpec) _) -> do
+    bestPeriods <- mapM (\(i, SubDataParams _ (SD1 periodSpec) _) -> do
             let
                 freqDisps = sortBy (\(_, disp1) (_, disp2) -> compare disp1 disp2) $ V.toList $ D.getMinima periodSpec False
                 freqs = map fst freqDisps
@@ -119,7 +119,7 @@ leastSquares dat period =
                                 freq = 2 * pi / period
                 fitWithSpline (modulatedUnitPolynoms templates) 1 dat 2 (\_ -> return ())
         let
-            Left residue = binaryOp (F.subtr) (Left dat) (Right spline) True g
+            SD1 residue = subDataBinaryOp (F.subtr) (SD1 dat) (SD2 spline) True g
             vals = values1 residue
             (disp, norm) = V.foldl' (\(sum, wSum) (_, y, w) -> (sum + y * y * w, wSum + w)) (0, 0) vals
         return $ disp / norm

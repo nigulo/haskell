@@ -5,7 +5,7 @@ import Graphics.UI.Gtk.Layout.VBox
 import qualified Regression.Polynom as P
 import Regression.Spline as S
 import Regression.Regression as R
-import Regression.AnalyticData as AD
+import Regression.AnalyticDataWrapper as ADW
 import Regression.Data as D 
 import Regression.Utils as U
 import qualified Math.Function as F
@@ -90,17 +90,16 @@ sampleDialog stateRef = do
                     graphTabParms = (graphTabs state) !! currentGraphTab
                     selectedGraph = graphTabSelection graphTabParms
                     (xMins, xMaxs) = unzip $ map (\sdp -> 
-                            case subData sdp of 
+                            case unboxSubData $ subData sdp of 
                                 Left d -> (D.xMins d, D.xMaxs d)
-                                Right (Left ad) -> (AD.xMins ad, AD.xMaxs ad)
-                                Right (Right ad) -> (AD.xMins ad, AD.xMaxs ad)
+                                Right ad -> (ADW.xMins ad, ADW.xMaxs ad)
                         ) (dataSet selectedData)
 
                     xs =
                         case selectedData2 of -- only unsegmented data
                             Just dat ->
                                 let
-                                    Left d = subData $ head $ dataSet dat
+                                    SD1 d = subData $ head $ dataSet dat
                                 in
                                     --D.xs d
                                     filter (\xs -> and (zipWith (>=) xs (head xMins)) && and (zipWith (<=) xs (head xMaxs))) (D.xs d)

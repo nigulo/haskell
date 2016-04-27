@@ -129,8 +129,8 @@ fit stateRef dataParams fitName = do
             spline <- fitData (lsqFitParams lsqParms) dat tEnv
             g <- getStdGen 
             let
-                Left diff = U.binaryOp (F.subtr) (Left dat) (Right spline) True g
-                Left squareDiff = U.binaryOp (F.subtr) (Left diff) (Left diff) True g
+                SD1 diff = subDataBinaryOp (F.subtr) (SD1 dat) (SD2 spline) True g
+                SD1 squareDiff = subDataBinaryOp (F.subtr) (SD1 diff) (SD1 diff) True g
                 diffVals = D.values1 diff
                 datVals = D.values1 dat
                 datMean = Sample.meanWeighted (V.map (\(x, y, w) -> (y, w)) datVals)
@@ -152,7 +152,7 @@ fit stateRef dataParams fitName = do
             appendLog stateRef ("BIC = " ++ show bic)
             --appendLog stateRef ("KS statistic D = " ++ (show (kolmogorovSmirnovD normal diffSample)))
             --modifyState stateRef $ addData (Left dist) (fitName ++ "_residueDist") (Just (currentGraphTab, selectedGraph))
-            return $ Right $ Left spline
+            return $ SD2 spline
     fitDataParams <- applyToData1 func dataParams fitName tEnv
     modifyState stateRef $ (addDataParams fitDataParams (Just (currentGraphTab, selectedGraph)))
 

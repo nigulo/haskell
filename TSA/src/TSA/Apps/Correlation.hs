@@ -32,7 +32,7 @@ main = do
         xys2 :: [(Double, Double)] = map (\line -> let [xStr, yStr] = words line in (read xStr, read yStr)) $ drop numLinesToSkip $ lines $ str2
         dat2 = D.data1' $ V.fromList xys2
 
-    findCorrelation defaultTaskEnv (createDataParams_ "dat1" [createSubDataParams__ (Left dat1)]) (createDataParams_ "dat2" [createSubDataParams__ (Left dat2)]) precision shifts "correlation"
+    findCorrelation defaultTaskEnv (createDataParams_ "dat1" [createSubDataParams__ (SD1 dat1)]) (createDataParams_ "dat2" [createSubDataParams__ (SD1 dat2)]) precision shifts "correlation"
     return ()
 
     

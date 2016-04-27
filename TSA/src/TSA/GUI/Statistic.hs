@@ -249,11 +249,11 @@ statisticDialog stateRef = do
                                                                 widgetDestroy messageDialog
                                                         else return ()
                                                         let
-                                                            mapOp i dp = unboxSubData $ dataSet dp !! i
+                                                            mapOp i dp = unboxSubData $ subData $ dataSet dp !! i
                                                             segments = List.map (\i -> List.map (mapOp i) dataParams) [0 .. minSegments - 1]
                                                         results <- calcConcurrently (\dataSets puFunc -> S.getValues dataSets varValDefs (mkStdGen 1) puFunc (taskInitializer tEnv) (taskFinalizer tEnv) statistic) (progressUpdateFunc tEnv) (taskInitializer tEnv) (taskFinalizer tEnv) segments
                                                         modifyMVar_ stateRef $ \state -> 
-                                                            return $ addSegmentedData (List.map Left results) name (Just (currentGraphTab, selectedGraph)) state
+                                                            return $ addSegmentedData (List.map SD1 results) name (Just (currentGraphTab, selectedGraph)) state
                                     
                                     if not (S.isValid statistic) then
                                         do
