@@ -63,6 +63,8 @@ data FftParams = FftParams {
     fftPhaseShift :: Double,
     fftRealData :: Maybe D.Data,
     fftImagData :: Maybe D.Data,
+    fftCalcPower :: Bool,
+    fftCalcReAndIm :: Bool,
     fftCommonParams :: CommonParams
 } deriving (Show, Read)
 
@@ -70,7 +72,9 @@ instance Xml.XmlElement FftParams where
     toElement params = 
         Xml.element "fftparams" 
             [("direction", show (fftDirection params)),
-             ("phaseshift", show (fftPhaseShift params))
+             ("phaseshift", show (fftPhaseShift params)),
+             ("calcpower", show (fftCalcPower params)),
+             ("calcreandim", show (fftCalcReAndIm params))
             ] 
             (
                 [Left (Xml.element "realdata" [] (
@@ -90,6 +94,12 @@ instance Xml.XmlElement FftParams where
         FftParams {
             fftDirection = read $ Xml.attrValue e "direction",
             fftPhaseShift = read $ Xml.attrValue e "phaseshift",
+            fftCalcPower = case Xml.maybeAttrValue e "calcpower" of
+                Just calcPower -> read calcPower
+                Nothing -> True,
+            fftCalcReAndIm = case Xml.maybeAttrValue e "calcreandim" of
+                Just calcReAndIm -> read calcReAndIm
+                Nothing -> False,
             fftCommonParams = Xml.fromElement (Xml.contentElement e commonParamsXmlElementName),
             fftRealData =
                 case Xml.contents $ Xml.contentElement e "realdata" of
@@ -782,32 +792,8 @@ newParams =
                 },
             bayesLinRegParams = newBayesLinReg,
             envParams = newEnv,
-            fftParams = FftParams {
-                fftDirection = True,
-                fftPhaseShift = 0,
-                fftRealData = Nothing,
-                fftImagData = Nothing,
-                fftCommonParams = CommonParams {
-                    commonName = "FFT",
-                    commonNo = 1
-                }
-            },
-            asParams = AnalyticSignalParams {
-                asRealData = Nothing,
-                asImagData = Nothing,
-                asAmplitudeParams = CommonParams {
-                    commonName = "Amplitude",
-                    commonNo = 1
-                },
-                asPhaseParams = CommonParams {
-                    commonName = "Phase",
-                    commonNo = 1
-                },
-                asFrequencyParams = CommonParams {
-                    commonName = "Frequency",
-                    commonNo = 1
-                }
-            },
+            fftParams = newFft,
+            asParams = newAnalyticSignal,
             localPhaseParams = newLocalPhase,
             findPeriodParams = newFindPeriod,
             d2Params = newD2,
@@ -821,6 +807,38 @@ newParams =
             buildParams = newBuild,
             interpolateParams = newInterpolate,
             statisticParams = [newStatistic Nothing Nothing]
+    }
+
+newFft :: FftParams
+newFft = FftParams {
+        fftDirection = True,
+        fftPhaseShift = 0,
+        fftCalcPower = True,
+        fftCalcReAndIm = False,                
+        fftRealData = Nothing,
+        fftImagData = Nothing,
+        fftCommonParams = CommonParams {
+            commonName = "FFT",
+            commonNo = 1
+        }
+    }
+
+newAnalyticSignal :: AnalyticSignalParams
+newAnalyticSignal = AnalyticSignalParams {
+        asRealData = Nothing,
+        asImagData = Nothing,
+        asAmplitudeParams = CommonParams {
+            commonName = "Amplitude",
+            commonNo = 1
+        },
+        asPhaseParams = CommonParams {
+            commonName = "Phase",
+            commonNo = 1
+        },
+        asFrequencyParams = CommonParams {
+            commonName = "Frequency",
+            commonNo = 1
+        }
     }
 
 newFindPeriod :: FindPeriodParams

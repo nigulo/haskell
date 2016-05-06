@@ -56,14 +56,21 @@ paramsDialog stateRef = do
     addWidget (Just "Direction: ") directionCombo dialog
     
     realSpectrumCombo <- dataSetComboNew2 onlySpectrum state False
-    addWidget (Just "Real spectrum: ") (getComboBox realSpectrumCombo) dialog
+    addWidget (Just "Real signal: ") (getComboBox realSpectrumCombo) dialog
 
     imagSpectrumCombo <- dataSetComboNew2 onlySpectrum state False
-    addWidget (Just "Imag spectrum: ") (getComboBox imagSpectrumCombo) dialog
+    addWidget (Just "Imaginary signal: ") (getComboBox imagSpectrumCombo) dialog
 
     phaseShiftAdjustment <- adjustmentNew (fftPhaseShift parms) (-1) 1 0.1 0.1 1
     phaseShiftSpin <- spinButtonNew phaseShiftAdjustment 1 2
     addWidget (Just "Phase shift: ") phaseShiftSpin dialog
+
+    calcPowerCheck <- checkButtonNew >>= \button -> toggleButtonSetActive button (fftCalcPower parms) >> return button
+    addWidget (Just "Power:") calcPowerCheck dialog
+
+    calcReAndImCheck <- checkButtonNew >>= \button -> toggleButtonSetActive button (fftCalcReAndIm parms) >> return button
+    addWidget (Just "Real and imaginary:") calcReAndImCheck dialog
+
     
     infoLabel <- labelNew $ Just "Number of samples will be truncated to closest power of 2"
     addWidget Nothing infoLabel dialog
@@ -98,12 +105,16 @@ paramsDialog stateRef = do
                 selectedRealSpec <- getSelectedData realSpectrumCombo
                 selectedImagSpec <- getSelectedData imagSpectrumCombo
                 phaseShift <- spinButtonGetValue phaseShiftSpin
+                calcPower <- toggleButtonGetActive calcPowerCheck
+                calcReAndIm <- toggleButtonGetActive calcReAndImCheck
                 widgetDestroy dialog
                 
                 modifyStateParams stateRef $ \params -> params {fftParams = FftParams {
                     fftCommonParams = updateCommonParams name commonParams,
                     fftDirection = (direction == Just "Time -> Frequency"),
                     fftPhaseShift = phaseShift,
+                    fftCalcPower = calcPower,
+                    fftCalcReAndIm = calcReAndIm,
                     fftRealData = case selectedRealSpec of 
                         Nothing -> Nothing
                         Just s -> Just $ left $ unboxSubData $ subData $ head $ dataSet s,
@@ -148,6 +159,8 @@ fft stateRef name =
             step = max realStep imagStep
             fftFunc = if fftDirection parms then fromTimeToFrequency else fromFrequencyToTime
             phaseShift = fftPhaseShift parms
+            calcPower = fftCalcPower parms
+            calcReAndIm = fftCalcReAndIm parms
             numToUse = 2 ^ (floor (logBase 2 (fromIntegral n)))
             ys1 = V.take numToUse $ V.zipWith (:+) reals imags
         
@@ -158,19 +171,27 @@ fft stateRef name =
         realSpec <- return $ D.Spectrum2 ((0, specStep), V.zip (V.map realPart spec1) (V.replicate len 0))
         imagSpec <- return $ D.Spectrum2 ((0, specStep), V.zip (V.map imagPart spec1) (V.replicate len 0))
         
-        --modifyState stateRef $ addDiscreteData realSpec (name ++ "_Real") (Just (currentGraphTab, selectedGraph))
-        --modifyState stateRef $ addDiscreteData imagSpec (name ++ "_Imag") (Just (currentGraphTab, selectedGraph))
-        g <- getStdGen 
-        let
-            powerSpec = U.dataToDataOp (F.function "sqrt(x*x + y*y)") realSpec imagSpec True g
-            -- shift it to zero
-            yMax = D.yMax powerSpec
-            xMax = D.xMax1 powerSpec
-            xMiddle = xMax / 2
-            normVals = V.map (\(x, y, w) -> (x, y / yMax, w)) (D.values1 powerSpec)
-            xStep = xMax / fromIntegral (V.length normVals - 1)
-            (left, right) = V.partition (\(x, _, _) -> x >= xMiddle) normVals
-            left1 = V.map (\(x, y, w) -> (x - xMax - xStep, y, w)) left
-            powerSpec1 = D.spectrum1 $ left1 V.++ right
-        modifyState stateRef $ addDiscreteData powerSpec1 name (Just (currentGraphTab, selectedGraph))
-
+        if calcReAndIm
+            then do
+                modifyState stateRef $ addDiscreteData realSpec (name ++ "_Re") (Just (currentGraphTab, selectedGraph))
+                modifyState stateRef $ addDiscreteData imagSpec (name ++ "_Im") (Just (currentGraphTab, selectedGraph))
+            else
+                return ()
+        
+        if calcPower
+            then do
+                g <- getStdGen 
+                let
+                    powerSpec = U.dataToDataOp (F.function "sqrt(x*x + y*y)") realSpec imagSpec True g
+                    -- shift it to zero
+                    yMax = D.yMax powerSpec
+                    xMax = D.xMax1 powerSpec
+                    xMiddle = xMax / 2
+                    normVals = V.map (\(x, y, w) -> (x, y / yMax, w)) (D.values1 powerSpec)
+                    xStep = xMax / fromIntegral (V.length normVals - 1)
+                    (left, right) = V.partition (\(x, _, _) -> x >= xMiddle) normVals
+                    left1 = V.map (\(x, y, w) -> (x - xMax - xStep, y, w)) left
+                    powerSpec1 = D.spectrum1 $ left1 V.++ right
+                modifyState stateRef $ addDiscreteData powerSpec1 name (Just (currentGraphTab, selectedGraph))
+            else
+                return ()
