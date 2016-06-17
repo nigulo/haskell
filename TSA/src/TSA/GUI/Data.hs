@@ -131,6 +131,7 @@ infoDialog stateRef = do
     vBox <- vBoxNew False 2
     boxPackStart contentBox vBox PackGrow 2
     notebook <- notebookNew
+    notebookSetTabPos notebook PosLeft
     notebookSetScrollable notebook True
     boxPackStart vBox notebook PackGrow 2
     
