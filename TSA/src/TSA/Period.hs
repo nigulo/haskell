@@ -52,7 +52,13 @@ calcDispersions dataParams periodStart' periodEnd' precision method name bootstr
                         dispersionAndInfo <- 
                             case method of 
                                 0 -> do --LeastSquares
-                                    leastSquares dat (1 / (freqStart + fromIntegral i * step))
+                                    let
+                                        ys = D.ys dat
+                                        mean = V.sum ys / (fromIntegral (D.dataLength dat))
+                                        datCentered = D.setY (V.map (\y -> y - mean) ys) dat  
+                                        r = V.sum $ V.map (^2) (D.ys datCentered)
+                                        reduction = leastSquares datCentered (freqStart + fromIntegral i * step)
+                                    return (reduction / r)
                                 1 -> do --StringLength
                                     do
                                         let 
@@ -105,31 +111,34 @@ calcDispersions dataParams periodStart' periodEnd' precision method name bootstr
     puFunc 1
     return dispersions
 
-leastSquares :: Data -> Double -> IO Double
-leastSquares dat period =
-    do 
-        g <- getStdGen 
-        spline <-  
-            do
+leastSquares :: Data -> Double -> Double
+leastSquares dat freq =
+    let
+        xys = D.xys1 dat
+        --(ss, cs) = V.foldl1' (\(ss, cs) (s, c) -> (ss + s, cs + c)) $ V.map (\(x, _) ->
+        --        let
+        --            phase = 4 * pi * freq * x
+        --        in
+        --            sin phase, cos phase 
+        --    ) xys
+        --tau = atan ss / cs / (4 * pi * freq) 
+        (cc, ss, cs, yc, ys) = V.foldl1' (\(ccs, sss, css, ycs, yss) (cc, ss, cs, yc, ys) -> (ccs + cc, sss + ss, css + cs, ycs + yc, yss + ys)) $ V.map (\(x, y) -> 
                 let
-                    templates =
-                        [PolynomTemplate (3, Nothing, Nothing)] ++ 
-                        [PolynomTemplate (1, Just (F.fromExpression(sine freq)), Just (F.fromExpression (dsin freq)))] ++
-                        [PolynomTemplate (1, Just (F.fromExpression(cosine freq)), Just (F.fromExpression (dcos freq)))]                         
-                            where
-                                freq = 2 * pi / period
-                fitWithSpline (modulatedUnitPolynoms templates) 1 dat 2 (\_ -> return ())
-        let
-            SD1 residue = subDataBinaryOp (F.subtr) (SD1 dat) (SD2 spline) True g
-            vals = values1 residue
-            (disp, norm) = V.foldl' (\(sum, wSum) (_, y, w) -> (sum + y * y * w, wSum + w)) (0, 0) vals
-        return $ disp / norm
+                    phase = 2 * pi * freq * x 
+                    c = cos phase
+                    s = sin phase
+                in
+                    (c * c, s * s, c * s, y * c, y * s)
+            ) xys
+        d = cc * ss - cs * cs
+        reduction = ((ss * yc - cs * ys) * yc + (cc * ys - cs * yc) * ys) / d
+    in reduction
 
 stringLength :: V.Vector (Double, Double) -> Double -> IO Double
-stringLength xys period =
+stringLength xys freq =
     do 
         let
-            phaseData = sortVectorBy (\(x1, _) (x2, _) -> compare x1 x2) $ V.map (\(x, y) -> (snd (properFraction (x / period)), y)) xys
+            phaseData = sortVectorBy (\(x1, _) (x2, _) -> compare x1 x2) $ V.map (\(x, y) -> (snd (properFraction (x * freq)), y)) xys
             
             calculateLength [] = return 0
             calculateLength (_:[]) = return 0
