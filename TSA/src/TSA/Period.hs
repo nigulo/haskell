@@ -47,27 +47,35 @@ calcDispersions dataParams periodStart' periodEnd' precision method name bootstr
         findDispersions :: Int -> Either D.Data (Either S.Spline FS.Functions) -> (Double -> IO ()) -> IO SubData 
         findDispersions method (Left dat) puFunc = do
             let
-                mapFunc i puFunc = 
-                    do
-                        dispersionAndInfo <- 
-                            case method of 
-                                0 -> do --LeastSquares
-                                    let
-                                        ys = D.ys dat
-                                        mean = V.sum ys / (fromIntegral (D.dataLength dat))
-                                        datCentered = D.setY (V.map (\y -> y - mean) ys) dat  
-                                        r = V.sum $ V.map (^2) (D.ys datCentered)
-                                        reduction = leastSquares datCentered (freqStart + fromIntegral i * step)
-                                    return (reduction / r)
-                                1 -> do --StringLength
-                                    do
-                                        let 
-                                            ymin = D.yMin dat
-                                            yNorm = D.yMax dat - ymin
-                                            vals = D.xys1 dat --map (\(x, y) -> (x, (y - ymin) / yNorm)) $ D.xys1 dat
-                                        stringLength vals (1 / (freqStart + fromIntegral i * step))
-                        puFunc 1
-                        return dispersionAndInfo
+                ys = D.ys dat
+                (mean, var) = meanVarianceUnb ys
+                datCentered = D.setY (V.map (\y -> y - mean) ys) dat 
+                sigLevel pValue = -2 * log (pValue / var)
+                mapFunc i puFunc = do 
+                    let
+                        freq = (freqStart + fromIntegral i * step)
+                    dispersionAndInfo <- 
+                        case method of 
+                            0 -> do --LeastSquares
+                                let
+                                    r = V.sum $ V.map (^2) (D.ys datCentered)
+                                    reduction = leastSquares datCentered freq
+                                    dispersion = reduction / r
+                                    pValue = var * exp(-reduction/2)
+                                (logFunc taskEnv) ("p-value for " ++ show freq ++ " " ++ show pValue)
+                                return dispersion
+                            1 -> do --StringLength
+                                do
+                                    let 
+                                        ymin = D.yMin dat
+                                        yNorm = D.yMax dat - ymin
+                                        vals = D.xys1 dat --map (\(x, y) -> (x, (y - ymin) / yNorm)) $ D.xys1 dat
+                                    stringLength vals freq
+                    puFunc 1
+                    return dispersionAndInfo
+            (logFunc taskEnv) ("Significance level 0.1: " ++ show (sigLevel 0.1))
+            (logFunc taskEnv) ("Significance level 0.05: " ++ show (sigLevel 0.05))
+            (logFunc taskEnv) ("Significance level 0.01: " ++ show (sigLevel 0.01))
             dispersions <- calcConcurrently mapFunc puFunc (taskInitializer taskEnv) (taskFinalizer taskEnv) [0 .. precision - 1]
             let
                 norm = maximum dispersions
