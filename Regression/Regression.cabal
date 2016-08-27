@@ -20,14 +20,15 @@ library
                    fft -any,
                    carray -any,
                    statistics -any,
-                   cubicspline,
+                   cubicspline -any,
                    numeric-limits -any,
-                   eigen ==2.0.0
+                   eigen -any
   hs-source-dirs:   src
   ghc-options:      -O2 -fexcess-precision
   exposed-modules:  
                    Regression.AnalyticData,
                    Regression.AnalyticDataWrapper,
+                   Regression.Bayes,
                    Regression.Bootstrap,
                    Regression.CUDALeastSquares,
                    Regression.Data,
@@ -36,12 +37,11 @@ library
                    Regression.IOLeastSquares,
                    Regression.LeastSquares,
                    Regression.Polynom,
+                   Regression.RBF,
                    Regression.Regression,
                    Regression.Spline,
                    Regression.Statistic,
-                   Regression.Utils,
-                   Regression.Bayes,
-                   Regression.RBF
+                   Regression.Utils
   extensions:       
                     ExistentialQuantification,
                     FlexibleInstances,

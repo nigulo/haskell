@@ -3,25 +3,8 @@ version:             0.0.1
 cabal-version:       >= 1.2
 build-type:          Simple
 license:             AllRightsReserved
-license-file:        ""
-copyright:           
-maintainer:          
-stability:           
-homepage:            
-package-url:         
-bug-reports:         
-synopsis:            
-description:         .
-category:            
-author:              
-tested-with:         
-data-files:
-            tsa.ico,
-            ui.xml
-data-dir:            res
 extra-source-files:  
 extra-tmp-files:
-
 executable TSA
   build-depends:   
                GUI -any,

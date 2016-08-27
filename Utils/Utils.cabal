@@ -39,7 +39,7 @@ library
                    random -any,
                    time -any,
                    vector -any,
-                   SafeSemaphore ==0.9.*,
+                   SafeSemaphore -any,
                    HTF > 0.9,
                    bytestring -any,
                    utf8-string -any

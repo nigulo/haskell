@@ -36,7 +36,8 @@ executable Math
                FlexibleInstances,
                ScopedTypeVariables,
                TypeSynonymInstances,
-               MultiParamTypeClasses
+               MultiParamTypeClasses,
+               FlexibleContexts
 
 library 
   build-depends:    
@@ -74,7 +75,8 @@ library
                    Math.Vector
   extensions:       
                    FlexibleInstances,
-                   MultiParamTypeClasses
+                   MultiParamTypeClasses,
+                   FlexibleContexts
 
 test-suite MathTests
   type:            exitcode-stdio-1.0

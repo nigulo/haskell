@@ -29,7 +29,7 @@ rbfMLII y sumPhi sumyPhi (maxIters, precision) = do
         --initial guess for the hyperparameters
         calc i prevAlpha prevBeta prevMargLik = do
             let
-                invS = (M.map (*prevAlpha) (M.identity numBases)) `M.add` (M.map (*prevBeta) sumPhi)
+                invS = (M.map (*prevAlpha) (M.identity numBases numBases)) `M.add` (M.map (*prevBeta) sumPhi)
                 s = M.inverse invS
                 d = M.map (*prevBeta) sumyPhi
                 m = s `M.mul` d

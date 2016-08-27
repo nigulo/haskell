@@ -43,8 +43,8 @@ addMeasurements ::
 --addMeasurements _ _ 0 state = state -- return same state if weight is zero
 addMeasurements xVect y w (LSQState (b, d, e)) = 
     let 
-        n = length xVect
-        pInt = length (head xVect) 
+        n = Prelude.length xVect
+        pInt = Prelude.length (head xVect) 
         --pInt = length xVect
         fori :: Acc (Scalar Int) -> Acc (Scalar Int) -> Acc Matrix -> Acc Matrix
         fori pScalar iScalar bdx = 
@@ -170,7 +170,7 @@ addConstraint ::
        -> LSQState      -- next state of calculation
 addConstraint rVect s w (LSQState (b, f, e)) = 
     let
-        pInt = length rVect
+        pInt = Prelude.length rVect
         p = constant $ pInt
         fori :: Acc (Scalar Int) -> Acc (Matrix, Vector Double, Vector Double) -> Acc (Matrix, Vector Double, Vector Double)
         fori iScalar brf = 
@@ -239,7 +239,7 @@ addConstraint rVect s w (LSQState (b, f, e)) =
         foris :: [Acc (Matrix, Vector Double, Vector Double) -> Acc (Matrix, Vector Double, Vector Double)]                  
         foris =  [fori (unit (constant i)) | i <- [0 .. pInt - 1]]
         fs = toList f
-        (b1, r1, f1) = run $ foldl1 (>->) foris (use (b, fromList (Z:.(pInt + 1)) (rVect Prelude.++ [s]), fromList (Z:.length fs) ((Prelude.init fs) Prelude.++ [w])))
+        (b1, r1, f1) = run $ foldl1 (>->) foris (use (b, fromList (Z:.(pInt + 1)) (rVect Prelude.++ [s]), fromList (Z:.Prelude.length fs) ((Prelude.init fs) Prelude.++ [w])))
         --(b1, r1, f1) = run $ for__ 0 (p - 1) (b, vector (values rVect ++ [s]), (V.set p w f)) fori;
         rsp = indexArray r1 (Z:.pInt)
         fm = indexArray f (Z:.pInt)

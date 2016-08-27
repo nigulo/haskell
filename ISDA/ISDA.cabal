@@ -3,30 +3,15 @@ version:             0.0.1
 cabal-version:       >= 1.2
 build-type:          Simple
 license:             AllRightsReserved
-license-file:        ""
-copyright:           
-maintainer:
-stability:           
-homepage:            
-package-url:         
-bug-reports:         
-synopsis:            
-description:         .
-category:            
-author:              
-tested-with:         
-data-files:          
-data-dir:            ""
 extra-source-files:  
-extra-tmp-files:     
-
+extra-tmp-files:
 executable ISDA
   build-depends:   
                    Utils -any,
                    base -any,
                    containers -any
   hs-source-dirs:  src
-  ghc-options:     -O2 -fexcess-precision
+  ghc-options:     -fexcess-precision
   main-is:         Main.hs
 
 library 
@@ -36,6 +21,6 @@ library
                    containers -any,
                    vector -any
   hs-source-dirs:  src
-  ghc-options:     -O2 -fexcess-precision
+  ghc-options:     -fexcess-precision
   exposed-modules: ISDA.InOut
 
