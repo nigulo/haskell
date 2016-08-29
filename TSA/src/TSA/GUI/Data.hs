@@ -452,10 +452,10 @@ addOrUpdateDataParams dp tabIndex update state =
                                 (pointSize, lineWidth) = 
                                     case subData (head (dataSet dp)) of
                                         SD1 dat ->
-                                            if D.is3d dat
-                                                then (0, 0)
-                                                else
-                                                    if D.isSpectrum dat then (0, 1) else (1, 0)
+                                            case D.dim dat of
+                                                0 -> (0, 1)
+                                                1 -> if D.isSpectrum dat then (0, 1) else (1, 0)
+                                                2 -> (0, 0)
                                         SD2 spline -> (0, 1)
                                         SD3 ad ->
                                             if AD.is3d ad

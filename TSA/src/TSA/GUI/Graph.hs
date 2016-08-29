@@ -872,12 +872,12 @@ printGraph stateRef = do
     fileFilter `fileFilterAddPattern` "*.PDF"
     fileFilter `fileFilterAddPattern` "*.pdf"
 
-    (castToFileChooser dialog) `fileChooserAddFilter` fileFilter
-    (castToFileChooser dialog) `fileChooserSetFilter` fileFilter
+    castToFileChooser dialog `fileChooserAddFilter` fileFilter
+    castToFileChooser dialog `fileChooserSetFilter` fileFilter
     widgetShowAll dialog
     response <- dialogRun dialog
     file <- fileChooserGetFilename (castToFileChooser dialog)
-    if response == ResponseAccept && (file /= Nothing)
+    if response == ResponseAccept && isJust file
         then
             do
                 widgetDestroy dialog
@@ -889,8 +889,10 @@ printGraph stateRef = do
 getPlotData :: (RandomGen g) => PlotArea -> GraphDataParams -> DataParams -> Double -> (Double, Double) -> g -> [PlotData]
 getPlotData graphArea graphDataParams dataParams period (w, h) randomGen =
     let
+            get1dData d =
+                V.fromList $ map (\vec -> ((V.head vec, 0, 0), (V.head vec, fromIntegral (V.length vec), 0))) $ groupVector $ D.ys d
             get2dData d =
-                V.map (\(x, y, weight) -> ((toPhase x period, 0), (y, if graphDataParamsErrorBars graphDataParams && weight > 0 then sqrt (1 / weight) else 0))) $ values1 d
+                V.map (\(x, y, weight) -> ((toPhase x period, 0), (y, if graphDataParamsErrorBars graphDataParams && weight > 0 then sqrt (1 / weight) else 0))) $ D.values1 d
             get3dData = xys2
             sample2dData d = 
                 let
@@ -899,7 +901,7 @@ getPlotData graphArea graphDataParams dataParams period (w, h) randomGen =
                         xStep = (xRight - xLeft) / w
                     --errors = foldr1 (\ys1 ys2 -> zipWith (\y1 y2 -> y1 + y1) ys1 ys2) $ map (AD.getValues (map (\x -> [x]) xs) randomGen) bsData
                 in
-                    V.fromList $ zipWith (\x y -> ((x, 0), (y, 0))) xs (ADW.getValues (map (\x -> [x]) xs) randomGen d)
+                    V.fromList $ zipWith (\x y -> ((x, 0), (y, 0))) xs (ADW.getValues (map (:[]) xs) randomGen d)
             sample3dData d = 
                 let
                     (xLeft, xRight) = (plotAreaLeft graphArea, plotAreaRight graphArea)
@@ -909,24 +911,30 @@ getPlotData graphArea graphDataParams dataParams period (w, h) randomGen =
                 in
                     D.xys2 (U.sampleAnalyticData d [xLeft, plotAreaBottom graphArea] [xRight, plotAreaTop graphArea] [100, 75] randomGen)
             lineAttributes =
-                case graphDataParamsLineWidth graphDataParams of
-                    0 -> Nothing
-                    otherwise ->
-                        Just $ PlotLineAttributes {
-                            plotLineDash = graphDataParamsLineDash graphDataParams,
-                            plotLineWidth = graphDataParamsLineWidth graphDataParams,
-                            plotLineColor = getRGBA $ graphDataParamsColor graphDataParams
-                        }
+                PlotLineAttributes {
+                    plotLineDash = graphDataParamsLineDash graphDataParams,
+                    plotLineWidth = graphDataParamsLineWidth graphDataParams,
+                    plotLineColor = getRGBA $ graphDataParamsColor graphDataParams
+                }
             mapOp sdp = 
                 case unboxSubData $ subData sdp of
                     Left d ->
                         case D.dim d of
+                            0 -> 
+                                PlotVectors {
+                                    plotVectors = get1dData d,
+                                    plotVectorLineAttributes = lineAttributes,
+                                    plotVectorStartStyle = 0,
+                                    plotVectorEndStyle = 0
+                                }
                             1 -> if D.isData d
                                 -- 2D data
                                 then
                                     PlotData {
                                         plotDataValues = get2dData d,
-                                        plotDataLineAttributes = lineAttributes,
+                                        plotDataLineAttributes = case graphDataParamsLineWidth graphDataParams of 
+                                            0 -> Nothing
+                                            otherwise -> Just lineAttributes,
                                         plotDataPointAttributes = 
                                             case graphDataParamsPointSize graphDataParams of
                                                 0 -> Nothing
@@ -941,7 +949,7 @@ getPlotData graphArea graphDataParams dataParams period (w, h) randomGen =
                                 else
                                     PlotData {
                                         plotDataValues = get2dData d,
-                                        plotDataLineAttributes = lineAttributes,
+                                        plotDataLineAttributes = Just lineAttributes,
                                         plotDataPointAttributes = Nothing
                                     }                 
                             2 -> 
@@ -954,7 +962,7 @@ getPlotData graphArea graphDataParams dataParams period (w, h) randomGen =
                         then 
                             PlotData {
                                 plotDataValues = sample2dData ad,
-                                plotDataLineAttributes = lineAttributes,
+                                plotDataLineAttributes = Just lineAttributes,
                                 plotDataPointAttributes = Nothing
                             }                 
                         else
@@ -993,15 +1001,25 @@ getGraphArea state tabIndex graphIndex g =
                                             0 ->
                                                 if minOrMax
                                                     then
-                                                        D.xMin1 d
+                                                        case D.dim d of
+                                                            0 -> D.yMin d
+                                                            otherwise -> D.xMin1 d
                                                     else
-                                                        D.xMax1 d
+                                                        case D.dim d of
+                                                            0 -> D.yMax d
+                                                            otherwise -> D.xMax1 d
                                             1 -> 
                                                 if minOrMax
                                                     then
-                                                        if D.is2d d then D.yMin d else D.xMini 1 d  
+                                                        case D.dim d of
+                                                            0 -> 0
+                                                            1 -> D.yMin d
+                                                            2 -> D.xMini 1 d
                                                     else
-                                                        if D.is2d d then D.yMax d else D.xMaxi 1 d  
+                                                        case D.dim d of
+                                                            0 -> 1
+                                                            1 -> D.yMax d
+                                                            2 -> D.xMaxi 1 d
                                             2 ->
                                                 if  D.is3d d
                                                     then

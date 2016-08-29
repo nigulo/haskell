@@ -333,19 +333,21 @@ readAscii stateRef colTypes cols name dataOrSpectrum = do
             numCols = if ymdToYears then length colTypes - 2 else length colTypes    
             is1d = numCols == 1 || numCols == 2 && ColError `elem` colTypes 
             is2d = numCols == 2 || numCols == 3 && ColError `elem` colTypes 
-            dataCreateFunc = if dataOrSpectrum then D.data1 else D.spectrum1
             dat = 
                 if is1d then 
-                        dataCreateFunc $ V.fromList $ map (\line -> 
+                        D.data0 $ V.fromList $ map (\line -> 
                             if length line == 1 
-                                then (head line, 1, 1) 
-                                else (head line, 1, last line)) dataLines
+                                then (head line, 1) 
+                                else (head line, last line)) dataLines
                 else if is2d 
                     then
-                        dataCreateFunc $ V.fromList $ map (\line -> 
-                            if length line == 2 
-                                then (head line, last line, 1) 
-                                else (head line, line !! 1, last line)) dataLines
+                        let
+                            dataCreateFunc = if dataOrSpectrum then D.data1 else D.spectrum1
+                        in
+                            dataCreateFunc $ V.fromList $ map (\line -> 
+                                if length line == 2 
+                                    then (head line, last line, 1) 
+                                    else (head line, line !! 1, last line)) dataLines
                     else
                         D.data2 $ V.fromList $ map (\line -> 
                             if length line == 3 
