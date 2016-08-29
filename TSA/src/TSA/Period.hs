@@ -50,7 +50,7 @@ calcDispersions dataParams periodStart' periodEnd' precision method name bootstr
                 ys = D.ys dat
                 (mean, var) = meanVarianceUnb ys
                 datCentered = D.setY (V.map (\y -> y - mean) ys) dat 
-                sigLevel pValue = -2 * log (pValue / var)
+                sigLevel pValue = -2 * var * log (pValue)
                 mapFunc i puFunc = do 
                     let
                         freq = (freqStart + fromIntegral i * step)
@@ -61,7 +61,7 @@ calcDispersions dataParams periodStart' periodEnd' precision method name bootstr
                                     r = V.sum $ V.map (^2) (D.ys datCentered)
                                     reduction = leastSquares datCentered freq
                                     dispersion = reduction / r
-                                    pValue = var * exp(-reduction/2)
+                                    pValue = exp(-reduction/2/var)
                                 (logFunc taskEnv) ("p-value for " ++ show freq ++ " " ++ show pValue)
                                 return dispersion
                             1 -> do --StringLength
