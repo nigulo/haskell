@@ -4,6 +4,7 @@ module TSA.Data (
     isContinuous,
     isDiscrete,
     is2d,
+    dim,
     ---------------
     merge,
     applyToData,
@@ -78,6 +79,14 @@ is2d dp =
              SD2 s -> AD.is2d s
              SD3 f -> AD.is2d f
              SD4 rbf -> AD.is2d rbf
+
+dim :: DataParams -> Int
+dim dp =
+    case subData (head (dataSet dp)) of 
+             SD1 d -> D.dim d
+             SD2 s -> AD.dim s
+             SD3 f -> AD.dim f
+             SD4 rbf -> AD.dim rbf
 
 merge :: String -> DataParams -> DataParams -> DataParams
 merge name dp1 dp2 = 

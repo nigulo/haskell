@@ -718,9 +718,12 @@ modifyDialog stateRef = do
                                         else
                                             return ()
                                     Histogram ->
-                                        if isDiscrete selectedData1 && TSA.Data.is2d selectedData1 && constant > 1 
+                                        if isDiscrete selectedData1 && TSA.Data.dim selectedData1 <= 1 && constant > 1 
                                         then do
                                             let 
+                                                opType = case TSA.Data.dim selectedData1 of
+                                                    0 -> Y
+                                                    otherwise -> opType
                                                 func i d _ = 
                                                     do
                                                         let
