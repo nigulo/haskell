@@ -27,7 +27,7 @@ main = do --mpiWorld $ \size rank ->
     g <- getStdGen 
     do
             let 
-                splineParams = createDataParams_ "spline" [createSubDataParams__ (Right (Left spline))]
+                splineParams = createDataParams_ "spline" [createSubDataParams_ (Right (Left spline))]
                 Left diff = U.binaryOp F.subtr (Left dat) (Right (Left spline)) True g
             Xml.renderToFile (Xml.toDocument diff) "diff"
             splineExtrema <- findExtrema splineParams 1000000 (dataName splineParams) (\_ -> return ())

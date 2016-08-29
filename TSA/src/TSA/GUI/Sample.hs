@@ -124,7 +124,7 @@ sampleDialog stateRef = do
                                 otherwise -> D.data1' . V.fromList . map (\((x:_), y) -> (x, y)) $ sample 
                         else 
                             D.spectrum1' . V.fromList . map (\((x:_), y) -> (x, y)) $ sample 
-                    subDataParams = map (\sample -> createSubDataParams__ (SD1 (dataCreateFunc sample))) samples
+                    subDataParams = map (\sample -> createSubDataParams_ (SD1 (dataCreateFunc sample))) samples
      
                 modifyState stateRef $ addDataParams (createDataParams_ name subDataParams) (Just (currentGraphTab, selectedGraph))
 

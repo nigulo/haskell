@@ -193,7 +193,7 @@ localPhase stateRef dataParams period maxPeriod epoch precision name calculateCo
                         Just d -> map (\grp -> V.map (\(x, f, y, w) -> (x, f, if f < -0.3 then getBarCodeValue d x else y, w)) grp) expandedGroups
                         Nothing -> expandedGroups
                 in
-                    createSubDataParams__ (SD1 (Data3 $ foldl' (\res v -> res V.++ v) V.empty expandedGroupsWithBarCode))
+                    createSubDataParams_ (SD1 (Data3 $ foldl' (\res v -> res V.++ v) V.empty expandedGroupsWithBarCode))
             ) (dataSet dataParams)
 
     if calculatePhaseDispersion
@@ -213,9 +213,7 @@ localPhase stateRef dataParams period maxPeriod epoch precision name calculateCo
                                     case unboxSubData dat of 
                                         Left d -> d
                                         Right ad -> sampleAnalyticData_ ad [200000] g
-                                bootstrapSet = subDataBootstrapSet sdp
                         phaseDispersions <- calcConcurrently_ (\period -> return (period, calcPhaseDispersion (SD1 sampledDat) period epoch 10 avgOverCycles True g)) periods
-                        bsPhaseDispersions <- mapM (\dat -> calcConcurrently_ (\period -> return (period, calcPhaseDispersion dat period epoch 10 avgOverCycles True g)) periods) bootstrapSet 
                         let
                             SD2 s = dat
                             xmin = AD.xMin1 s
@@ -223,24 +221,17 @@ localPhase stateRef dataParams period maxPeriod epoch precision name calculateCo
                             minByFunc (_, (d1, ng1)) (_, (d2, ng2)) = compare (d1 / (fromIntegral ng1 - 1)) (d2 / (fromIntegral ng2 - 1))
                             (minPhaseDispersionPeriod, (minD, minG)) = minimumBy minByFunc phaseDispersions
                             minPhaseDispersion = minD / (fromIntegral minG - 1)
-                            minBSPeriodsAndDispersions = map (\phaseDispersions -> minimumBy minByFunc phaseDispersions) bsPhaseDispersions
                             globalDispersions = sort phaseDispersions
-                            globalBSDispersions = map (\phaseDispersions -> sortVector $ V.fromList phaseDispersions) bsPhaseDispersions
                             sortedDispersions = V.map (\(period, (d, g)) -> (period, d / (fromIntegral g - 1))) $ V.fromList globalDispersions
-                            sortedBSDispersions = map (\phaseDispersions -> V.map (\(period, (d, g)) -> (period, d / (fromIntegral g - 1))) phaseDispersions) globalBSDispersions
                         appendLog stateRef ("Minimum Phase dispersion for " ++ name ++ " " ++ show no ++ ", period = " ++ (show minPhaseDispersionPeriod) ++ ": " ++ (show minPhaseDispersion))
-                        return $ (createSubDataParams_ 
-                                    (SD1 (data1' sortedDispersions)) 
-                                    (map (\sortedDispersions -> SD1 (data1' sortedDispersions)) sortedBSDispersions), 
+                        return $ (createSubDataParams_ (SD1 (data1' sortedDispersions)), 
                                 ((xmax + xmin) / 2, minPhaseDispersionPeriod), 
-                                (map (\(minPhaseDispersionPeriod, _) -> ((xmax + xmin) / 2, minPhaseDispersionPeriod)) minBSPeriodsAndDispersions),
-                                globalDispersions, 
-                                globalBSDispersions
+                                globalDispersions
                                 )
                     ) (zip [1, 2 ..] (dataSet dataParams))
                 let
                     
-                        (phaseDispersions, periods, bsPeriods, globalDispersions, globalBSDispersions) = unzip5 result
+                        (phaseDispersions, periods, globalDispersions) = unzip3 result
                         globalPersAndDisps = map (\periodDisps@((period, _):_) ->
                             let
                                 (disp, numGroups) = foldl' (\(dispSum, groupLenSum) (_, (disp, groupLen)) ->
@@ -255,13 +246,7 @@ localPhase stateRef dataParams period maxPeriod epoch precision name calculateCo
                             ) (transpose globalDispersions)
                         (minGlobalPhaseDispersionPeriod, minGlobalPhaseDispersion) = minimumBy (\(_, d1) (_, d2) -> compare d1 d2) globalPersAndDisps
                 appendLog stateRef ("Minimum Global Phase dispersion for " ++ name ++ ", period = " ++ (show minGlobalPhaseDispersionPeriod) ++ ": " ++ (show minGlobalPhaseDispersion))
-                modifyState stateRef $ addDataParams (createDataParams_ (name ++ "_gdisp") [createSubDataParams__ (SD1 (data1' (V.fromList globalPersAndDisps)))]) (Just (currentGraphTab, selectedGraph))
-                --modifyState stateRef $ addDataParams (DataParams {dataName = name ++ "_disp", dataSet = phaseDispersions}) (Just (currentGraphTab, selectedGraph))
-                --modifyState stateRef $ addDataParams (calculateWeights (DataParams {dataName = name ++ "_periods", 
-                --        dataSet = [SubDataParams {
-                --                subData = Left (D.data1' (V.fromList periods)), 
-                --                subDataBootstrapSet = map (\periods -> Left (D.data1' (V.fromList periods))) (transpose bsPeriods)}]
-                --                }) True) (Just (currentGraphTab, selectedGraph))
+                modifyState stateRef $ addDataParams (createDataParams_ (name ++ "_gdisp") [createSubDataParams_ (SD1 (data1' (V.fromList globalPersAndDisps)))]) (Just (currentGraphTab, selectedGraph))
                  
         else
             return ()

@@ -37,7 +37,7 @@ findCorrelation taskEnv dataParams1 dataParams2' precision shifts name = do
         shiftData dataParams 0 = return dataParams
         shiftData dataParams shift = do
             let 
-                func i j d _ = return $ subDataConstantOp (F.add) d shift False g
+                func i d _ = return $ subDataConstantOp (F.add) d shift False g
             applyToData1 func dataParams "" taskEnv
         (xMin1, xMax1) = getRange dataParams1
         mapFunc shift puFunc = do 

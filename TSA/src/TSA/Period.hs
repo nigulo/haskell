@@ -98,9 +98,9 @@ calcDispersions dataParams periodStart' periodEnd' precision method name bootstr
             return disps
         ) (dataSet dataParams) [1 ..]
     let
-        dispersions = createDataParams_ name (map (\sd -> createSubDataParams__ sd) subDispersions)
+        dispersions = createDataParams_ name (map (\sd -> createSubDataParams_ sd) subDispersions)
             
-    bestPeriods <- mapM (\(i, SubDataParams _ (SD1 periodSpec) _) -> do
+    bestPeriods <- mapM (\(i, SubDataParams _ (SD1 periodSpec)) -> do
             let
                 freqDisps = sortBy (\(_, disp1) (_, disp2) -> compare disp1 disp2) $ V.toList $ D.getMinima periodSpec False
                 freqs = map fst freqDisps

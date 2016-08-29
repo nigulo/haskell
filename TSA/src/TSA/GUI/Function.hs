@@ -126,7 +126,7 @@ functionDialog stateRef = do
                                         widgetDestroy messageDialog
                                 else
                                     do
-                                        if length varNames == 1 
+                                        if length varNames <= 1 
                                             then
                                                 modifyState stateRef $ addFunction (AnalyticData [([left], [right], func)]) name (Just (currentGraphTab, selectedGraph))
                                             else 

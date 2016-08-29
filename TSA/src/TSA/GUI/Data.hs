@@ -104,8 +104,6 @@ infoDialog stateRef = do
                         addWidgetToBox (Just "Number of points:") numPointsLabel PackNatural dataPage
                     else
                         return ()
-                bootstrapCountLabel <- labelNew $ Just $ show $ length (subDataBootstrapSet (head (dataSet dp))) 
-                addWidgetToBox (Just "Bootstrap samples:") bootstrapCountLabel PackNatural dataPage
 
                 hBox <- hBoxNew False 2
                 addWidgetToBox Nothing hBox PackNatural dataPage
@@ -495,7 +493,7 @@ addDataParams dp tabIndex state = addOrUpdateDataParams dp tabIndex False state
 
 addOrUpdateSegmentedData :: [SubData] -> String -> Maybe (Int, Int) -> Bool -> State -> State
 addOrUpdateSegmentedData ds name tabIndex update state = 
-    addOrUpdateDataParams (TSA.Data.createDataParams_ name (map (\d -> TSA.Data.createSubDataParams__ d) ds)) tabIndex update state
+    addOrUpdateDataParams (TSA.Data.createDataParams_ name (map (\d -> TSA.Data.createSubDataParams_ d) ds)) tabIndex update state
 
 addSegmentedData :: [SubData] -> String -> Maybe (Int, Int) -> State -> State
 addSegmentedData ds name tabIndex = addOrUpdateSegmentedData ds name tabIndex False

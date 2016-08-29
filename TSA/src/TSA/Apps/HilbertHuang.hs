@@ -161,7 +161,7 @@ calcAnalyticSignal :: Data -> Int -> Double -> ReaderT Env (IO) (String {-logTex
 calcAnalyticSignal imfDat modeNo freq = do
     let
         asParams = AnalyticSignalParams {
-                asRealData = Just (createDataParams_ "imf" [createSubDataParams__ (SD1 imfDat)]),
+                asRealData = Just (createDataParams_ "imf" [createSubDataParams_ (SD1 imfDat)]),
                 asImagData = Nothing
             }
     env <- ask

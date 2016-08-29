@@ -34,7 +34,7 @@ findExtrema :: DataParams -> Int -> Bool -> String
 findExtrema dataParams precision global name taskEnv = do
     g <- getStdGen 
     let 
-        findExtremaFunc i j sd puFunc = 
+        findExtremaFunc i sd puFunc = 
             case unboxSubData sd of
                 Left d -> do
                     let
@@ -52,7 +52,7 @@ findZeroCrossings :: DataParams -> Int  -> String -> TaskEnv -> IO DataParams
 findZeroCrossings dataParams precision name taskEnv = do
     g <- getStdGen 
     let 
-        findZCFunc i j sd puFunc = do
+        findZCFunc i sd puFunc = do
             case unboxSubData sd of
                 Left d -> do
                     let

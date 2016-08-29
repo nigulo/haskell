@@ -127,7 +127,7 @@ fit stateRef dataParams fitName = do
         lsqParms = lsqParams (params state)
         bootstrapCount = lsqBootstrapCount lsqParms
         
-        func i maybeJ (SD1 dat) puFunc = do 
+        func i (SD1 dat) puFunc = do 
             spline <- fitData (lsqFitParams lsqParms) dat tEnv
             g <- getStdGen 
             let
@@ -146,7 +146,7 @@ fit stateRef dataParams fitName = do
                 diffSample = D.ys diff
                 normal = normalFromSample diffSample
                 --dist = D.data1 $ V.map (\(x, y) -> (x, y, 1)) (cumulProbDist_ diffSample)
-            appendLog stateRef ("Results for " ++ fitName ++ " " ++ show i ++ (case maybeJ of Just j -> ", " ++ show j; Nothing -> "") ++  ":")
+            appendLog stateRef ("Results for " ++ fitName ++ " " ++ show i ++ ":")
             appendLog stateRef ("stdev residuals = " ++ (show (stdDev normal)))
             appendLog stateRef ("num parameters = " ++ (show degFreedom))
             appendLog stateRef ("chi-squared = " ++ (show redChiSquared))

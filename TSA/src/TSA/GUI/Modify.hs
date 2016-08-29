@@ -362,7 +362,7 @@ modifyDialog stateRef = do
                                     then
                                         if isDiscrete selectedData1 && isDiscrete sd2 then do
                                                 let
-                                                    func i _ (SD1 ds1) _ = do
+                                                    func i (SD1 ds1) _ = do
                                                         let
                                                             SD1 ds2 = getSubDataAt sd2 i
                                                             func = case op of
@@ -393,7 +393,6 @@ modifyDialog stateRef = do
                                                             SD2 (AnalyticData [(_, _, ad)]) -> SD2 (AnalyticData [(minX, maxX, ad)])
                                                             SD3 (AnalyticData [(_, _, ad)]) -> SD3 (AnalyticData [(minX, maxX, ad)])
                                                             SD4 (AnalyticData [(_, _, ad)]) -> SD4 (AnalyticData [(minX, maxX, ad)]))
-                                                        []
                                                 minsMaxs = map minMax (dataSet sd2)
                                                 gaps = zipWith (\(_, minX) (maxX, _) -> (minX, maxX)) (init minsMaxs) (tail minsMaxs)
                                                 result = if op == SegmentByGaps then map mapOp gaps else map mapOp minsMaxs 
@@ -424,7 +423,6 @@ modifyDialog stateRef = do
                                                     mapOp sdp1 sdp2 = createSubDataParams
                                                             (subDataRange sdp1)
                                                             (subDataBinaryOp func (subData sdp1) (subData sdp2) (opType == Y) g) 
-                                                            []
                                                     result = zipWith mapOp (dataSet selectedData1) (dataSet sd2) 
                                                 modifyState stateRef $ addDataParams (createDataParams_ name result) (Just (currentGraphTab, selectedGraph))
                                             Nothing -> return ()
@@ -435,7 +433,6 @@ modifyDialog stateRef = do
                                         mapOp sdp1 sdp2 = createSubDataParams
                                                 (subDataRange sdp1)
                                                 (subDataBinaryOp (getModifyFunc op) (subData sdp1) (subData sdp2) (opType == Y) g) 
-                                                []
                                         result = zipWith mapOp (dataSet selectedData1) (dataSet sd2) 
                                     modifyState stateRef $ addDataParams (createDataParams_ name result) (Just (currentGraphTab, selectedGraph))
                             Nothing -> 
@@ -443,7 +440,7 @@ modifyDialog stateRef = do
                                     Swap ->
                                         if isDiscrete selectedData1 then do
                                                 let
-                                                    func i j (SD1 ds1) _ =
+                                                    func i (SD1 ds1) _ =
                                                         do
                                                         let
                                                             (xs, ys, ws) = V.unzip3 $ D.values1 ds1
@@ -478,7 +475,6 @@ modifyDialog stateRef = do
                                                                     createSubDataParams 
                                                                             ([xLeft], [xRight])
                                                                             (SD1 seg) 
-                                                                            []
                                                             ) (init sortedSegments) (tail sortedSegments)
                                                     in
                                                         ds
@@ -500,7 +496,6 @@ modifyDialog stateRef = do
                                                                     if dataLength seg > 0 then Just (createSubDataParams
                                                                             ([xLeft], [xLeft + subSetLength])
                                                                             (SD1 seg)
-                                                                            []
                                                                         ) else Nothing
                                                             ) [xMin, xMin + subSetLength .. xMax - subSetLength]
                                                     in
@@ -515,38 +510,38 @@ modifyDialog stateRef = do
                                                         let
                                                             d = data1 (V.fromList segment)
                                                         in
-                                                            [createSubDataParams__ (SD1 d)]
+                                                            [createSubDataParams_ (SD1 d)]
                                                     splitByGaps' lastX ((x, y, w):vals) segment =
                                                         if (x - lastX > constant) 
                                                             then 
                                                                 let
                                                                     d = data1 (V.fromList segment)
                                                                 in
-                                                                    createSubDataParams__ (SD1 d):splitByGaps' x vals [(x, y, w)]
+                                                                    createSubDataParams_ (SD1 d):splitByGaps' x vals [(x, y, w)]
                                                             else splitByGaps' x vals (segment ++ [(x, y, w)])
                                             modifyState stateRef $ addDataParams (createDataParams_ name (splitByGaps (subData (head (dataSet selectedData1))))) (Just (currentGraphTab, selectedGraph))
                                         else return ()
                                     Unsegment ->
                                         if isDiscrete selectedData1 then do
                                             let
-                                                unsegment (SubDataParams _ (SD1 d) _:[]) = D.values1 d
-                                                unsegment (SubDataParams _ (SD1 d) _:sdps) = D.values1 d V.++ unsegment sdps
+                                                unsegment (SubDataParams _ (SD1 d) :[]) = D.values1 d
+                                                unsegment (SubDataParams _ (SD1 d) :sdps) = D.values1 d V.++ unsegment sdps
                                             modifyState stateRef $ addDataParams (createDataParams_ name 
                                                 ( 
                                                     let 
                                                         d = D.data1 (sortVectorBy (\(x1, _, _) (x2, _, _) -> compare x1 x2) (unsegment (dataSet selectedData1)))
                                                     in
-                                                        [createSubDataParams__ (SD1 d)]
+                                                        [createSubDataParams_ (SD1 d)]
                                                 )) (Just (currentGraphTab, selectedGraph))
                                         else return ()
                                     SetWeights ->
                                         if isDiscrete selectedData1 then do
-                                            dataWithWeights <- applyToData1 (\_ _ (SD1 dat) _ -> return (SD1 (D.setW (V.replicate (D.dataLength dat) constant) dat))) selectedData1 name tEnv
+                                            dataWithWeights <- applyToData1 (\_ (SD1 dat) _ -> return (SD1 (D.setW (V.replicate (D.dataLength dat) constant) dat))) selectedData1 name tEnv
                                             modifyState stateRef $ addDataParams dataWithWeights (Just (currentGraphTab, selectedGraph))
                                         else return ()
                                     Smooth -> 
                                         if isDiscrete selectedData1 && constant > 0 then do
-                                            smoothedData <- applyToData1 (\_ _ (SD1 dat) _ -> 
+                                            smoothedData <- applyToData1 (\_ (SD1 dat) _ -> 
                                                 case opType of
                                                     GaussianKernel -> do -- constant refers to stdev of gaussian kernel
                                                         let
@@ -588,17 +583,17 @@ modifyDialog stateRef = do
                                         else return ()
                                     JDToYear ->
                                         if isDiscrete selectedData1 then do
-                                            dataWithWeights <- applyToData1 (\_ _ (SD1 dat) _ -> return (SD1 (D.data1 (V.map (\(x, y, w) -> let TropicalYears year = toTropicalYears (JD x) in (year, y, w) ) (D.values1 dat))))) selectedData1 name tEnv
+                                            dataWithWeights <- applyToData1 (\_ (SD1 dat) _ -> return (SD1 (D.data1 (V.map (\(x, y, w) -> let TropicalYears year = toTropicalYears (JD x) in (year, y, w) ) (D.values1 dat))))) selectedData1 name tEnv
                                             modifyState stateRef $ addDataParams dataWithWeights (Just (currentGraphTab, selectedGraph))
                                         else return ()
                                     YearToJD ->
                                         if isDiscrete selectedData1 then do
-                                            dataWithWeights <- applyToData1 (\_ _ (SD1 dat) _ -> return (SD1 (D.data1 (V.map (\(x, y, w) -> let JD jd = toJD (TropicalYears x) in (jd, y, w) ) (D.values1 dat))))) selectedData1 name tEnv
+                                            dataWithWeights <- applyToData1 (\_ (SD1 dat) _ -> return (SD1 (D.data1 (V.map (\(x, y, w) -> let JD jd = toJD (TropicalYears x) in (jd, y, w) ) (D.values1 dat))))) selectedData1 name tEnv
                                             modifyState stateRef $ addDataParams dataWithWeights (Just (currentGraphTab, selectedGraph))
                                         else return ()
                                     Round ->
                                         if isDiscrete selectedData1 then do
-                                            dataWithWeights <- applyToData1 (\_ _ (SD1 dat) _ -> 
+                                            dataWithWeights <- applyToData1 (\_ (SD1 dat) _ -> 
                                                 return (SD1 (D.data1 (V.map (\(x, y, w) -> 
                                                     let 
                                                         e = 10 ^ (round constant) 
@@ -609,7 +604,7 @@ modifyDialog stateRef = do
                                         else return ()
                                     RemoveNeighbour ->
                                         if isDiscrete selectedData1 then do
-                                            dataWithWeights <- applyToData1 (\_ _ (SD1 dat) _ -> do
+                                            dataWithWeights <- applyToData1 (\_ (SD1 dat) _ -> do
                                                 let 
                                                         filterFunc [] res (Just lastVal) = res ++ [lastVal]
                                                         filterFunc (val:vals) [] Nothing = filterFunc vals [] (Just val)
@@ -629,7 +624,7 @@ modifyDialog stateRef = do
                                         if isDiscrete selectedData1 && constant /= 0 
                                         then do
                                             let 
-                                                func i j d _ = 
+                                                func i d _ = 
                                                     do
                                                         let
                                                             SD1 dat = d 
@@ -646,7 +641,7 @@ modifyDialog stateRef = do
                                             maybeFunc <- getFunction dialog f 1
                                             case maybeFunc of
                                                 Just func -> do
-                                                    result <- applyToData1 (\i j d _ -> return (subDataConstantOp func d 0 True g)) selectedData1 name tEnv
+                                                    result <- applyToData1 (\i d _ -> return (subDataConstantOp func d 0 True g)) selectedData1 name tEnv
                                                     modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                                                 Nothing -> return ()
                                         else
@@ -655,7 +650,7 @@ modifyDialog stateRef = do
                                         if isDiscrete selectedData1 && constant /= 0 
                                         then do
                                             let 
-                                                func i j d _ = 
+                                                func i d _ = 
                                                     do
                                                         let
                                                             SD1 dat = d 
@@ -669,7 +664,7 @@ modifyDialog stateRef = do
                                         if isDiscrete selectedData1 && constant > 0
                                         then do
                                             let 
-                                                func i j d _ = 
+                                                func i d _ = 
                                                     do
                                                         let
                                                             SD1 dat = d 
@@ -689,7 +684,7 @@ modifyDialog stateRef = do
                                         if isDiscrete selectedData1
                                         then do
                                             let 
-                                                func i j d _ = 
+                                                func i d _ = 
                                                     do
                                                         let
                                                             SD1 dat = d 
@@ -709,7 +704,7 @@ modifyDialog stateRef = do
                                         if isDiscrete selectedData1 && TSA.Data.is2d selectedData1 
                                         then do
                                             let 
-                                                func i j d _ = 
+                                                func i d _ = 
                                                     do
                                                         let
                                                             SD1 dat = d
@@ -726,7 +721,7 @@ modifyDialog stateRef = do
                                         if isDiscrete selectedData1 && TSA.Data.is2d selectedData1 && constant > 1 
                                         then do
                                             let 
-                                                func i j d _ = 
+                                                func i d _ = 
                                                     do
                                                         let
                                                             SD1 dat = d
@@ -744,7 +739,7 @@ modifyDialog stateRef = do
                                             return ()
                                     otherwise -> do
                                         let 
-                                            func i j sd _ = return $ subDataConstantOp (getModifyFunc op) sd constant (opType == Y) g
+                                            func i sd _ = return $ subDataConstantOp (getModifyFunc op) sd constant (opType == Y) g
                                         result <- applyToData1 func selectedData1 name tEnv
                                         modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
                 mapM_ modify (case selectedData1 of 

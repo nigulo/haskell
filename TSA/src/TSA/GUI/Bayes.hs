@@ -141,7 +141,7 @@ linRegWithMLII stateRef method fitName dataParams (RBFParams numCentres numLambd
         dat = dataSet dataParams
         opts = (50, 0.001)
 
-        func i j (SD1 dat) _ = do
+        func i (SD1 dat) _ = do
             let
                 minx = D.xMin1 dat
                 maxx = D.xMax1 dat

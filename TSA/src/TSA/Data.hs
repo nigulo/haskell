@@ -8,7 +8,6 @@ module TSA.Data (
     merge,
     applyToData,
     applyToData1,
-    calculateWeights,
     ---------------
     getDataType,
     getSubDataAt,
@@ -18,7 +17,6 @@ module TSA.Data (
     createDataParams_,
     createSubDataParams,
     createSubDataParams_,
-    createSubDataParams__,
     subDataBinaryOp,
     subDataConstantOp
     ) where
@@ -89,7 +87,7 @@ merge name dp1 dp2 =
             dataSet = (dataSet dp1) ++ (dataSet dp2)
         }
 
-applyToData :: (Int {- subdata no-} -> Maybe Int {- bootstrap no -} -> SubData -> (Double -> IO ()) -> IO [SubData]) 
+applyToData :: (Int {- subdata no-} -> SubData -> (Double -> IO ()) -> IO [SubData]) 
         -> DataParams 
         -> [String] 
         -> TaskEnv
@@ -97,60 +95,31 @@ applyToData :: (Int {- subdata no-} -> Maybe Int {- bootstrap no -} -> SubData -
 applyToData func dp names taskEnv = do
     let
         numSubSets = length $ dataSet dp
-        numBootstrapSets = length $ subDataBootstrapSet $ head $ dataSet dp
-        subSetNum = 1 + numBootstrapSets
-        totalNum = numSubSets * (1 + numBootstrapSets)
         puFunc = progressUpdateFunc taskEnv 
         mapOp (i, sdp) = do
-            results <- func i Nothing (subData sdp) (\pct -> puFunc ((fromIntegral (i * subSetNum) + pct) / fromIntegral totalNum))
-            bootstrapResults <- calcConcurrently (\(j, d) puFunc -> 
-                    func i (Just j) d (\pct -> puFunc ((fromIntegral (i * subSetNum) + pct * fromIntegral subSetNum) / fromIntegral totalNum))
-                ) (progressUpdateFunc taskEnv) (taskInitializer taskEnv) (taskFinalizer taskEnv) (zip [0, 1 ..] (subDataBootstrapSet sdp))
+            results <- func i (subData sdp) (\pct -> puFunc (((fromIntegral i + pct) / fromIntegral numSubSets)))
             puFunc $ fromIntegral (i + 1) / fromIntegral numSubSets
-            return (results, case transpose bootstrapResults of 
-                [] -> replicate (length names) []
-                xs -> xs
-                )
+            return results
     resultsPerSubData <- mapM mapOp (zip [0, 1 ..] (dataSet dp))
     let
-        (results, bootstrapResults) = unzip resultsPerSubData 
-    return $ zipWith3 (\name results bootstrapResults -> DataParams {
+        results = resultsPerSubData 
+    return $ zipWith (\name results -> DataParams {
         dataName = name, 
         dataDesc = "",
-        dataSet = zipWith3 (\sdp result bootstrapResults -> 
+        dataSet = zipWith (\sdp result -> 
             SubDataParams {
                     subDataRange = subDataRange sdp,
-                    subData = result, 
-                    subDataBootstrapSet = bootstrapResults
-                }) (dataSet dp) results bootstrapResults
-        }) names (transpose results) (transpose bootstrapResults)
+                    subData = result 
+                }) (dataSet dp) results
+        }) names (transpose results)
 
-applyToData1 :: (Int -> Maybe Int -> SubData -> (Double -> IO ()) -> IO (SubData)) 
+applyToData1 :: (Int -> SubData -> (Double -> IO ()) -> IO (SubData)) 
         -> DataParams 
         -> String 
         -> TaskEnv
         -> IO DataParams
 applyToData1 func dp name taskEnv = 
-    applyToData (\i j d pu -> func i j d pu >>= \result -> return [result]) dp [name] taskEnv >>= \[result] -> return result
-
-calculateWeights :: DataParams -> Bool -> DataParams
-calculateWeights dp dropBootstrapData = dp {dataSet = map mapOp (dataSet dp)} where
-        mapOp sdp =
-            case subData sdp of
-                SD1 d ->
-                    if length (subDataBootstrapSet sdp) > 0
-                        then
-                        let
-                            vals = D.values1 d
-                            bootstrap = (subDataBootstrapSet sdp)
-                            bsData = map (\(SD1 sd) -> sd) bootstrap 
-                            len = length bsData
-                            vars = foldl1' (\ys1 ys2 -> V.zipWith (\y1 y2 -> y1 + y2) ys1 ys2) $ map (\bsd -> V.zipWith (\(_, yb, _) (_, y, _) -> (y - yb) * (y - yb) / fromIntegral len) (D.values1 bsd) vals) bsData
-                            newValues = V.zipWith (\(x, y, _) var -> (x, y, 1 / var)) vals vars
-                          in
-                            sdp {subData = SD1 (D.data1 newValues), subDataBootstrapSet = if dropBootstrapData then [] else bootstrap}
-                      else sdp
-                otherwise -> sdp 
+    applyToData (\i d pu -> func i d pu >>= \result -> return [result]) dp [name] taskEnv >>= \[result] -> return result
 
 getDataType :: DataParams -> String
 getDataType dp =
@@ -177,23 +146,16 @@ createDataParams_ name = createDataParams name name
 
 createSubDataParams :: ([Double], [Double]) 
     -> SubData 
-    -> [SubData]
     -> SubDataParams
-createSubDataParams range dat bootstrapSet =
+createSubDataParams range dat =
     SubDataParams {
         subDataRange = range,
-        subData = dat,
-        subDataBootstrapSet = bootstrapSet
+        subData = dat
     }
 
-createSubDataParams_ :: SubData
-    -> [SubData]
+createSubDataParams_ :: SubData 
     -> SubDataParams
 createSubDataParams_ dat = createSubDataParams (U.dataRange (unboxSubData dat)) dat
-
-createSubDataParams__ :: SubData 
-    -> SubDataParams
-createSubDataParams__ dat = createSubDataParams (U.dataRange (unboxSubData dat)) dat []
 
 subDataBinaryOp :: (RandomGen g) => F.Function Double -> SubData -> SubData -> Bool -> g -> SubData
 subDataBinaryOp op (SD1 d1) (SD1 d2) yOrx g = SD1 (U.dataToDataOp op d1 d2 yOrx g)

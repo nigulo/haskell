@@ -93,7 +93,7 @@ buildDialog stateRef = do
                                 "x" -> D.xs1 d2
                                 "y" -> D.ys d2
                         in
-                            createSubDataParams__ (SD1 (D.data1' (V.zip xs ys )))
+                            createSubDataParams_ (SD1 (D.data1' (V.zip xs ys )))
                     result = zipWith mapOp (dataSet selectedData1) (dataSet selectedData2) 
                     
                     graphTabParms = (graphTabs state) !! currentGraphTab

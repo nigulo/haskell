@@ -49,8 +49,7 @@ unboxSubData (SD4 rbf) = Right (ADW.analyticDataWrapper rbf)
 
 data SubDataParams = SubDataParams {
     subDataRange :: ([Double], [Double]),
-    subData :: SubData,
-    subDataBootstrapSet :: [SubData]
+    subData :: SubData
 } deriving (Show, Read)
 
 instance Xml.XmlElement SubDataParams where
@@ -62,14 +61,7 @@ instance Xml.XmlElement SubDataParams where
                 SD2 s -> Left (Xml.toElement s)
                 SD3 f -> Left (Xml.toElement f)
                 SD4 rbf -> Left (Xml.toElement rbf)
-                ])] ++
-            [Left (Xml.element "bootstrapset" [] (map (\ds ->
-                        case ds of
-                                SD1 d -> Left (Xml.toElement d) 
-                                SD2 s -> Left (Xml.toElement s)
-                                SD3 f -> Left (Xml.toElement f)
-                                SD4 rbf -> Left (Xml.toElement rbf)
-                            ) (subDataBootstrapSet params)))]
+                ])]
         )
 
     fromElement e = 
@@ -84,16 +76,7 @@ instance Xml.XmlElement SubDataParams where
                     if Xml.name dataSetElem == D.xmlElementName then SD1 $ Xml.fromElement dataSetElem
                     else if Xml.name dataSetElem == S.xmlElementName then SD2 $ Xml.fromElement dataSetElem
                     else if Xml.name dataSetElem == F.xmlElementName then SD3 $ Xml.fromElement dataSetElem
-                    else SD4 $ Xml.fromElement dataSetElem,
-            subDataBootstrapSet =
-                case Xml.maybeContentElement e "bootstrapset" of
-                    Just elem -> map (\(Left dataSetElem) ->
-                            if Xml.name dataSetElem == D.xmlElementName then SD1 $ Xml.fromElement dataSetElem
-                            else if Xml.name dataSetElem == S.xmlElementName then SD2 $ Xml.fromElement dataSetElem
-                            else if Xml.name dataSetElem == F.xmlElementName then SD3 $ Xml.fromElement dataSetElem
-                            else SD4 $ Xml.fromElement dataSetElem
-                        ) (Xml.contents elem)
-                    Nothing -> []
+                    else SD4 $ Xml.fromElement dataSetElem
         }
 
 data DataParams = DataParams {
@@ -119,7 +102,7 @@ instance Xml.XmlElement DataParams where
                         Just "1" ->
                             map (\(Left elem) -> Xml.fromElement elem) (Xml.contents (Xml.contentElement e "dataset"))
                         Nothing -> 
-                            [SubDataParams {subDataRange = U.dataRange (unboxSubData sd), subData = sd, subDataBootstrapSet = []}] where
+                            [SubDataParams {subDataRange = U.dataRange (unboxSubData sd), subData = sd}] where
                                 sd =
                                     let 
                                         Left dataSetElem = head $ Xml.contents $ Xml.contentElement e "dataset" 
