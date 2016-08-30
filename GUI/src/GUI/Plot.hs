@@ -360,7 +360,7 @@ drawData plotSettings plotData =
                             ((screenX1, _) , (screenX2, _), screenZ) = toScreenCoords1 formattedArea (plotArea plotSettings) ((x1, 0), (x2, 0), z)
                         in (screenX1, screenX2, screenZ)
                         ) $ plotDataValues3d d
-            
+            zeroScreenCoords = toScreenCoords scrArea (plotArea plotSettings) (0, 0, 0)
         case plotData of
             PlotData _ _ _ ->
                 do
@@ -384,7 +384,7 @@ drawData plotSettings plotData =
                                     otherwise -> setLineWidth 1 
                                 setLineJoin LineJoinMiter
                                 
-                                V.mapM_ (\(x, y) -> drawDataSymbol (left, top, right, bottom) (x, y) ptSize (plotPointType pointAttributes)) dataPoints
+                                V.mapM_ (\(x, y) -> drawDataSymbol (left, top, right, bottom) (x, y) ptSize (plotPointType pointAttributes) zeroScreenCoords) dataPoints
                                 stroke
                         otherwise ->
                             return ()
@@ -653,8 +653,8 @@ getColor y yMin yRange =
 
 
 
-drawDataSymbol :: (Double, Double, Double, Double) -> ((Double, Double), (Double, Double)) -> Double -> PlotPointType -> Render ()
-drawDataSymbol (left, top, right, bottom) ((x, xErr), (y, yErr)) size symbol =
+drawDataSymbol :: (Double, Double, Double, Double) -> ((Double, Double), (Double, Double)) -> Double -> PlotPointType -> (Double, Double, Double) -> Render ()
+drawDataSymbol (left, top, right, bottom) ((x, xErr), (y, yErr)) size symbol (x0, y0, z0) =
     do
         let
             drawPlus =
@@ -750,7 +750,7 @@ drawDataSymbol (left, top, right, bottom) ((x, xErr), (y, yErr)) size symbol =
                     fill
             Impulse -> 
                 do
-                    moveTo x (bottom)
+                    moveTo x (if y0 < bottom then if y0 > top then y0 else top else bottom)
                     lineTo x y
         if xErr > 0
             then do
