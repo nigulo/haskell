@@ -375,8 +375,8 @@ doPlot state grphTabParams plotFunc =
 
                     dataSets2d = filter (\(dataSet, _) -> 
                             case unboxSubData dataSet of
-                                Left d -> D.is2d d
-                                Right ad -> ADW.is2d ad
+                                Left d -> D.dim d <= 1
+                                Right ad -> ADW.dim ad <=1
                         ) $ concat $ map (\gdp -> 
                                 let 
                                     dp = getDataByName (graphDataParamsName gdp) state
@@ -402,30 +402,38 @@ doPlot state grphTabParams plotFunc =
                                 Left d ->
                                     if isData d
                                         then
-                                            case pointType of
-                                                Impulse -> (fmap (Graph2D.lineSpec (((LineSpec.lineWidth lineWidth) . 
-                                                    (LineSpec.lineColor color) . (LineSpec.lineType 1) . (LineSpec.title title)) LineSpec.deflt)) (Plot2D.list Graph2D.impulses (V.toList (V.map (\(x, y) -> (x + offset, y)) (D.xys1 d)))))
-                                                otherwise ->
-                                                    let
-                                                        pt = case elemIndex pointType gnuPointTypes of 
-                                                            Just i -> i
-                                                            otherwise -> 1
-                                                        valuesWithOffset = V.toList (V.map (\(x, y) -> (x + offset, y)) (D.xys1 d))
-                                                    in 
-                                                        if lineWidth == 0 
-                                                            then
-                                                                if errorBars then
-                                                                    (fmap (Graph2D.lineSpec (((LineSpec.pointType pt) . (LineSpec.pointSize pointSize) . (LineSpec.lineColor color) . (LineSpec.title title)) LineSpec.deflt)) 
-                                                                        (Plot2D.list (Graph2D.yErrorBarsRelative) (V.toList (V.map (\(x, y, w) -> ((x + offset, y), if w > 0 then sqrt (1 / w) else 0)) (D.values1 d)))))
-                                                                else
-                                                                    (fmap (Graph2D.lineSpec (((LineSpec.pointType pt) . (LineSpec.pointSize pointSize) . (LineSpec.lineColor color) . (LineSpec.title title)) LineSpec.deflt)) 
-                                                                        (Plot2D.list (Graph2D.points) valuesWithOffset))
-                                                            else
-                                                                case dash1 of 
-                                                                    0 -> (fmap (Graph2D.lineSpec (((LineSpec.pointType pt) . (LineSpec.pointSize pointSize) . (LineSpec.lineWidth lineWidth) . 
-                                                                        (LineSpec.lineColor color) . (LineSpec.lineType 2) . (LineSpec.title title)) LineSpec.deflt)) (Plot2D.list (Graph2D.linesPoints) valuesWithOffset))
-                                                                    otherwise -> (fmap (Graph2D.lineSpec (((LineSpec.pointType pt) . (LineSpec.pointSize pointSize) . (LineSpec.lineWidth lineWidth) . 
-                                                                        (LineSpec.lineColor color) . (LineSpec.lineType dash1) . (LineSpec.title title)) LineSpec.deflt)) (Plot2D.list (Graph2D.linesPoints) valuesWithOffset))
+                                            if D.is1d d
+                                                then
+                                                    case dash1 of 
+                                                        0 -> (fmap (Graph2D.lineSpec (((LineSpec.lineWidth lineWidth) . 
+                                                            (LineSpec.lineColor color) . (LineSpec.lineType 2) . (LineSpec.title title)) LineSpec.deflt)) (Plot2D.list Graph2D.impulses (map (\vec -> (V.head vec + offset, fromIntegral (V.length vec))) $ groupVector $ D.ys d)))
+                                                        otherwise -> (fmap (Graph2D.lineSpec (((LineSpec.lineWidth lineWidth) . 
+                                                            (LineSpec.lineColor color) . (LineSpec.lineType dash1) . (LineSpec.title title)) LineSpec.deflt)) (Plot2D.list Graph2D.impulses (map (\vec -> (V.head vec + offset, fromIntegral (V.length vec))) $ groupVector $ D.ys d)))
+                                                else
+                                                    case pointType of
+                                                        Impulse -> (fmap (Graph2D.lineSpec (((LineSpec.lineWidth lineWidth) . 
+                                                            (LineSpec.lineColor color) . (LineSpec.lineType 1) . (LineSpec.title title)) LineSpec.deflt)) (Plot2D.list Graph2D.impulses (V.toList (V.map (\(x, y) -> (x + offset, y)) (D.xys1 d)))))
+                                                        otherwise ->
+                                                            let
+                                                                pt = case elemIndex pointType gnuPointTypes of 
+                                                                    Just i -> i
+                                                                    otherwise -> 1
+                                                                valuesWithOffset = V.toList (V.map (\(x, y) -> (x + offset, y)) (D.xys1 d))
+                                                            in 
+                                                                if lineWidth == 0 
+                                                                    then
+                                                                        if errorBars then
+                                                                            (fmap (Graph2D.lineSpec (((LineSpec.pointType pt) . (LineSpec.pointSize pointSize) . (LineSpec.lineColor color) . (LineSpec.title title)) LineSpec.deflt)) 
+                                                                                (Plot2D.list (Graph2D.yErrorBarsRelative) (V.toList (V.map (\(x, y, w) -> ((x + offset, y), if w > 0 then sqrt (1 / w) else 0)) (D.values1 d)))))
+                                                                        else
+                                                                            (fmap (Graph2D.lineSpec (((LineSpec.pointType pt) . (LineSpec.pointSize pointSize) . (LineSpec.lineColor color) . (LineSpec.title title)) LineSpec.deflt)) 
+                                                                                (Plot2D.list (Graph2D.points) valuesWithOffset))
+                                                                    else
+                                                                        case dash1 of 
+                                                                            0 -> (fmap (Graph2D.lineSpec (((LineSpec.pointType pt) . (LineSpec.pointSize pointSize) . (LineSpec.lineWidth lineWidth) . 
+                                                                                (LineSpec.lineColor color) . (LineSpec.lineType 2) . (LineSpec.title title)) LineSpec.deflt)) (Plot2D.list (Graph2D.linesPoints) valuesWithOffset))
+                                                                            otherwise -> (fmap (Graph2D.lineSpec (((LineSpec.pointType pt) . (LineSpec.pointSize pointSize) . (LineSpec.lineWidth lineWidth) . 
+                                                                                (LineSpec.lineColor color) . (LineSpec.lineType dash1) . (LineSpec.title title)) LineSpec.deflt)) (Plot2D.list (Graph2D.linesPoints) valuesWithOffset))
                                         else
                                             (fmap (Graph2D.lineSpec (((LineSpec.lineWidth lineWidth) . (LineSpec.lineColor color) . (LineSpec.lineType dash1) . (LineSpec.title title)) LineSpec.deflt)) 
                                                 (Plot2D.list (Graph2D.lines) (V.toList (D.xys1 d))))
