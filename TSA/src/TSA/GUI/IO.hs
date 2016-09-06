@@ -5,6 +5,7 @@ import Graphics.UI.Gtk hiding (addWidget)
 import Data.IORef
 import qualified Data.Map as Map
 import Control.Concurrent
+import Control.Monad
 import Debug.Trace
 
 import Regression.Data as D hiding (ws)
@@ -130,8 +131,8 @@ newDataDialog stateRef = do
                 widgetDestroy dialog
 
 
-data ColumnType = ColGeneral | ColJD | ColYear | ColMonth | ColDay | ColYYYYMMDD | ColError deriving (Eq)
-columnTypes = [ColGeneral, ColJD, ColYear, ColMonth, ColDay, ColYYYYMMDD, ColError]
+data ColumnType = ColGeneral | ColJD | ColYear | ColMonth | ColDay | ColYYYYMMDD deriving (Eq)
+columnTypes = [ColGeneral, ColJD, ColYear, ColMonth, ColDay, ColYYYYMMDD]
 
 dataFormatDialog :: StateRef -> ([ColumnType] -> [[String]] -> String -> Bool -> IO ()) -> [String] -> String -> IO ()
 dataFormatDialog stateRef callback lines name = do
@@ -148,8 +149,8 @@ dataFormatDialog stateRef callback lines name = do
     -- Page 1
     page1 <- vBoxNew False 0
     assistantSetPageType assistant page1 AssistantPageConfirm
-    headerLabel <- labelNew $ Just "Data to import:"
-    addWidgetToBox Nothing headerLabel PackNatural page1
+    headerLabel1 <- labelNew $ Just "Data to import:"
+    addWidgetToBox Nothing headerLabel1 PackNatural page1
     ------------------------
     textBuffer <- textBufferNew Nothing
     textBufferSetText textBuffer (concatMap (++ "\n") lines)
@@ -190,107 +191,181 @@ dataFormatDialog stateRef callback lines name = do
     ------------------------
     -- Page 2
     page2 <- vBoxNew False 0
-    headerLabel <- labelNew $ Just "Columns:"
-    addWidgetToBox Nothing headerLabel PackNatural page2
+    headerLabel2 <- labelNew $ Just "Columns:"
+    addWidgetToBox Nothing headerLabel2 PackNatural page2
     scrolledWindow2 <- scrolledWindowNew Nothing Nothing
+    scrolledWindowSetPolicy scrolledWindow2  PolicyNever PolicyAutomatic
     boxPackStart page2 scrolledWindow2 PackGrow 2
-    table <- tableNew 0 0 True
-    scrolledWindowAddWithViewport scrolledWindow2 table
+    table2 <- tableNew 0 0 True
+    scrolledWindowAddWithViewport scrolledWindow2 table2
     --addWidgetToBox Nothing table PackNatural page2
+    colIndexComboTable <- tableNew 0 0 True
+    addWidgetToBox Nothing colIndexComboTable PackNatural page2
+    assistantAppendPage assistant page2
+    
+    ------------------------
+    -- Page 3
+    page3 <- vBoxNew False 0
+    headerLabel3 <- labelNew $ Just "Columns:"
+    addWidgetToBox Nothing headerLabel3 PackNatural page3
+    scrolledWindow3 <- scrolledWindowNew Nothing Nothing
+    scrolledWindowSetPolicy scrolledWindow3  PolicyNever PolicyAutomatic
+    boxPackStart page3 scrolledWindow3 PackGrow 2
+    table3 <- tableNew 0 0 True
+    scrolledWindowAddWithViewport scrolledWindow3 table3
+    --addWidgetToBox Nothing table3 PackNatural page3
     typeComboTable <- tableNew 0 0 True
-    addWidgetToBox Nothing typeComboTable PackNatural page2
+    addWidgetToBox Nothing typeComboTable PackNatural page3
     
     nameEntry <- entryNew
     nameEntry `entrySetText` name
-    addWidgetToBox (Just "Name: ") nameEntry PackNatural page2
+    addWidgetToBox (Just "Name: ") nameEntry PackNatural page3
     dataTypeCombo <- createComboBox ["Data", "Spectrum"]
     comboBoxSetActive dataTypeCombo 0
-    addWidgetToBox (Just "Type: ") dataTypeCombo PackNatural page2
-    assistantAppendPage assistant page2
+    addWidgetToBox (Just "Type: ") dataTypeCombo PackNatural page3
+    assistantAppendPage assistant page3
     
+    ------------------------
     widgetShowAll assistant
     assistantSetPageComplete assistant page1 True
     assistantSetPageComplete assistant page2 True
-    assistantSetPageType assistant page2 AssistantPageConfirm
+    assistantSetPageComplete assistant page3 True
+    assistantSetPageType assistant page1 AssistantPageIntro
+    assistantSetPageType assistant page2 AssistantPageContent
+    assistantSetPageType assistant page3 AssistantPageConfirm
     
+    assistantStateRef <- newIORef ([], [])
     on assistant assistantCancel $ widgetDestroy assistant 
     on assistant assistantPrepare $ \page -> do
-        useSpace <- toggleButtonGetActive spaceCheck
-        useTab <- toggleButtonGetActive tabCheck
-        useComma <- toggleButtonGetActive commaCheck
-        useSemicolon <- toggleButtonGetActive semicolonCheck
-        separatorIndicesStr <- entryGetString separatorIndicesEntry
-        omitSeparators <- toggleButtonGetActive omitSeparatorsCheck
-        skippedRowsStr <- entryGetString skipRowsEntry
-        let
-            separatorOffset = if omitSeparators then 1 else 0 
-            separatorIndices :: [Int] = sort $ map (read) $ filter (\ind -> trim ind /= "") $ concat $ map (splitBy ';') $ concat $ map (splitBy ',') $ words separatorIndicesStr
-            splitFunc useChar char line = if useChar then concat (map (splitBy char) line) else line
-            splittedLines' = map (\line -> filter (\col -> trim col /= "") (
-                ((splitFunc useSpace ' ') . (splitFunc useTab '\t') . (splitFunc useComma ',') . (splitFunc useSemicolon ';')) 
-                    (if separatorIndices /= [] then map (\(i1, i2) -> take (i2 - i1 - separatorOffset) (drop (i1 + separatorOffset) line)) (zip (-separatorOffset:separatorIndices) (separatorIndices ++ [length line])) else [line])
-                )) lines
-            skippedRows :: [Int] = sort $ map (read) $ filter (\ind -> trim ind /= "") $ concat $ map (splitBy ';') $ concat $ map (splitBy ',') $ words skippedRowsStr
-            splittedLines = foldl' (\lines (skippedRow, i) -> removeAt (skippedRow - i) lines) splittedLines' (zip skippedRows [1 ..]) 
-            first5Rows = splittedLines --take 5 splittedLines
-            colsAndLengths = map (\(i, line) -> (i, length line)) (zip [1, 2 ..] splittedLines)
-            (minLine, minCols) = minimumBy (\(_, len1) (_, len2) -> compare len1 len2) colsAndLengths
-            (maxLine, maxCols) = maximumBy (\(_, len1) (_, len2) -> compare len1 len2) colsAndLengths
-            cols = transpose $ map (take minCols) splittedLines
-            numRows = length first5Rows
-            numCols = length cols
-        if minCols /= maxCols
-            then do
-                msgDialog <- messageDialogNew (Just (castToWindow assistant)) [DialogDestroyWithParent] MessageWarning ButtonsOk 
-                    ("Unequal column numbers detected. Line " ++ (show minLine) ++ " has " ++ (show minCols) ++ " columns, but line " ++ (show maxLine) ++ " has " ++ (show maxCols) ++ " columns.")
-                dialogRun msgDialog
-                widgetDestroy msgDialog
+        if page == castToWidget page1 then
+            do
+                writeIORef assistantStateRef ([], [])
+                widgetShowAll page1
+        else if page == castToWidget page2 then
+            do
+                useSpace <- toggleButtonGetActive spaceCheck
+                useTab <- toggleButtonGetActive tabCheck
+                useComma <- toggleButtonGetActive commaCheck
+                useSemicolon <- toggleButtonGetActive semicolonCheck
+                separatorIndicesStr <- entryGetString separatorIndicesEntry
+                omitSeparators <- toggleButtonGetActive omitSeparatorsCheck
+                skippedRowsStr <- entryGetString skipRowsEntry
+                let
+                    separatorOffset = if omitSeparators then 1 else 0 
+                    separatorIndices :: [Int] = sort $ map (read) $ filter (\ind -> trim ind /= "") $ concat $ map (splitBy ';') $ concat $ map (splitBy ',') $ words separatorIndicesStr
+                    splitFunc useChar char line = if useChar then concat (map (splitBy char) line) else line
+                    splittedLines' = map (\line -> filter (\col -> trim col /= "") (
+                        ((splitFunc useSpace ' ') . (splitFunc useTab '\t') . (splitFunc useComma ',') . (splitFunc useSemicolon ';')) 
+                            (if separatorIndices /= [] then map (\(i1, i2) -> take (i2 - i1 - separatorOffset) (drop (i1 + separatorOffset) line)) (zip (-separatorOffset:separatorIndices) (separatorIndices ++ [length line])) else [line])
+                        )) lines
+                    skippedRows :: [Int] = sort $ map (read) $ filter (\ind -> trim ind /= "") $ concat $ map (splitBy ';') $ concat $ map (splitBy ',') $ words skippedRowsStr
+                    splittedLines = foldl' (\lines (skippedRow, i) -> removeAt (skippedRow - i) lines) splittedLines' (zip skippedRows [1 ..]) 
+                    first5Rows = splittedLines --take 5 splittedLines
+                    colsAndLengths = map (\(i, line) -> (i, length line)) (zip [1, 2 ..] splittedLines)
+                    (minLine, minCols) = minimumBy (\(_, len1) (_, len2) -> compare len1 len2) colsAndLengths
+                    (maxLine, maxCols) = maximumBy (\(_, len1) (_, len2) -> compare len1 len2) colsAndLengths
+                    cols = transpose $ map (take minCols) splittedLines
+                    numRows = length first5Rows
+                    numCols = length cols
+                if minCols /= maxCols
+                    then do
+                        msgDialog <- messageDialogNew (Just (castToWindow assistant)) [DialogDestroyWithParent] MessageWarning ButtonsOk 
+                            ("Unequal column numbers detected. Line " ++ (show minLine) ++ " has " ++ (show minCols) ++ " columns, but line " ++ (show maxLine) ++ " has " ++ (show maxCols) ++ " columns.")
+                        dialogRun msgDialog
+                        widgetDestroy msgDialog
+                        return ()
+                    else return ()
+                tableCells <- containerGetChildren table2
+                mapM_ (\cell -> do 
+                        containerRemove table2 cell
+                        widgetDestroy cell
+                    ) tableCells
+                zipWithM_ (\row line -> do
+                        zipWithM_ (\col elem -> do
+                                cell <- labelNew $ Just elem
+                                tableAttachDefaults table2 cell col (col + 1) row (row + 1)
+                            ) [0, 1 ..] (take numCols line)
+                    ) [0, 1 ..] first5Rows
+                widgetShowAll table2
+                --tableResize table (numRows + 1) numCols
+                (colIndexCombos, _) <- readIORef assistantStateRef
+                if colIndexCombos == []
+                    then
+                        do
+                            colIndexComboTableCells <- containerGetChildren colIndexComboTable
+                            mapM_ (\combo -> do
+                                    containerRemove colIndexComboTable combo
+                                    widgetDestroy combo
+                                ) colIndexComboTableCells
+                            colIndexCombos <- mapM (\col -> do
+                                    colIndexCombo <- createComboBox ["-", "x", "y", "z", "w"]
+                                    if col <= 3
+                                        then 
+                                            comboBoxSetActive colIndexCombo (col + 1)
+                                        else
+                                            comboBoxSetActive colIndexCombo 0
+                                    tableAttachDefaults colIndexComboTable colIndexCombo col (col + 1) 0 1
+                                    return colIndexCombo
+                                ) [0 .. numCols - 1] 
+                            writeIORef assistantStateRef (colIndexCombos, cols)
+                            widgetShowAll colIndexComboTable
+                    else
+                        return ()
+                widgetShowAll page2
+        else if page == castToWidget page3 then 
+            do
+                (colIndexCombos, cols) <- readIORef assistantStateRef
+                maybeColIndexes <- zipWithM (\col colIndexCombo -> do
+                        colIndex <- comboBoxGetActive colIndexCombo
+                        case colIndex of
+                            0 -> return Nothing
+                            i -> return $ Just (i, col)
+                    ) [0, 1 ..] colIndexCombos
+                let
+                    colIndexes = sortBy (\(i1, _) (i2, _) -> compare i1 i2) (catMaybes maybeColIndexes)
+                    selectedCols = map (\(_, col) -> cols !! col) colIndexes
+
+                tableCells3 <- containerGetChildren table3
+                mapM_ (\cell -> do 
+                        containerRemove table3 cell
+                        widgetDestroy cell
+                    ) tableCells3
+                zipWithM_ (\colIndex col -> do
+                        zipWithM_ (\rowIndex elem -> do
+                                cell <- labelNew $ Just elem
+                                tableAttachDefaults table3 cell colIndex (colIndex + 1) rowIndex (rowIndex + 1)
+                            ) [0, 1 ..] col
+                    ) [0, 1 ..] selectedCols
+                widgetShowAll table3
+
+                typeComboTableCells <- containerGetChildren typeComboTable
+                mapM_ (\combo -> do
+                        containerRemove typeComboTable combo
+                        widgetDestroy combo
+                    ) typeComboTableCells
+                typeCombos <- mapM (\col -> do
+                        typeCombo <- createComboBox ["General", "JD", "Year", "Month", "Day", "YYYY-MM-DD"]
+                        comboBoxSetActive typeCombo 0
+                        tableAttachDefaults typeComboTable typeCombo col (col + 1) 0 1
+                        return typeCombo
+                    ) [0 .. (length colIndexes) - 1] 
+                widgetShowAll typeComboTable
+                widgetShowAll page3
+        
+                on assistant assistantClose $ do
+                    colTypesAndCols <- mapM (\(col, typeCombo) -> do
+                            colType <- comboBoxGetActive typeCombo
+                            return (columnTypes !! colType, selectedCols !! col)
+                        ) (zip [0, 1 ..] typeCombos)
+                    let
+                        (colTypes, selectedCols) = unzip colTypesAndCols
+                    name <- entryGetString nameEntry
+                    dataType <- comboBoxGetActive dataTypeCombo
+                    callback colTypes selectedCols name (dataType == 0)
+                    widgetDestroy assistant 
                 return ()
-            else return ()
-        tableCells <- containerGetChildren table
-        mapM_ (containerRemove table) tableCells
-        mapM_ (\(row, line) -> mapM_ (\(col, elem) -> do
-                        cell <- labelNew $ Just elem
-                        tableAttachDefaults table cell col (col + 1) row (row + 1)
-                ) (zip [0, 1 ..] line)
-            ) (zip [0, 1 ..] (map (take numCols) first5Rows))
-        {-
-        let
-            line = foldl' (\res row -> zipWith (\rowVal newRowVal -> rowVal ++ newRowVal ++ "\n") res row) (repeat "") (map (take numCols) first5Rows)
-        mapM_ (\(col, colText) -> do
-                textBuffer <- textBufferNew Nothing
-                textBufferSetText textBuffer colText
-                textView <- textViewNewWithBuffer textBuffer
-                font <- fontDescriptionNew
-                fontDescriptionSetFamily font TSA.GUI.Common.defaultFontFamily
-                widgetModifyFont textView (Just font)
-                textViewSetEditable textView False 
-                --cell <- labelNew $ Just colText
-                tableAttachDefaults table textView col (col + 1) 0 1
-            ) (zip [0, 1 ..] line)
-        -}   
-        --tableResize table (numRows + 1) numCols
-        typeCombos <- mapM (\col -> do
-                typeCombo <- createComboBox ["-", "General", "JD", "Year", "Month", "Day", "YYYY-MM-DD", "Error"]
-                comboBoxSetActive typeCombo 1
-                tableAttachDefaults typeComboTable typeCombo col (col + 1) 0 1
-                return typeCombo
-            ) [0 .. numCols - 1] 
-        widgetShowAll page2
-        on assistant assistantClose $ do
-            colTypesAndCols <- mapM (\(col, typeCombo) -> do
-                    colType <- comboBoxGetActive typeCombo
-                    case colType of
-                        0 -> return Nothing
-                        i -> return $ Just (columnTypes !! (i - 1), cols !! col)
-                ) (zip [0, 1 ..] typeCombos)
-            let
-                (colTypes, selectedCols) = unzip $ catMaybes colTypesAndCols
-            name <- entryGetString nameEntry
-            dataType <- comboBoxGetActive dataTypeCombo
-            callback colTypes selectedCols name (dataType == 0)
-            widgetDestroy assistant 
-        return ()
+        else
+            return ()
     return ()
 
 readValue :: ColumnType -> String -> Integer -> Double
@@ -319,7 +394,7 @@ readAscii stateRef colTypes cols name dataOrSpectrum = do
             dataLines =
                 map (\line -> 
                         let
-                            lineVals = map (\(i, val) -> readValue (colTypes !! i) val year) (zip [0, 1 ..] line)
+                            lineVals = zipWith (\i val -> readValue (colTypes !! i) val year) [0, 1 ..] line
                         in
                             if ymdToYears
                                 then
@@ -331,8 +406,8 @@ readAscii stateRef colTypes cols name dataOrSpectrum = do
                                 else lineVals 
                     ) $ transpose cols 
             numCols = if ymdToYears then length colTypes - 2 else length colTypes    
-            is1d = numCols == 1 || numCols == 2 && ColError `elem` colTypes 
-            is2d = numCols == 2 || numCols == 3 && ColError `elem` colTypes 
+            is1d = numCols == 1 
+            is2d = numCols == 2 
             dat = 
                 if is1d then 
                         D.data0 $ V.fromList $ map (\line -> 
