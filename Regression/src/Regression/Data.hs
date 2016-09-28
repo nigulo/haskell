@@ -62,6 +62,7 @@ module Regression.Data (
     dim,
     isData,
     isSpectrum,
+    isEvenlySampled,
     filterData,
     dataLength,
     toSpectrum
@@ -124,7 +125,11 @@ xmlElementName :: String
 xmlElementName = "data"
 
 xs :: Data -> [[Double]]
-xs d = map (\x -> [x]) (V.toList (xs1 d))
+xs (Data1 ds) = map (\(y, w) -> []) $ V.toList ds
+xs (Data2 ds) = map (\(x, y, w) -> [x]) $ V.toList ds
+xs (Data3 ds) = map (\(x1, x2, y, w) -> [x1, x2]) $ V.toList ds
+xs (Spectrum2 ((offset, step), values)) = 
+    [let (y, w) = values V.! i in [offset + step * fromIntegral i] | i <- [0 .. V.length values - 1]]
 
 xsi :: Int -> Data -> V.Vector Double
 xsi 0 (Data1 ds) = V.empty 
@@ -627,6 +632,23 @@ isData _ = False
 isSpectrum :: Data -> Bool
 isSpectrum (Spectrum2 _) = True
 isSpectrum _ = False
+
+isEvenlySampled :: Data -> Bool
+isEvenlySampled (Spectrum2 _) = True
+isEvenlySampled d@(Data2 _) =
+    let 
+        xs = xs1 d
+    in
+        if V.length xs <= 1 
+            then True
+            else 
+                let
+                    xDiffs = V.zipWith (-) (V.tail xs) (V.init xs)
+                    xDiff = V.head xDiffs
+            in
+                V.all (==xDiff) xDiffs
+isEvenlySampled _ = False -- Currently no support for 2d data
+                    
 
 toSpectrum :: Data -> Maybe Data
 toSpectrum s@(Spectrum2 _) = Just s
