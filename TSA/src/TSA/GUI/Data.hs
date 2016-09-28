@@ -8,6 +8,7 @@ module TSA.GUI.Data (
     only2d,
     onlyData,
     onlySpectrum,
+    onlyEvenlySampled,
     splineAndSpectrum,
     dataAndSpectrum,
     onlyAnalytic,
@@ -301,6 +302,12 @@ onlyData = dataFilter True
 
 onlySpectrum :: DataFilter
 onlySpectrum = dataFilter False
+
+onlyEvenlySampled :: DataFilter
+onlyEvenlySampled dp = 
+    case subData (head (dataSet dp)) of 
+        SD1 d -> D.isEvenlySampled d
+        otherwise -> False
 
 dataAndSpectrum :: DataFilter
 dataAndSpectrum dp = 

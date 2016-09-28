@@ -55,10 +55,10 @@ paramsDialog stateRef = do
     if fftDirection parms then comboBoxSetActive directionCombo 0 else comboBoxSetActive directionCombo 1
     addWidget (Just "Direction: ") directionCombo dialog
     
-    realSpectrumCombo <- dataSetComboNew2 onlySpectrum state False
+    realSpectrumCombo <- dataSetComboNew2 onlyEvenlySampled state False
     addWidget (Just "Real signal: ") (getComboBox realSpectrumCombo) dialog
 
-    imagSpectrumCombo <- dataSetComboNew2 onlySpectrum state False
+    imagSpectrumCombo <- dataSetComboNew2 onlyEvenlySampled state False
     addWidget (Just "Imaginary signal: ") (getComboBox imagSpectrumCombo) dialog
 
     phaseShiftAdjustment <- adjustmentNew (fftPhaseShift parms) (-1) 1 0.1 0.1 1
@@ -152,10 +152,20 @@ fft stateRef name =
 
             (reals, realStep) = case fftRealData parms of 
                 Nothing -> (V.replicate n 0, 0)
-                Just s@(Spectrum2 ((_, step), _)) -> (D.ys s, step)
+                Just dat ->
+                    let
+                        (xs, ys, _) = V.unzip3 (D.values1 dat)
+                        step = xs V.! 1 - V.head xs
+                    in 
+                        (ys, step)
             (imags, imagStep) = case fftImagData parms of 
                 Nothing -> (V.replicate n 0, 0)
-                Just s@(Spectrum2 ((_, step), _)) -> (D.ys s, step)
+                Just dat ->
+                    let
+                        (xs, ys, _) = V.unzip3 (D.values1 dat)
+                        step = xs V.! 1 - V.head xs
+                    in 
+                        (ys, step)
             step = max realStep imagStep
             fftFunc = if fftDirection parms then fromTimeToFrequency else fromFrequencyToTime
             phaseShift = fftPhaseShift parms
