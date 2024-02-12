@@ -100,4 +100,4 @@ test-suite MathTests
   extensions:      
                    FlexibleInstances, 
                    ScopedTypeVariables
-
+                   FlexibleContexts

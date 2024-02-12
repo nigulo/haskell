@@ -7,7 +7,7 @@ type Matrix = Array DIM2 Double
 
 -- | Returns a solution vector for given system of linear equations
 --   represented by (n * (n + 1)) upper triangular matrix.
-backSubstitution :: Matrix -> Vector Double
+backSubstitution :: Math.CUDALinearEquations.Matrix -> Vector Double
 backSubstitution m = 
     let
         Z:.rows:._ = arrayShape m

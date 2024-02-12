@@ -14,6 +14,8 @@ solveGauss m =
         numRows <- getNumRows m
         let p = numRows - 2
         mapM_ (\i -> calcForward i m) [0 .. p]
+	vals <- getValues m
+        print vals
         backSubstitution m
                 
 
@@ -35,8 +37,9 @@ calcForward i m =
                 do
                     ajk <- a j k
                     aji <- a j i
-                    aik <- a i k 
-                    return ((j, k), (ajk - (aji) * aii * (aik)))
+                    aik <- a i k
+                    print (j, k, ajk - aji * aii * aik)
+                    return ((j, k), (ajk - aji * aii * aik))
         
         mapM_ (\(j, k) -> do (indices, value) <- val j k; IOMatrix.set indices value m) [(j , k) | j <- [i + 1 .. p], k <- [i + 1 .. p + 1]]
 

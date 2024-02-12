@@ -2,7 +2,7 @@
 module Math.Function (
     Fn,
     ComplexFn,
-    Function,
+    Function(..),
     getValue,
     getValue_,
     getComplexValue,
