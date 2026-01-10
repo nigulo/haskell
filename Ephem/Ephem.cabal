@@ -22,19 +22,23 @@ library
 test-suite EphemTests
   type:            exitcode-stdio-1.0
   ghc-options:     -Wall -rtsopts
-  build-depends:   base >= 4, HTF > 0.9
-  hs-source-dirs:  
+  build-depends:   base >= 4,
+                   tasty >= 1.2,
+                   tasty-hunit >= 0.10,
+                   time -any
+  hs-source-dirs:
                    src,
                    tests
   main-is:         EphemTests.hs
-  other-modules:   
+  other-modules:
                    Ephem.CoordsTest,
                    Ephem.TestUtils,
                    Ephem.TimeTest,
                    Ephem.TypesTest,
                    Ephem.SunTest,
                    Ephem.MoonTest,
-                   Ephem.UtilsTest
+                   Ephem.UtilsTest,
+                   Ephem.CelestialBodyTest
 
 executable Converter
   build-depends:   

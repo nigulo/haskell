@@ -1,12 +1,12 @@
-{-# OPTIONS_GHC -F -pgmF htfpp #-}
-
-module Ephem.UtilsTest where
+module Ephem.UtilsTest (tests) where
 
 import Ephem.Types
 import Ephem.Utils
 import Ephem.TestUtils
-import Test.Framework
+import Test.Tasty
+import Test.Tasty.HUnit
 
+test_clipAngle :: Assertion
 test_clipAngle = do 
     assertEqualAngle (Deg 0) (clipAngle (Deg 0))
     assertEqualAngle (Deg 0) (clipAngle (Deg 360))
@@ -22,11 +22,17 @@ test_clipAngle = do
     assertEqualAngle (Rad (pi2 - 0.1)) (clipAngle (Rad (-pi2 - 0.1)))
     assertEqualAngle (Rad (pi2 - 0.1)) (clipAngle (Rad (-0.1)))
 
+test_clipHour :: Assertion
 test_clipHour = do 
-    assertEqual 0 (clipHour 0)
-    assertEqual 0 (clipHour 24)
-    assertEqual 1 (clipHour 1)
-    assertEqual 1 (clipHour 25)
-    assertEqual 23 (clipHour (-1))
-    assertEqual 23 (clipHour (-25))
-    
+    assertEqual "" 0 (clipHour 0)
+    assertEqual "" 0 (clipHour 24)
+    assertEqual "" 1 (clipHour 1)
+    assertEqual "" 1 (clipHour 25)
+    assertEqual "" 23 (clipHour (-1))
+    assertEqual "" 23 (clipHour (-25))
+
+tests :: TestTree
+tests = testGroup "Ephem.UtilsTest"
+    [ testCase "clipAngle" test_clipAngle
+    , testCase "clipHour" test_clipHour
+    ]

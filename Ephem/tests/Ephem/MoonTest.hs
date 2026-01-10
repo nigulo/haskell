@@ -1,5 +1,4 @@
-{-# OPTIONS_GHC -F -pgmF htfpp #-}
-module Ephem.MoonTest where
+module Ephem.MoonTest (tests) where
 
 import Ephem.OrbitalElements
 import Ephem.CelestialBody
@@ -9,9 +8,11 @@ import Ephem.Types
 import Ephem.Coords
 import Ephem.Time
 import Ephem.TestUtils
-import Test.Framework
+import Test.Tasty
+import Test.Tasty.HUnit
 import Debug.Trace
 
+test_calcMoon1980 :: Assertion
 test_calcMoon1980 = do
     let
         date = ymd 1979 2 26.6666667
@@ -29,6 +30,7 @@ test_calcMoon1980 = do
     
     assertEqualDouble 1.1746293999999999e-4 phase
 
+test_calcMoon1980_1 :: Assertion
 test_calcMoon1980_1 = do
     let
         date = ymd 1990 4 19
@@ -58,6 +60,7 @@ test_calcMoon1980_3 = do
     assertEqualAngle (Deg 1.0571632870999998) moonLat
 -}
 
+test_calcMoon2000 :: Assertion
 test_calcMoon2000 = do
     let
         date = ymd 1990 4 19
@@ -69,6 +72,7 @@ test_calcMoon2000 = do
     assertEqualAngle (Deg (-0.57149094276)) moonLat
     assertEqualDouble 60.76229203493 moonDist
 
+test_calcMoon2000_1 :: Assertion
 test_calcMoon2000_1 = do
     let
         date = ymd 1979 2 26.6666667
@@ -98,6 +102,7 @@ test_calcMoon2000_3 = do
     assertEqualAngle (Deg (-0.34329209165999997)) moonLat
 -}
 
+test_calcMoon2013 :: Assertion
 test_calcMoon2013 = do
     let
         date = ymd 2013 7 29
@@ -112,6 +117,7 @@ test_calcMoon2013 = do
     assertEqualAngle (DMS 11 47 2.0707809999999998) moonDec
 
 
+test_calcPositionAngle :: Assertion
 test_calcPositionAngle = do
     let
         sunRA = HMS 3 40 38
@@ -121,6 +127,7 @@ test_calcPositionAngle = do
         posAngle = calcPositionAngle (sunRA, sunDec) (moonRA, moonDec)
     assertEqualAngle (Deg 70.02850835221) posAngle
 
+test_calcMoonDistance :: Assertion
 test_calcMoonDistance = do
     let
         date = ymd 1979 2 26.6666667
@@ -128,6 +135,7 @@ test_calcMoonDistance = do
         dist = calcMoonDistance moon1980 mM' date
     assertEqualDouble 0.9451006465399999 dist
     
+test_calcMoonAngularDiameter :: Assertion
 test_calcMoonAngularDiameter = do
     let
         dist = 0.945101
@@ -135,12 +143,14 @@ test_calcMoonAngularDiameter = do
     assertEqualAngle (DMS 0 32 53.503361) diam
     
     
+test_calcMoonHorizontalParallax :: Assertion
 test_calcMoonHorizontalParallax = do
     let
         dist = 0.945101
         parallax = calcMoonHorizontalParallax dist
     assertEqualAngle (DMS 1 00 21.327244) parallax
 
+test_calcMoonRiseSet :: Assertion
 test_calcMoonRiseSet = do
     let
         date = YMD 1979 9 6
@@ -160,4 +170,17 @@ test_calcMoonRiseSet = do
                 gmtSet = gstToGMT gstSet date
             assertEqualHours (HMS 18 38 32.761092) gmtRise
             assertEqualHours (HMS 5 1 50.463226999999996) gmtSet
-            
+
+tests :: TestTree
+tests = testGroup "Ephem.MoonTest"
+    [ testCase "calcMoon1980" test_calcMoon1980
+    , testCase "calcMoon1980_1" test_calcMoon1980_1
+    , testCase "calcMoon2000" test_calcMoon2000
+    , testCase "calcMoon2000_1" test_calcMoon2000_1
+    , testCase "calcMoon2013" test_calcMoon2013
+    , testCase "calcPositionAngle" test_calcPositionAngle
+    , testCase "calcMoonDistance" test_calcMoonDistance
+    , testCase "calcMoonAngularDiameter" test_calcMoonAngularDiameter
+    , testCase "calcMoonHorizontalParallax" test_calcMoonHorizontalParallax
+    , testCase "calcMoonRiseSet" test_calcMoonRiseSet
+    ]

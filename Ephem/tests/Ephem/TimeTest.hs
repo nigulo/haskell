@@ -1,12 +1,13 @@
-{-# OPTIONS_GHC -F -pgmF htfpp #-}
-module Ephem.TimeTest where
+module Ephem.TimeTest (tests) where
 
 import Ephem.Types
 import Ephem.Time
 import Ephem.TestUtils
-import Test.Framework
+import Test.Tasty
+import Test.Tasty.HUnit
 
 
+test_gmtToGST :: Assertion
 test_gmtToGST = do
     let
         date = YMD 1980 4 22
@@ -14,10 +15,12 @@ test_gmtToGST = do
         gst = gmtToGST gmt date
     assertEqualHours (HMS 4 40 5.164531805391448) (toHMS gst)
 
+test_calcB :: Assertion
 test_calcB = do
     assertEqualDouble 17.395558591334748 (calcB 1979)
     assertEqualDouble 17.401211325672648 (calcB 2000)
 
+test_gstToGMT :: Assertion
 test_gstToGMT = do
     let
         date = YMD 1980 4 22
@@ -25,6 +28,7 @@ test_gstToGMT = do
         gmt = gstToGMT gst date
     assertEqualHours (HMS 14 36 51.70308807222682) (toHMS gmt)
 
+test_gstToLST :: Assertion
 test_gstToLST = do
     let
         longitude = Long (Deg 64) W
@@ -32,9 +36,19 @@ test_gstToLST = do
         lst = gstToLST gst longitude
     assertEqualHours (HMS 0 24 5.16999999999598) (toHMS lst)
 
+test_lstToGST :: Assertion
 test_lstToGST = do
     let
         longitude = Long (Deg 64) W
         lst = HMS 0 24 5.17
         gst = lstToGST lst longitude
     assertEqualHours (HMS 4 40 5.169999999992569) (toHMS gst)
+
+tests :: TestTree
+tests = testGroup "Ephem.TimeTest"
+    [ testCase "gmtToGST" test_gmtToGST
+    , testCase "calcB" test_calcB
+    , testCase "gstToGMT" test_gstToGMT
+    , testCase "gstToLST" test_gstToLST
+    , testCase "lstToGST" test_lstToGST
+    ]

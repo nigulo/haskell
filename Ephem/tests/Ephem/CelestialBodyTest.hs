@@ -1,6 +1,4 @@
-{-# OPTIONS_GHC -F -pgmF htfpp #-}
-
-module Ephem.CelestialBodyTest where
+module Ephem.CelestialBodyTest (tests) where
 
 import Ephem.OrbitalElements
 import Ephem.CelestialBody
@@ -8,9 +6,11 @@ import Ephem.Types
 import Ephem.Time
 import Ephem.Coords
 import Ephem.TestUtils
-import Test.Framework
+import Test.Tasty
+import Test.Tasty.HUnit
 import Debug.Trace
 
+test_calcEclCoordsPlanets :: Assertion
 test_calcEclCoordsPlanets = do
     let
         date = YMD 1980 11 22
@@ -62,6 +62,7 @@ test_calcEclCoordsPlanets = do
     assertEqualAngle (Sec 33.11100178694) jupiterDiam
     assertEqualDouble (-0.64452679731) jupiterMag
 
+test_calcPositionAngle :: Assertion
 test_calcPositionAngle = do
     let
         sunRA = HMS 15 50 37
@@ -73,6 +74,7 @@ test_calcPositionAngle = do
 
 
 -- Elliptical
+test_calcEclCoordsHalley :: Assertion
 test_calcEclCoordsHalley = do 
     let
         date = ymd 1986 1 0
@@ -95,6 +97,7 @@ test_calcEclCoordsHalley = do
     assertEqualAngle (DMS (-2) 7 17.26739888136) halleyDec
 
 -- Parabolic
+test_calcEclCoordsKohler1977m :: Assertion
 test_calcEclCoordsKohler1977m = do
     let
         date = YMD 1977 12 25
@@ -117,6 +120,7 @@ test_calcEclCoordsKohler1977m = do
     assertEqualAngle (DMS (-33) 41 42.33512859685) kohlerDec
 
 -- Hyperbolic
+test_calcEclCoordsPanstarrsC2011L4 :: Assertion
 test_calcEclCoordsPanstarrsC2011L4 = do
     let
         date = YMD 2013 03 19
@@ -133,6 +137,7 @@ test_calcEclCoordsPanstarrsC2011L4 = do
     assertEqualHours (HMS 0 34 20.95961957262) panstarrsRA
     assertEqualAngle (DMS 15 48 46.36899256674) panstarrsDec
 
+test_calcEclCoordsMcNaughtC2009R1 :: Assertion
 test_calcEclCoordsMcNaughtC2009R1 = do
     let
         date = YMD 2013 06 17
@@ -146,6 +151,7 @@ test_calcEclCoordsMcNaughtC2009R1 = do
     assertEqualHours (HMS 2 47 3.01465) mcNaughtRA
     assertEqualAngle (DMS (-79) 38 53.783736999999995) mcNaughtDec
 
+test_calcPlanetRiseSet :: Assertion
 test_calcPlanetRiseSet = do
     let
         date = ymd 2012 4 1
@@ -160,4 +166,14 @@ test_calcPlanetRiseSet = do
             assertEqualHours (HMS 22 24 22.521236) gmtSet
             assertEqualAngle (DMS 39 19 27.727452) aziRise
             assertEqualAngle (DMS 321 14 17.536600999999997) aziSet
-            
+
+tests :: TestTree
+tests = testGroup "Ephem.CelestialBodyTest"
+    [ testCase "calcEclCoordsPlanets" test_calcEclCoordsPlanets
+    , testCase "calcPositionAngle" test_calcPositionAngle
+    , testCase "calcEclCoordsHalley" test_calcEclCoordsHalley
+    , testCase "calcEclCoordsKohler1977m" test_calcEclCoordsKohler1977m
+    , testCase "calcEclCoordsPanstarrsC2011L4" test_calcEclCoordsPanstarrsC2011L4
+    , testCase "calcEclCoordsMcNaughtC2009R1" test_calcEclCoordsMcNaughtC2009R1
+    , testCase "calcPlanetRiseSet" test_calcPlanetRiseSet
+    ]

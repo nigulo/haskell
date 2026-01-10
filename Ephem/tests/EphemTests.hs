@@ -1,15 +1,25 @@
-{-# OPTIONS_GHC -F -pgmF htfpp #-}
 module Main where
 
+import Test.Tasty
 
-import Test.Framework
---import Test.Framework.BlackBoxTest
-import {-@ HTF_TESTS @-} Ephem.TypesTest
-import {-@ HTF_TESTS @-} Ephem.CoordsTest
-import {-@ HTF_TESTS @-} Ephem.TimeTest
-import {-@ HTF_TESTS @-} Ephem.UtilsTest
-import {-@ HTF_TESTS @-} Ephem.SunTest
-import {-@ HTF_TESTS @-} Ephem.CelestialBodyTest
-import {-@ HTF_TESTS @-} Ephem.MoonTest
+import qualified Ephem.TypesTest
+import qualified Ephem.CoordsTest
+import qualified Ephem.TimeTest
+import qualified Ephem.UtilsTest
+import qualified Ephem.SunTest
+import qualified Ephem.CelestialBodyTest
+import qualified Ephem.MoonTest
 
-main = htfMain htf_importedTests
+main :: IO ()
+main = defaultMain tests
+
+tests :: TestTree
+tests = testGroup "Ephem Tests"
+    [ Ephem.TypesTest.tests
+    , Ephem.CoordsTest.tests
+    , Ephem.TimeTest.tests
+    , Ephem.UtilsTest.tests
+    , Ephem.SunTest.tests
+    , Ephem.CelestialBodyTest.tests
+    , Ephem.MoonTest.tests
+    ]
