@@ -16,7 +16,6 @@ module Ephem.OrbitalElements (
     mercury2000,
     venus2000,
     earth2000,
-    earth2000a,
     mars2000,
     jupiter2000,
     saturn2000,
@@ -213,19 +212,6 @@ venus2000 = OrbitalElements {
 }
 
 earth2000 = OrbitalElements {
-    eccentricity = (0.01671123, (-0.00004392)),
-    inclination = (Deg (-0.00001531), Deg (-0.01294668)),
-    longitudeOfAscedingNode = (Deg 0, Deg 0),
-    periapsisOrientation = LongitudeOfPeriapsis (Deg 102.93768193, Deg 0.32327364),
-    elementsByOrbitType = ClosedOrbitElements {
-        semiMajorAxis = (AU 1.00000261, AU 0.00000562)
-    }, 
-    epoch = ymd 2000 1 0,
-    epochData = MeanLongitude (Deg 100.46457166, Deg 35999.37244981)
-}
-
-
-earth2000a = OrbitalElements {
     eccentricity = (0.01671022, (-0.00003804)),
     inclination = (Deg 0.00005, Deg (-0.0130388888889)),
     longitudeOfAscedingNode = (Deg (-11.26064), Deg (-5.06340277778)),

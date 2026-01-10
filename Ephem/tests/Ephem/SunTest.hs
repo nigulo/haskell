@@ -40,8 +40,8 @@ test_calcSunRiseSet = do
         Nothing ->
             assertFailure "calcSunRiseSet failed"
         Just ((gmtRise, aziRise), (gmtSet, aziSet)) -> do
-            assertEqualHours (HMS 5 20 20.941854) gmtRise
-            assertEqualHours (HMS 18 34 58.819801999999996) gmtSet
+            assertEqualHours (HMS 5 20 20.941896) gmtRise
+            assertEqualHours (HMS 18 34 58.819817) gmtSet
 
 test_calcSunRiseSet' :: Assertion
 test_calcSunRiseSet' = do
@@ -55,16 +55,16 @@ test_calcSunRiseSet' = do
         Nothing ->
             assertFailure "calcSunRiseSet failed"
         Just (lstRise, lstSet) -> do
-            assertEqualHours (Hrs 4.381976917099999) lstRise
-            assertEqualHours (Hrs 17.66469518556) lstSet
+            assertEqualHours (Hrs 4.381979998589999) lstRise
+            assertEqualHours (Hrs 17.664698764609998) lstSet
 
             let
                 gstRise = lstToGST lstRise long
                 gstSet = lstToGST lstSet long
                 gmtRise = gstToGMT gstRise date
                 gmtSet = gstToGMT gstSet date
-            assertEqualHours (HMS 5 20 7.727189999999999) gmtRise
-            assertEqualHours (HMS 18 34 54.970400999999995) gmtSet
+            assertEqualHours (HMS 5 20 7.738252999999999) gmtRise
+            assertEqualHours (HMS 18 34 54.983250999999996) gmtSet
 
 test_calcSunRiseSet'2 :: Assertion
 test_calcSunRiseSet'2 = do
@@ -72,21 +72,21 @@ test_calcSunRiseSet'2 = do
         date = ymd 2013 7 24
         lat = Lat (DMS 58 22 47) N
         long = Long (DMS 26 43 18) E
-        maybeRiseSet = calcSunRiseSet' date earth2000a lat True
+        maybeRiseSet = calcSunRiseSet' date earth2000 lat True
     case maybeRiseSet of
         Nothing ->
             assertFailure "calcSunRiseSet failed"
         Just (lstRise, lstSet) -> do
-            assertEqualHours (Hrs 23.776147349899997) lstRise
-            assertEqualHours (Hrs 16.78680324471) lstSet
+            assertEqualHours (Hrs 23.77616475648) lstRise
+            assertEqualHours (Hrs 16.786807456549997) lstSet
 
             let
                 gstRise = lstToGST lstRise long
                 gstSet = lstToGST lstSet long
                 gmtRise = gstToGMT gstRise date
                 gmtSet = gstToGMT gstSet date
-            assertEqualHours (HMS 1 51 51.652992999999995) gmtRise
-            assertEqualHours (HMS 18 49 42.833487999999996) gmtSet
+            assertEqualHours (HMS 1 51 51.715486) gmtRise
+            assertEqualHours (HMS 18 49 42.848608999999996) gmtSet
 
 test_calcSunRiseSet'3 :: Assertion
 test_calcSunRiseSet'3 = do
@@ -99,13 +99,13 @@ test_calcSunRiseSet'3 = do
         Nothing ->
             assertFailure "calcSunRiseSet failed"
         Just (lstRise, lstSet) -> do
-            assertEqualHours (Hrs 17.90462887806) lstRise
-            assertEqualHours (Hrs 6.1173861898799995) lstSet
+            assertEqualHours (Hrs 17.877619385419997) lstRise
+            assertEqualHours (Hrs 5.9613026717499995) lstSet
 
             let
                 gstRise = lstToGST lstRise long
                 gstSet = lstToGST lstSet long
                 gmtRise = gstToGMT gstRise date
                 gmtSet = gstToGMT gstSet date
-            assertEqualHours (HMS 4 19 52.396257) gmtRise
-            assertEqualHours (HMS 16 30 38.2956) gmtSet
+            assertEqualHours (HMS 4 18 15.427532999999999) gmtRise
+            assertEqualHours (HMS 16 21 17.928924) gmtSet

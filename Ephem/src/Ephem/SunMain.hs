@@ -29,7 +29,7 @@ main = do
                             Nothing
                     ) 
             else Nothing
-        sunRiseSets = sunRisesAndSets year maybeMonthAndDay earth2000a (toLatitude (Deg lat)) (toLongitude (Deg long)) timeZone
+        sunRiseSets = sunRisesAndSets year maybeMonthAndDay earth2000 (toLatitude (Deg lat)) (toLongitude (Deg long)) timeZone
         
         formatRiseSet (date, maybeRiseSet) = 
             let

@@ -142,7 +142,7 @@ calcSunRiseSet' date earth lat useCorrection =
                             --        else if st2s - st1s > 12 then (st2s, st1s + 24)
                             --        else (st2s, st1s)
                         in
-                            Just (Hrs (clipHour (24.07 * st1r / (24.07 + (diffT st1r st2r)) - deltaT)), Hrs (clipHour (24.07 * st1s / (24.07 + (diffT st1s st2s)) + deltaT)))
+                            Just (Hrs (clipHour (24.06571 * st1r / (24.06571 + (diffT st1r st2r)) - deltaT)), Hrs (clipHour (24.06571 * st1s / (24.06571 + (diffT st1s st2s)) + deltaT)))
                     Nothing -> Nothing
             Nothing -> Nothing
     in
