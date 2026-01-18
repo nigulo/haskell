@@ -10,6 +10,7 @@ module Ephem.Utils (
     where
 
 import Ephem.Types
+import GHC.Base (VecElem(DoubleElemRep))
 
 pi2 :: Double
 pi2 = 2 * pi
@@ -28,22 +29,7 @@ clipHour :: Double -> Double
 clipHour = clip 24
 
 clip :: Double -> Double -> Double
-clip clipVal val
-    | val >= 0 && val < clipVal = val
-    | val < 0 = 
-        let
-            (n, f) = properFraction (val / clipVal)
-        in
-            clipVal + clipVal * f
-    | otherwise =
-        if isNaN val || isInfinite val 
-            then val 
-            else 
-                let
-                    (n, f) = properFraction (val / clipVal)
-                in
-                    clipVal * f
- 
+clip clipVal val = val - clipVal * fromIntegral (floor (val / clipVal))
 
 calcElement :: (Double, Double) -> Double -> Double
 calcElement (elem, elemRate) ctys = elem + elemRate * ctys

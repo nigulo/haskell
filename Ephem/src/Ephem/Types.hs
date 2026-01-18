@@ -33,10 +33,11 @@ module Ephem.Types (
     absAngle,
     sgnAngle,
     toLatitude,
-    toLongitude
+    toLongitude,
+    addDays
 ) where
 
-import Data.Time.Calendar hiding (diffDays)
+import Data.Time.Calendar hiding (diffDays, addDays)
 import Data.Time.Calendar.OrdinalDate
 
 class SphericalCoord a where
@@ -354,7 +355,17 @@ toLatitude angle =
         else Lat angle N
 
 toLongitude :: Angle -> Long
-toLongitude angle = 
-    if sgnAngle angle < 0 
+toLongitude angle =
+    if sgnAngle angle < 0
         then Long (absAngle angle) W
         else Long angle E
+
+-- | Add days to a Date (sign-sensitive: negative values subtract days)
+addDays :: Double -> Date -> Date
+addDays days (YMD y m d) = toYMD $ MJD (mjd + days)
+    where MJD mjd = toMJD (YMD y m d)
+addDays days (TropicalYears x) = TropicalYears (x + days / 365.2422)
+addDays days (JD x) = JD (x + days)
+addDays days (RJD x) = RJD (x + days)
+addDays days (MJD x) = MJD (x + days)
+addDays days (TJD x) = TJD (x + days)

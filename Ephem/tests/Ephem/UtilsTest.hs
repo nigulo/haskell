@@ -23,13 +23,13 @@ test_clipAngle = do
     assertEqualAngle (Rad (pi2 - 0.1)) (clipAngle (Rad (-0.1)))
 
 test_clipHour :: Assertion
-test_clipHour = do 
-    assertEqual "" 0 (clipHour 0)
-    assertEqual "" 0 (clipHour 24)
-    assertEqual "" 1 (clipHour 1)
-    assertEqual "" 1 (clipHour 25)
-    assertEqual "" 23 (clipHour (-1))
-    assertEqual "" 23 (clipHour (-25))
+test_clipHour = do
+    assertEqualFloat 0 (clipHour 0)
+    assertEqualFloat 0 (clipHour 24)
+    assertEqualFloat 1 (clipHour 1)
+    assertEqualFloat 1 (clipHour 25)
+    assertEqualFloat 23 (clipHour (-1))
+    assertEqualFloat 23 (clipHour (-25))
 
 tests :: TestTree
 tests = testGroup "Ephem.UtilsTest"

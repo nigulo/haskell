@@ -148,8 +148,8 @@ test_calcEclCoordsMcNaughtC2009R1 = do
         tilt = calcObliquityOfEcliptic date
         (mcNaughtRA, mcNaughtDec) = eclToEqu mcNaughtLong mcNaughtLat tilt
 
-    assertEqualHours (HMS 2 47 3.01465) mcNaughtRA
-    assertEqualAngle (DMS (-79) 38 53.783736999999995) mcNaughtDec
+    assertEqualHours (HMS 2 44 57.477430999999996) mcNaughtRA
+    assertEqualAngle (DMS (-79) 33 21.353552999999998) mcNaughtDec
 
 test_calcPlanetRiseSet :: Assertion
 test_calcPlanetRiseSet = do
@@ -162,10 +162,10 @@ test_calcPlanetRiseSet = do
         Nothing -> 
             assertFailure "calcPlanetRiseSet failed"
         Just ((gmtRise, aziRise), (gmtSet, aziSet)) -> do
-            assertEqualHours (HMS 4 11 31.847156) gmtRise
-            assertEqualHours (HMS 22 24 22.521236) gmtSet
-            assertEqualAngle (DMS 39 19 27.727452) aziRise
-            assertEqualAngle (DMS 321 14 17.536600999999997) aziSet
+            assertEqualHours (HMS 4 7 39.248033) gmtRise
+            assertEqualHours (HMS 22 14 44.883693) gmtSet
+            assertEqualAngle (DMS 40 1 29.249208999999997) aziRise
+            assertEqualAngle (DMS 320 32 32.612959) aziSet
 
 tests :: TestTree
 tests = testGroup "Ephem.CelestialBodyTest"

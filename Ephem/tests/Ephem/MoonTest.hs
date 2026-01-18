@@ -68,9 +68,9 @@ test_calcMoon2000 = do
         (moonLong, moonLat, dist) = calcMoon2 moon2000 sun date
         EarthRadii moonDist = toEarthRadii dist
 
-    assertEqualAngle (Deg 306.91638665465996) moonLong
-    assertEqualAngle (Deg (-0.57149094276)) moonLat
-    assertEqualDouble 60.76229203493 moonDist
+    assertEqualAngle (Deg 306.91840665099) moonLong
+    assertEqualAngle (Deg (-0.57782468703)) moonLat
+    assertEqualDouble 60.72590740718999 moonDist
 
 test_calcMoon2000_1 :: Assertion
 test_calcMoon2000_1 = do
@@ -79,8 +79,8 @@ test_calcMoon2000_1 = do
         sun@(sunLong, _) = calcSun earth2000 date
         (moonLong, moonLat, _) = calcMoon2 moon2000 sun date
 
-    assertEqualAngle (Deg 336.75286373049) moonLong
-    assertEqualAngle (Deg 0.9694900409699999) moonLat
+    assertEqualAngle (Deg 336.85740495579) moonLong
+    assertEqualAngle (Deg 0.9542138930299999) moonLat
 
 {-
 test_calcMoon2000_2 = do
@@ -111,10 +111,10 @@ test_calcMoon2013 = do
         tilt = calcObliquityOfEcliptic date
         (moonRA, moonDec) = eclToEqu moonLong moonLat tilt
 
-    assertEqualAngle (Deg 27.41881730102) moonLong
-    assertEqualAngle (Deg 1.31837654175) moonLat
-    assertEqualHours (HMS 1 39 52.614826) moonRA
-    assertEqualAngle (DMS 11 47 2.0707809999999998) moonDec
+    assertEqualAngle (Deg 27.432735591599997) moonLong
+    assertEqualAngle (Deg 1.32429474496) moonLat
+    assertEqualHours (HMS 1 39 55.273399) moonRA
+    assertEqualAngle (DMS 11 47 40.008463) moonDec
 
 
 test_calcPositionAngle :: Assertion

@@ -41,26 +41,45 @@ test-suite EphemTests
                    Ephem.CelestialBodyTest
 
 executable Converter
-  build-depends:   
+  build-depends:
                    base >= 4,
                    system-fileio -any,
                    system-filepath -any,
                    bytestring -any,
                    utf8-string -any,
-                   vector -any
+                   vector -any,
+                   time -any
   hs-source-dirs:  src
   ghc-options:     -Wall -rtsopts
   main-is:         Converter.hs
   extensions:      DoAndIfThenElse
+  other-modules:   Ephem.Types
 
 executable Ephem
   hs-source-dirs:  src
   main-is:         Main.hs
-  build-depends:   base >= 4
+  build-depends:   base >= 4,
+                   time -any
   ghc-options:     -Wall
+  other-modules:   Ephem.CelestialBody,
+                   Ephem.Coords,
+                   Ephem.Moon,
+                   Ephem.OrbitalElements,
+                   Ephem.Sun,
+                   Ephem.Time,
+                   Ephem.Types,
+                   Ephem.Utils
 
 executable Sun
-  build-depends:   base >= 4
+  build-depends:   base >= 4,
+                   time -any
   hs-source-dirs:  src
   ghc-options:     -Wall -rtsopts
   main-is:         Ephem/SunMain.hs
+  other-modules:   Ephem.CelestialBody,
+                   Ephem.Coords,
+                   Ephem.OrbitalElements,
+                   Ephem.Sun,
+                   Ephem.Time,
+                   Ephem.Types,
+                   Ephem.Utils
