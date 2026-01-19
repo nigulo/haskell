@@ -12,7 +12,7 @@ import Ephem.Types
 import Ephem.Time
 import Ephem.Utils
 import Debug.Trace
-import Data.Time.Calendar hiding (diffDays)
+import Data.Time.Calendar hiding (diffDays, addDays)
 import Data.Time.Calendar.MonthDay
 
 -- | Calculates the ecliptical longitude and mean anomaly of the sun
@@ -62,11 +62,12 @@ calcSunRiseSet date earth lat long =
                     gstSet = lstToGST lstSet long
                     Hrs gmtRise = toHrs $ gstToGMT gstRise date
                     Hrs gmtSet = toHrs $ gstToGMT gstSet date
-                    YMD y m d = toYMD date
-                    date1 = YMD y m (fromIntegral (floor d) + gmtRise / 24)
+                    YMD y1 m1 d1 = toYMD (if gmtRise > 12 then addDays (-1) date else date)
+                    YMD y2 m2 d2 = toYMD date --(if gmtSet < 12 then addDays 1 date else date)
+                    date1 = YMD y1 m1 (fromIntegral (floor d1) + gmtRise / 24)
                     tilt1 = calcObliquityOfEcliptic date1
                     (sunLong1, _) = calcSun earth date1
-                    date2 = YMD y m (fromIntegral (floor d) + gmtSet / 24)
+                    date2 = YMD y2 m2 (fromIntegral (floor d2) + gmtSet / 24)
                     (sunLong2, _) = calcSun earth date2
                     tilt2 = calcObliquityOfEcliptic date2
                     (sunRA1, sunDec1) = eclToEqu sunLong1 (Deg 0) tilt1
@@ -87,7 +88,7 @@ calcSunRiseSet date earth lat long =
                                         gstRise1 = lstToGST lstRise1 long
                                         gstSet1 = lstToGST lstSet1 long
                                         gmtRise1 = gstToGMT gstRise1 date
-                                        gmtSet1 = gstToGMT gstSet1 date
+                                        gmtSet1 = gstToGMT2 gstSet1 date
                                     in
                                         Just ((gmtRise1, Rad $ clipAngleRad (riseAzi1 - deltaARise)), (gmtSet1, Rad $ clipAngleRad (setAzi1 + deltaASet)))
                         Nothing -> Nothing

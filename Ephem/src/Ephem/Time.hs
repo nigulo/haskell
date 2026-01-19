@@ -7,6 +7,7 @@ module Ephem.Time (
     gmtToGST,
     calcB, -- don't use this function direclty (exposed only for testing purposes)
     gstToGMT,
+    gstToGMT2,
     gstToLST,
     lstToGST
     ) where
@@ -76,7 +77,7 @@ gstToGMT hours date =
         Hrs hrs = toHrs hours
         t2 = hrs - t1  -- Sidereal difference (can be negative)
         -- Boundary detection: if |t2| < 1 hour, we're near midnight
-        nearBoundary = abs t2 < 1.0 || abs (t2 + 24) < 1.0 || abs (t2 - 24) < 1.0
+        nearBoundary = abs t2 < 2.0 || abs (t2 + 24) < 2.0 || abs (t2 - 24) < 2.0
         gmt
             | nearBoundary =
                 -- Near boundary: convert to solar FIRST, then add 24 solar hours if needed
@@ -90,7 +91,30 @@ gstToGMT hours date =
                 t2 * d
     in
         Hrs gmt
-        
+
+
+gstToGMT2 :: GST -> Date -> GMT
+gstToGMT2 hours date =
+    let
+        ymd@(YMD y m _) = toYMD date
+        a = 0.0657098
+        b = calcB y
+        d = 0.997270
+        daysSinceJan0 = Cal.diffDays (fromGregorian y m (getDayOfMonth ymd)) (fromGregorian (y - 1) 12 31)
+        t0 = fromIntegral daysSinceJan0 * a - b
+        t1 = t0 + (if t0 < 0 then 24 else 0)
+        Hrs hrs = toHrs (trace ("gst " ++ show hours) hours)
+        t2 = trace ("t2 " ++ show (hrs - t1) ) (hrs - t1)  -- Sidereal difference (can be negative)
+        gmt
+            | t2 < 0 =
+                -- Far from boundary, negative: traditional algorithm (add 24 sidereal, then convert)
+                (t2 + 24) * d
+            | otherwise =
+                -- Positive: no wrapping needed
+                t2 * d
+    in
+        Hrs gmt
+
         
 gstToLST :: GST -> Long -> LST
 gstToLST hours (Long longitude ew) =
