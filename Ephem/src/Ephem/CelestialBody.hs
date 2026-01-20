@@ -277,30 +277,24 @@ calcPlanetRiseSet date planet earth lat long =
                 let
                     gstRise = lstToGST lstRise long
                     gstSet = lstToGST lstSet long
-                    Hrs gmtRise = toHrs $ gstToGMT gstRise date
-                    Hrs gmtSet = toHrs $ gstToGMT gstSet date
-                    YMD y m d = 
-                        let 
-                            YMD y1 m1 d1 = toYMD date
-                        in
-                            YMD y1 m1 (fromIntegral (floor d1))
-                    date1 = YMD y m (d + gmtRise / 24)
-                    earthHelCoords1 = calcHelLongAndDist earth date1
-                    planetHelCoords1 = calcHelLongAndDist planet date1
-                    (planetLong1, planetLat1) = calcEclCoords planet earth planetHelCoords1 earthHelCoords1 date1
-                    tilt1 = calcObliquityOfEcliptic date1
+                    gmtRise = gstToGMT gstRise date
+                    gmtSet = gstToGMT gstSet date
+
+                    earthHelCoords1 = calcHelLongAndDist earth gmtRise
+                    planetHelCoords1 = calcHelLongAndDist planet gmtRise
+                    (planetLong1, planetLat1) = calcEclCoords planet earth planetHelCoords1 earthHelCoords1 gmtRise
+                    tilt1 = calcObliquityOfEcliptic gmtRise
                     (planetRA1, planetDec1) = eclToEqu planetLong1 planetLat1 tilt1
                     planetDist1 = calcDistance planetHelCoords1 earthHelCoords1
-                    (planetRA1', planetDec1') = calcGeoParallax (Hrs gmtRise) date planetRA1 planetDec1 (Left planetDist1) lat long 0
+                    (planetRA1', planetDec1') = calcGeoParallax gmtRise planetRA1 planetDec1 (Left planetDist1) lat long 0
 
-                    date2 = YMD y m (d + gmtSet / 24)
-                    earthHelCoords2 = calcHelLongAndDist earth date2
-                    planetHelCoords2 = calcHelLongAndDist planet date2
-                    (planetLong2, planetLat2) = calcEclCoords planet earth planetHelCoords2 earthHelCoords2 date2
-                    tilt2 = calcObliquityOfEcliptic date2
+                    earthHelCoords2 = calcHelLongAndDist earth gmtSet
+                    planetHelCoords2 = calcHelLongAndDist planet gmtSet
+                    (planetLong2, planetLat2) = calcEclCoords planet earth planetHelCoords2 earthHelCoords2 gmtSet
+                    tilt2 = calcObliquityOfEcliptic gmtSet
                     (planetRA2, planetDec2) = eclToEqu planetLong2 planetLat2 tilt2
                     planetDist2 = calcDistance planetHelCoords2 earthHelCoords2
-                    (planetRA2', planetDec2') = calcGeoParallax (Hrs gmtSet) date planetRA2 planetDec2 (Left planetDist2) lat long 0
+                    (planetRA2', planetDec2') = calcGeoParallax gmtSet planetRA2 planetDec2 (Left planetDist2) lat long 0
                     
                 in
                     case calcRiseSet planetRA1' planetDec1' lat True of

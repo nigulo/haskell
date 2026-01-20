@@ -208,8 +208,8 @@ calcMoonRiseSet date moon earth lat long height numIterations =
         dist1 = calcMoonDistance moon mM'1 date1
         dist2 = calcMoonDistance moon mM'2 date2
         meanAngularDiameter = (calcMoonAngularDiameter dist1 `add` calcMoonAngularDiameter dist2) `mul` 0.5 
-        (moonRA1', moonDec1') = calcGeoParallax (HMS 0 0 0) date moonRA1 moonDec1 (Left (Km (a1 * dist1))) lat long height 
-        (moonRA2', moonDec2') = calcGeoParallax (HMS 12 0 0) date moonRA2 moonDec2 (Left (Km (a2 * dist2))) lat long height 
+        (moonRA1', moonDec1') = calcGeoParallax date1 moonRA1 moonDec1 (Left (Km (a1 * dist1))) lat long height
+        (moonRA2', moonDec2') = calcGeoParallax date2 moonRA2 moonDec2 (Left (Km (a2 * dist2))) lat long height
         riseSet = case calcRiseSet moonRA1' moonDec1' lat False of
             Just ((Hrs st1r, _), (Hrs st1s, _)) ->
                 case calcRiseSet moonRA2' moonDec2' lat False of

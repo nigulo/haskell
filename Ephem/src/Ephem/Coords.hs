@@ -197,7 +197,6 @@ calcRiseSetCorrection dec (Lat l latType) x =
                      
 calcGeoParallax ::
     GMT
-    -> Date
     -> RA
     -> Dec
     -> Either Distance Angle -- ^ distance of celestial body from the center of the earth in km's or equatorial horizontal parallax
@@ -205,7 +204,7 @@ calcGeoParallax ::
     -> Long
     -> Double -- ^ altitude in meters above sea level
     -> (RA, Dec)
-calcGeoParallax gmt date ra dec r' (Lat la latType) long height =
+calcGeoParallax gmt ra dec r' (Lat la latType) long height =
     let
         lat = case latType of 
             N -> la 
@@ -215,7 +214,7 @@ calcGeoParallax gmt date ra dec r' (Lat la latType) long height =
         height' = height / 6378140
         rhoSinPhi' = 0.996647 * sin u + height' * sine lat
         rhoCosPhi' = cos u + height' * cosine lat
-        lst = gstToLST (gmtToGST gmt date) long
+        lst = gstToLST (gmtToGST gmt) long
         h = hoursToAngle $ raToLHA ra lst
         cosH = cosine h
         r = case r' of 

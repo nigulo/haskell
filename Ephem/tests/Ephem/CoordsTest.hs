@@ -92,8 +92,8 @@ test_calcRiseSet = do
                 gmtSet = gstToGMT gstSet date
             assertEqualHours (Hrs 12.503376758189999) gstRise
             assertEqualHours (Hrs 2.27440101959) gstSet
-            assertEqualHours (HMS 14 18 8.908318) gmtRise
-            assertEqualHours (HMS 4 6 5.126033) gmtSet
+            assertEqualHours (HMS 14 18 8.806178) (getHours gmtRise)
+            assertEqualHours (HMS 4 6 5.039407) (getHours gmtSet)
     let
         maybeRiseSet = calcRiseSet ra dec lat True
     case maybeRiseSet of
@@ -108,24 +108,23 @@ test_calcRiseSet = do
 test_calcGeoParallax :: Assertion
 test_calcGeoParallax = do
     let
-        gmt = HMS 16 45 0
-        date = YMD 1979 2 26
+        gmt = fromDateAndHours (YMD 1979 2 26) (HMS 16 45 0)
         ra = HMS 22 35 9
         dec = DMS (-7) 41 13
         long = Long (Deg 100) W
         lat = Lat (Deg 50) N
         height = 60
         p = DMS 1 1 9
-        (ra', dec') = calcGeoParallax gmt date ra dec (Right p) lat long height
-    assertEqualHours (HMS 22 36 33.121067) ra'
-    assertEqualAngle (DMS (-8) 32 17.530164) dec'
+        (ra', dec') = calcGeoParallax gmt ra dec (Right p) lat long height
+    assertEqualHours (HMS 22 36 33.120492999999996) ra'
+    assertEqualAngle (DMS (-8) 32 17.530952) dec'
     let
         ra = HMS 22 36 44
         dec = DMS (-8) 44 24
         dist = AU 0.9901
-        (ra', dec') = calcGeoParallax gmt date ra dec (Left dist) lat long height
-    assertEqualHours (HMS 22 36 44.208639999999995) ra'
-    assertEqualAngle (DMS (-8) 44 31.582535999999998) dec'
+        (ra', dec') = calcGeoParallax gmt ra dec (Left dist) lat long height
+    assertEqualHours (HMS 22 36 44.208638) ra'
+    assertEqualAngle (DMS (-8) 44 31.582538) dec'
 
 tests :: TestTree
 tests = testGroup "Ephem.CoordsTest"

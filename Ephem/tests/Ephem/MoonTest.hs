@@ -161,15 +161,15 @@ test_calcMoonRiseSet = do
         Nothing -> 
             assertFailure "calcSunMoonSet failed"
         Just (lstRise, lstSet) -> do
-            assertEqualHours (Hrs 17.659648409659997) lstRise
-            assertEqualHours (Hrs 4.01063720222) lstSet
+            assertEqualHours (Hrs 17.659648879829998) lstRise
+            assertEqualHours (Hrs 4.01063710782) lstSet
             let
                 gstRise = lstToGST lstRise long
                 gstSet = lstToGST lstSet long
                 gmtRise = gstToGMT gstRise date
                 gmtSet = gstToGMT gstSet date
-            assertEqualHours (HMS 18 38 32.761092) gmtRise
-            assertEqualHours (HMS 5 1 50.463226999999996) gmtSet
+            assertEqualHours (HMS 18 38 32.653841) $ getHours gmtRise
+            assertEqualHours (HMS 5 1 50.374631) $ getHours gmtSet
 
 tests :: TestTree
 tests = testGroup "Ephem.MoonTest"

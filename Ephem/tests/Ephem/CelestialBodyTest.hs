@@ -162,10 +162,10 @@ test_calcPlanetRiseSet = do
         Nothing -> 
             assertFailure "calcPlanetRiseSet failed"
         Just ((gmtRise, aziRise), (gmtSet, aziSet)) -> do
-            assertEqualHours (HMS 4 7 39.248033) gmtRise
-            assertEqualHours (HMS 22 14 44.883693) gmtSet
-            assertEqualAngle (DMS 40 1 29.249208999999997) aziRise
-            assertEqualAngle (DMS 320 32 32.612959) aziSet
+            assertEqualHours (HMS 4 7 39.148008999999995) $ getHours gmtRise
+            assertEqualHours (HMS 22 14 44.755598) $ getHours gmtSet
+            assertEqualAngle (DMS 40 1 29.252419999999997) aziRise
+            assertEqualAngle (DMS 320 32 32.608948999999996) aziSet
 
 tests :: TestTree
 tests = testGroup "Ephem.CelestialBodyTest"

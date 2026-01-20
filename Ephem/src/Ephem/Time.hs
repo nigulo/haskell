@@ -5,18 +5,17 @@ module Ephem.Time (
     LT (..),
     gmtToLT,
     gmtToGST,
-    calcB, -- don't use this function direclty (exposed only for testing purposes)
     gstToGMT,
-    gstToGMT2,
     gstToLST,
-    lstToGST
+    lstToGST,
+    siderealDayLength
     ) where
 import Debug.Trace
 import Ephem.Types
 import Ephem.Utils
 import Data.Time.Calendar as Cal
 
-type GMT = Hours
+type GMT = Date
 type GST = Hours
 type LST = Hours
 type LT = Hours
@@ -25,97 +24,45 @@ type LT = Hours
 gmtToLT :: GMT -> Int -> LT
 gmtToLT gmt tz =
     let
-        Hrs gmtHrs = toHrs gmt
+        (_, Hrs gmtHrs) = splitDayAndTime gmt
     in
         Hrs (clipHour (gmtHrs + fromIntegral tz))
 
--- TODO Replace with Meeus "Astronomical Algorithms" formula
-gmtToGST :: GMT -> Date -> GST
-gmtToGST hours date =
-    let
-        ymd@(YMD y m _) = toYMD date
-        a = 0.0657098
-        b = calcB y
-        c = 1.002738
-        daysSinceJan0 = Cal.diffDays (fromGregorian y m (getDayOfMonth ymd)) (fromGregorian (y - 1) 12 31)
-        t0 = fromIntegral daysSinceJan0 * a - b
-        Hrs hrs = toHrs hours
-        (t1, t1Fract) = properFraction (hrs * c + t0 + 24)
-        gst = fromIntegral (t1 `mod` 24) + t1Fract  -- add 24 if < 0, subtract 24 if > 24
+gmtToGST :: GMT -> GST
+gmtToGST gmt =
+    let (day, Hrs time) = splitDayAndTime gmt
+        Hrs t = solarSiderealTimesDiff day
+        time' = clipHour $ time/siderealDayLength + t
     in
-        Hrs gst
+        Hrs time'
 
-calcB year =
+gstToGMT :: GST -> Date -> Date
+gstToGMT gst date =
     let
-        JD jd =  toJD $ YMD (year - 1) 12 31
-        s = jd - 2415020
-        t = s / 36525
-        r = 6.6460656 + (2400.051262 + 0.00002581 * t) * t
-        u = r - 24 * (fromIntegral year - 1900)
-        b = 24 - u
+        Hrs hours = toHrs gst
+        (day, time) = dayTime date hours
+        Hrs t = solarSiderealTimesDiff (JD day)
+        deltaT = clipHour $ time - t
+        time' = deltaT * siderealDayLength
     in
-        b
+        JD $ day + time'/24
+    where
+        dayTime date hours
+            | hours < 0   = (day-1, hours+24)
+            | hours >= 24 = (day+1, hours-24)
+            | otherwise = (day, hours)
+            where (JD day, _) = splitDayAndTime date
 
+siderealDayLength = hours / 24
+    where Hrs hours = toHrs $ HMS 23 56 4.0916
 
--- | Convert Greenwich Sidereal Time to Greenwich Mean Time
--- This is the inverse of gmtToGST, using the same calcB formula for consistency.
--- Based on the algorithm from "Practical Astronomy with your Calculator" by Duffett-Smith.
---
--- Key fix: At day boundaries (when siderealDiff is close to 0), the traditional algorithm
--- has a ~4 minute discontinuity because it adds 24 sidereal hours (= 23.93 solar hours).
--- For boundary cases only, we convert to solar time first, then add 24 solar hours.
-gstToGMT :: GST -> Date -> GMT
-gstToGMT hours date =
+solarSiderealTimesDiff :: Date -> Hours
+solarSiderealTimesDiff d =
     let
-        ymd@(YMD y m _) = toYMD date
-        a = 0.0657098
-        b = calcB y
-        d = 0.997270
-        daysSinceJan0 = Cal.diffDays (fromGregorian y m (getDayOfMonth ymd)) (fromGregorian (y - 1) 12 31)
-        t0 = fromIntegral daysSinceJan0 * a - b
-        t1 = t0 + (if t0 < 0 then 24 else 0)
-        Hrs hrs = toHrs hours
-        t2 = hrs - t1  -- Sidereal difference (can be negative)
-        -- Boundary detection: if |t2| < 1 hour, we're near midnight
-        nearBoundary = abs t2 < 2.0 || abs (t2 + 24) < 2.0 || abs (t2 - 24) < 2.0
-        gmt
-            | nearBoundary =
-                -- Near boundary: convert to solar FIRST, then add 24 solar hours if needed
-                let gmtRaw = t2 * d
-                in if gmtRaw < 0 then gmtRaw + 24 else if gmtRaw >= 24 then gmtRaw - 24 else gmtRaw
-            | t2 < 0 =
-                -- Far from boundary, negative: traditional algorithm (add 24 sidereal, then convert)
-                (t2 + 24) * d
-            | otherwise =
-                -- Positive: no wrapping needed
-                t2 * d
+        t = numCenturies j2000 d
     in
-        Hrs gmt
+        Hrs $ clipHour $ 6.697374558 + 2400.051336*t + 0.000025862*t*t
 
-
-gstToGMT2 :: GST -> Date -> GMT
-gstToGMT2 hours date =
-    let
-        ymd@(YMD y m _) = toYMD date
-        a = 0.0657098
-        b = calcB y
-        d = 0.997270
-        daysSinceJan0 = Cal.diffDays (fromGregorian y m (getDayOfMonth ymd)) (fromGregorian (y - 1) 12 31)
-        t0 = fromIntegral daysSinceJan0 * a - b
-        t1 = t0 + (if t0 < 0 then 24 else 0)
-        Hrs hrs = toHrs (trace ("gst " ++ show hours) hours)
-        t2 = trace ("t2 " ++ show (hrs - t1) ) (hrs - t1)  -- Sidereal difference (can be negative)
-        gmt
-            | t2 < 0 =
-                -- Far from boundary, negative: traditional algorithm (add 24 sidereal, then convert)
-                (t2 + 24) * d
-            | otherwise =
-                -- Positive: no wrapping needed
-                t2 * d
-    in
-        Hrs gmt
-
-        
 gstToLST :: GST -> Long -> LST
 gstToLST hours (Long longitude ew) =
     let

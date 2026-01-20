@@ -34,7 +34,12 @@ module Ephem.Types (
     sgnAngle,
     toLatitude,
     toLongitude,
-    addDays
+    addDays,
+    splitDayAndTime,
+    getHours,
+    toDays,
+    numCenturies,
+    fromDateAndHours
 ) where
 
 import Data.Time.Calendar hiding (diffDays, addDays)
@@ -125,6 +130,21 @@ instance SphericalCoord Angle where
             Rad x = toRad angle
         in
             tan x
+
+instance Num Date where
+    (+) (JD d1) (JD d2) = JD (d1+d2)
+    (+) d1 d2 = toJD d1 + toJD d2
+    (-) (JD d1) (JD d2) = JD (d1-d2)
+    (-) d1 d2 = toJD d1 - toJD d2
+    (*) (JD d1) (JD d2) = JD (d1*d2)
+    (*) d1 d2 = toJD d1 * toJD d2
+    negate (JD d) = JD (negate d)
+    negate d = negate $ toJD d
+    abs (JD d) = JD (abs d)
+    abs d = abs $ toJD d
+    signum (JD d) = JD (signum d)
+    signum d = signum $ toJD d
+    fromInteger int = JD (fromInteger int)
 
 toHMS :: Hours -> Hours
 toHMS x@(HMS _ _ _) = x
@@ -369,3 +389,27 @@ addDays days (JD x) = JD (x + days)
 addDays days (RJD x) = RJD (x + days)
 addDays days (MJD x) = MJD (x + days)
 addDays days (TJD x) = TJD (x + days)
+
+splitDayAndTime :: Date -> (Date, Hours)
+splitDayAndTime date =
+    let
+        JD jd = toJD date
+        day = 0.5 + (fromIntegral . truncate) (jd - 0.5)
+        time = jd - day
+    in
+       (JD day, Hrs (time * 24))
+
+getHours :: Date -> Hours
+getHours date = hrs where
+    (_, hrs) = splitDayAndTime date
+
+toDays :: Hours -> Double
+toDays hours = hrs/24
+    where Hrs hrs = toHrs hours
+
+numCenturies :: Date -> Date -> Double
+numCenturies (JD jd1) (JD jd2) = (jd2-jd1) / 36525
+numCenturies d1 d2 = numCenturies d1 d2
+
+fromDateAndHours :: Date -> Hours -> Date
+fromDateAndHours date hours = addDays (toDays hours) date
