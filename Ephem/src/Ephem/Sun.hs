@@ -62,17 +62,20 @@ calcSunRiseSet date earth lat long =
                     gstSet = lstToGST lstSet long
                     gmtRise = gstToGMT gstRise date
                     gmtSet = gstToGMT gstSet (toYMD date)
-                    Hrs gmtRiseHrs = getHours gmtRise
-                    gmtRise' = if gmtRiseHrs > 12 then addDays (-1) gmtRise else gmtRise
-                    --YMD y2 m2 d2 = toYMD date --(if gmtSet < 12 then addDays 1 date else date)
 
-                    --date1 = YMD y1 m1 (fromIntegral (floor d1) + gmtRise / 24)
+                    eastWest = case long of
+                        Long _ E -> True
+                        otherwise -> False
+                    Hrs gmtRiseHrs = getHours gmtRise
+                    gmtRise' = if eastWest && gmtRiseHrs > 12 then addDays (-1) gmtRise else gmtRise
+                    Hrs gmtSetHrs = getHours gmtSet
+                    gmtSet' = if not eastWest && gmtSetHrs < 12 then addDays 1 gmtSet else gmtSet
+
                     tilt1 = calcObliquityOfEcliptic gmtRise'
                     (sunLong1, _) = calcSun earth gmtRise'
 
-                    --date2 = YMD y2 m2 (fromIntegral (floor d2) + gmtSet / 24)
-                    (sunLong2, _) = calcSun earth gmtSet
-                    tilt2 = calcObliquityOfEcliptic gmtSet
+                    (sunLong2, _) = calcSun earth gmtSet'
+                    tilt2 = calcObliquityOfEcliptic gmtSet'
 
                     (sunRA1, sunDec1) = eclToEqu sunLong1 (Deg 0) tilt1
                     (sunRA2, sunDec2) = eclToEqu sunLong2 (Deg 0) tilt2
@@ -94,10 +97,12 @@ calcSunRiseSet date earth lat long =
                                         gstSet1 = lstToGST lstSet1 long
                                         gmtRise1 = gstToGMT gstRise1 date
                                         Hrs gmtRiseHrs1 = getHours gmtRise1
-                                        gmtRise1' = if gmtRiseHrs1 > 12 then addDays (1-siderealDayLength) gmtRise1 else gmtRise1
+                                        gmtRise1' = if eastWest && gmtRiseHrs1 > 12 then addDays (1-siderealDayLength) gmtRise1 else gmtRise1
                                         gmtSet1 = gstToGMT gstSet1 date
+                                        Hrs gmtSetHrs1 = getHours gmtSet1
+                                        gmtSet1' = if not eastWest && gmtSetHrs1 < 12 then addDays (-1+siderealDayLength) gmtSet1 else gmtSet1
                                     in
-                                        Just ((gmtRise1', Rad $ clipAngleRad (riseAzi1 - deltaARise)), (gmtSet1, Rad $ clipAngleRad (setAzi1 + deltaASet)))
+                                        Just ((gmtRise1', Rad $ clipAngleRad (riseAzi1 - deltaARise)), (gmtSet1', Rad $ clipAngleRad (setAzi1 + deltaASet)))
                         Nothing -> Nothing
             Nothing -> Nothing
 

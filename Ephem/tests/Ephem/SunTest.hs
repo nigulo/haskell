@@ -17,6 +17,7 @@ tests = testGroup "Sun Tests"
     , testCase "calcSunRiseSet'2" test_calcSunRiseSet'2
     , testCase "calcSunRiseSet'3" test_calcSunRiseSet'3
     , testCase "calcSunRiseSet'4" test_calcSunRiseSet'4
+    , testCase "calcSunRiseSet'5" test_calcSunRiseSet'5
     ]
 
 test_calcSunLongitude :: Assertion
@@ -132,3 +133,25 @@ test_calcSunRiseSet'4 = do
                 gmtSet = gstToGMT gstSet date
             assertEqualHours (HMS 23 32 52.83027) (getHours gmtRise)
             assertEqualHours (HMS 20 46 16.167414) (getHours gmtSet)
+
+test_calcSunRiseSet'5 :: Assertion
+test_calcSunRiseSet'5 = do
+    let
+        date = ymd 2025 9 10
+        lat = Lat (DMS 65 0 0) S
+        long = Long (DMS 26 43 18) W
+        maybeRiseSet = calcSunRiseSet' date earth2000 lat True
+    case maybeRiseSet of
+        Nothing ->
+            assertFailure "calcSunRiseSet failed"
+        Just (lstRise, lstSet) -> do
+            assertEqualHours (Hrs 5.810518527279999) lstRise
+            assertEqualHours (Hrs 16.69949239939) lstSet
+
+            let
+                gstRise = lstToGST lstRise long
+                gstSet = lstToGST lstSet long
+                gmtRise = gstToGMT gstRise date
+                gmtSet = gstToGMT gstSet date
+            assertEqualHours (HMS 8 17 1.569809) (getHours gmtRise)
+            assertEqualHours (HMS 19 8 34.842416) (getHours gmtSet)
