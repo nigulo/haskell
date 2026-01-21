@@ -13,7 +13,7 @@ main :: IO ()
 main = do
     (year, month, day) <- date
     let
-        srs = sunRisesAndSets year (Just (month, Nothing)) earth1980 (Lat (Deg 58.3780) N) (Long (Deg 26.7290) E) 2
+        srs = sunRisesAndSets year (Just (month, Nothing)) earth1980 (Lat (Deg 58.3743) N) (Long (Deg 26.6893) E) 2
     mapM_ (\((YMD _ _ d), Just (((riseTime, riseAzi), (setTime, setAzi)))) -> 
         putStrLn (show (floor d) ++ ": " ++ hoursToStr riseTime ++ " - " ++ hoursToStr setTime ++ ", " ++ angleToStr riseAzi ++ " - " ++  angleToStr setAzi)) srs
     return ()

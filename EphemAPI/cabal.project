@@ -1,0 +1,5 @@
+packages: .
+          ../Ephem
+
+-- Use this to specify compiler flags or other global settings
+-- with-compiler: ghc-9.4.8
