@@ -105,7 +105,7 @@ main = do
         ----------------------------------------------------------------------------------------------------------------
         -- Planet rise and set
         ----------------------------------------------------------------------------------------------------------------
-        get (literal "/api/planet-sunrise-sunset") $ do
+        get (literal "/api/planet-rise-set-transit") $ do
             -- Get query parameters from request
             req <- request
             let queryParams = Wai.queryString req
@@ -147,24 +147,35 @@ main = do
                             in YMD y m (fromIntegral d)
                             ) [0..dayCount-1]
 
-                    -- Calculate rise and set for each date
+                    -- Calculate rise, set, and transit for each date
                     let results = map (\date ->
                             let riseSet = calcPlanetRiseSet date planetElements earth2000 lat lon
                             in case riseSet of
                                 Just ((riseTime, riseAzi), (setTime, setAzi)) ->
-                                    let YMD y m d = toYMD date
+                                    let
+                                        transit = calcPlanetTransit date planetElements earth2000 lat lon (riseTime, setTime)
+                                        YMD y m d = toYMD date
                                         riseHMS = toHMS (getHours riseTime)
                                         setHMS = toHMS (getHours setTime)
                                         riseAziDeg = case toDeg riseAzi of Deg x -> x
                                         setAziDeg = case toDeg setAzi of Deg x -> x
-                                    in object [
+                                        -- Add transit data
+                                        transitData = case transit of
+                                            Just (transitTime, transitAlt) ->
+                                                let transitHMS = toHMS (getHours transitTime)
+                                                    transitAltDeg = case toDeg transitAlt of Deg x -> x
+                                                in [ Key.fromString "transit" .= formatTime transitHMS
+                                                   , Key.fromString "transitAltitude" .= transitAltDeg
+                                                   ]
+                                            Nothing -> []
+                                    in object $ [
                                         Key.fromString "date" .= formatDate (floor d) m y,
                                         Key.fromString "planet" .= planetParam,
                                         Key.fromString "rise" .= formatTime riseHMS,
                                         Key.fromString "set" .= formatTime setHMS,
                                         Key.fromString "riseAzimuth" .= riseAziDeg,
                                         Key.fromString "setAzimuth" .= setAziDeg
-                                        ]
+                                        ] ++ transitData
                                 Nothing ->
                                     let YMD y m d = toYMD date
                                     in object [

@@ -10,10 +10,11 @@ module Ephem.CelestialBody (
     calcEccAnomaly,
     calcTrueAnomaly,
     calcLongitude,
-    calcPlanetRiseSet
+    calcPlanetRiseSet,
+    calcPlanetTransit
     ) where
-    
-    
+
+
 import Ephem.Utils
 import Ephem.OrbitalElements
 import Ephem.Types
@@ -25,45 +26,45 @@ import Debug.Trace
 --        angleBy2Pi =  angle / pi2
 
 calcMeanAnomaly :: Either (Double, Double, Double) Double -> Double -> Double
-calcMeanAnomaly (Left (daysSinceEpoch, period, longitudeAtEpoch)) longitudeOfPeriapsis = 
+calcMeanAnomaly (Left (daysSinceEpoch, period, longitudeAtEpoch)) longitudeOfPeriapsis =
     clipAngleRad $ pi2 * daysSinceEpoch / (365.2422 * period) + longitudeAtEpoch - longitudeOfPeriapsis
-calcMeanAnomaly (Right meanLongitude) longitudeOfPeriapsis = 
+calcMeanAnomaly (Right meanLongitude) longitudeOfPeriapsis =
     clipAngleRad $ meanLongitude - longitudeOfPeriapsis
 
-calcEccAnomaly :: Double -- ^ mean anomaly 
+calcEccAnomaly :: Double -- ^ mean anomaly
     -> Double -- ^ eccentricity
-    -> Double 
-calcEccAnomaly meanAnomaly e = 
+    -> Double
+calcEccAnomaly meanAnomaly e =
     let
-        startingValue = 
-            if e > 0.8 && meanAnomaly < pi / 3 || e > 1 then 
+        startingValue =
+            if e > 0.8 && meanAnomaly < pi / 3 || e > 1 then
                let
                      trial = meanAnomaly / (e - 1)
                  in
                    if trial * trial > 6 * (e - 1) then
-                       if meanAnomaly < pi then (6 * meanAnomaly) ** (1/3) else asinh (meanAnomaly / e)        
-                     else 
-                        trial  
+                       if meanAnomaly < pi then (6 * meanAnomaly) ** (1/3) else asinh (meanAnomaly / e)
+                     else
+                        trial
             else
                 meanAnomaly
-        
+
         calcEccAnomaly' ea =
             let
                 ea1 =
-                    if e < 1 
+                    if e < 1
                         then
                             meanAnomaly + e * sin ea
                         else
                             ea - (e * sinh ea - ea - meanAnomaly) / (e * cosh ea - 1);
             in
-               if abs (ea1 - ea) < 1e-14 then ea1 else calcEccAnomaly' ea1  
+               if abs (ea1 - ea) < 1e-14 then ea1 else calcEccAnomaly' ea1
     in
         calcEccAnomaly' startingValue
-    
+
 calcTrueAnomaly :: Double -> Double -> Double
 calcTrueAnomaly eccAnomaly e =
-    if e < 1 
-        then 
+    if e < 1
+        then
             2 * atan (sqrt ((1 + e) / (1 - e)) * tan (eccAnomaly / 2))
         else
             2 * atan (sqrt ((e + 1) / (e - 1)) * tanh (eccAnomaly / 2))
@@ -71,15 +72,15 @@ calcTrueAnomaly eccAnomaly e =
 calcLongitude :: Double -> Double -> Double
 calcLongitude trueAnomaly longitudeOfPeriapsis =
     pi2 * (l' - fromIntegral ((floor l') :: Int)) where
-        l' = (trueAnomaly + longitudeOfPeriapsis) / pi2   
-            
+        l' = (trueAnomaly + longitudeOfPeriapsis) / pi2
+
 
 -- | Calculates heliocentric longitude and distance to the sun for the celestial body
 calcHelLongAndDist ::
     OrbitalElements
     -> Date
     -> (Angle, Distance)
-calcHelLongAndDist elements date = 
+calcHelLongAndDist elements date =
     let
         d = diffDays date (epoch elements)
         ctys = d / 36525
@@ -93,12 +94,12 @@ calcHelLongAndDist elements date =
                     meanAnomaly =
                         case epochData elements of
                             LongitudeAtEpoch longitude ->
-                                let 
+                                let
                                     Rad l0 = toRad $ calcAngleElement longitude ctys
                                 in
                                     calcMeanAnomaly (Left (d, (period orbit), l0)) omega
                             MeanLongitude longitude ->
-                                let 
+                                let
                                     Rad l0 = toRad $ calcAngleElement longitude ctys
                                 in
                                     calcMeanAnomaly (Right l0) omega
@@ -112,7 +113,7 @@ calcHelLongAndDist elements date =
                     a = calcElement (aAU, aRateAU) ctys
                     r' = a * (1 - e * e) / (1 + e * cos v')
                 in
-                    (v', r') 
+                    (v', r')
             OpenOrbitElements q ->
                 let
                     PerihelionPassage perihelionPassage = epochData elements
@@ -130,7 +131,7 @@ calcHelLongAndDist elements date =
                                 r' = q * (1 + e) / (1 + e * cos v')
                             in
                                 (trace ("v=" ++ show v' ++ ", r=" ++ show r') v', r')
-                        
+
                         else -- parabolic trajectory
                             let
                                 k1 = 0.0364911624 -- 3 * sqrt (k / 2) / 365.2422
@@ -147,13 +148,13 @@ calcHelLongAndDist elements date =
                                 r' = q * (1 + s' * s')
                             in
                                 (v', r')
-        l = calcLongitude v omega 
+        l = calcLongitude v omega
     in
-        (Rad l, AU r)   
+        (Rad l, AU r)
 
 
 
--- | Calculates the ecliptical longitude and latitude of one celestial body 
+-- | Calculates the ecliptical longitude and latitude of one celestial body
 -- | (planet 1) relative to another (planet 2, usually Earth).
 -- | The orbital elements for both planets must be for the same epoch.
 calcEclCoords ::
@@ -163,7 +164,7 @@ calcEclCoords ::
     -> (Angle, Distance) -- ^ planet 2 heliocentric longitude and distance
     -> Date
     -> (EcLong, EcLat)
-calcEclCoords p1OrbitalElements p2OrbitalElements (p1HelLong, p1Dist) (p2HelLong, p2Dist) date = 
+calcEclCoords p1OrbitalElements p2OrbitalElements (p1HelLong, p1Dist) (p2HelLong, p2Dist) date =
     let
         d = diffDays date (epoch p1OrbitalElements)
         ctys = d / 36525
@@ -173,8 +174,8 @@ calcEclCoords p1OrbitalElements p2OrbitalElements (p1HelLong, p1Dist) (p2HelLong
         p1HelLat = asin (sinHelLongMinusLongAsc1 * sin p1Incl)
         l1 = atan2 (sinHelLongMinusLongAsc1 * cos p1Incl) (cosine (p1HelLong `subtr` p1LongAsc)) + p1LongAscRad
         AU p1DistAU = toAU p1Dist
-        r1 = p1DistAU  * cos p1HelLat 
-        
+        r1 = p1DistAU  * cos p1HelLat
+
         Rad p2Incl = toRad $ calcAngleElement (inclination p2OrbitalElements) ctys
         p2LongAsc@(Rad p2LongAscRad) = toRad $ calcAngleElement (longitudeOfAscedingNode p2OrbitalElements) ctys
         sinHelLongMinusLongAsc2 = sine (p2HelLong `subtr` p2LongAsc)
@@ -182,8 +183,8 @@ calcEclCoords p1OrbitalElements p2OrbitalElements (p1HelLong, p1Dist) (p2HelLong
         l2 = atan2 (sinHelLongMinusLongAsc2 * cos p2Incl) (cosine (p2HelLong `subtr` p2LongAsc)) + p2LongAscRad
         AU p2DistAU = toAU p2Dist
         r2 = p2DistAU * cos p2HelLat
-        
-        
+
+
         l1Minusl2 = l1 - l2
         sinl1Minusl2 = sin l1Minusl2
         cosl1Minusl2 = cos l1Minusl2
@@ -197,7 +198,7 @@ calcEclCoords p1OrbitalElements p2OrbitalElements (p1HelLong, p1Dist) (p2HelLong
     in
         (Rad pGeoLong, Rad pGeoLat)
 
-calcDistance :: 
+calcDistance ::
     (Angle, Distance) -- ^ planet's heliocentric longitude and distance from sun
     -> (Angle, Distance) -- ^ earth's longitude and distance from sun
     -> Distance
@@ -206,7 +207,7 @@ calcDistance (pHelLong, rPlanet) (eHelLong, rEarth) =
         AU rPlanetAU = toAU rPlanet
         AU rEarthAU = toAU rEarth
     in
-        AU $ sqrt (rEarthAU * rEarthAU + rPlanetAU * rPlanetAU - 2 * rEarthAU * rPlanetAU * cosine (pHelLong `subtr` eHelLong) )    
+        AU $ sqrt (rEarthAU * rEarthAU + rPlanetAU * rPlanetAU - 2 * rEarthAU * rPlanetAU * cosine (pHelLong `subtr` eHelLong) )
 
 calcAngularDiameter ::
     Angle -- ^ angular diameter at 1 A.U.
@@ -215,8 +216,8 @@ calcAngularDiameter ::
 calcAngularDiameter diam (AU dist) =
         diam `mul` (1 / dist)
 
-calcPhase :: 
-    Angle 
+calcPhase ::
+    Angle
     -> Angle
     -> Double
 calcPhase pEclLong pGeoLong =
@@ -248,7 +249,7 @@ calcMagnitude ::
     -> Double -- ^ phase
     -> Double -- ^ albedo
     -> Double
-calcMagnitude r q f a = 
+calcMagnitude r q f a =
     let
         AU rAU = toAU r
         AU qAU = toAU q
@@ -262,7 +263,7 @@ calcPlanetRiseSet ::
     -> OrbitalElements -- ^ earth
     -> Lat
     -> Long
-    -> Maybe ((GMT, Angle), (GMT, Angle)) -- ^ (rise time and azimuth, set time and azimuth)   
+    -> Maybe ((GMT, Angle), (GMT, Angle)) -- ^ (rise time and azimuth, set time and azimuth)
 calcPlanetRiseSet date planet earth lat long =
     let
         earthHelCoords = calcHelLongAndDist earth date
@@ -303,7 +304,7 @@ calcPlanetRiseSet date planet earth lat long =
                     (planetRA2, planetDec2) = eclToEqu planetLong2 planetLat2 tilt2
                     planetDist2 = calcDistance planetHelCoords2 earthHelCoords2
                     (planetRA2', planetDec2') = calcGeoParallax gmtSet' planetRA2 planetDec2 (Left planetDist2) lat long 0
-                    
+
                 in
                     case calcRiseSet planetRA1' planetDec1' lat True of
                         Just ((lstRise1, riseAzi1), _) ->
@@ -323,3 +324,56 @@ calcPlanetRiseSet date planet earth lat long =
                                 Nothing -> Nothing
                         Nothing -> Nothing
             Nothing -> Nothing
+
+-- | Calculate planet transit (transit) time and altitude
+-- Transit is when the planet crosses the meridian (highest point in sky)
+-- Azimuth at transit is always ~180° (south) so not returned
+calcPlanetTransit ::
+    Date
+    -> OrbitalElements -- ^ planet
+    -> OrbitalElements -- ^ earth
+    -> Lat
+    -> Long
+    -> (GMT, GMT) -- ^ rise and set times
+    -> Maybe (GMT, Alt) -- ^ (transit time, altitude)
+calcPlanetTransit date planet earth lat long (gmtRise, gmtSet) =
+    let
+        -- Calculate transit time as midpoint between rise and set
+        Hrs riseHrs = getHours gmtRise
+        Hrs setHrs = getHours gmtSet
+
+        -- Handle case where set is before rise (crosses midnight)
+        (riseHrs', setHrs') = if setHrs < riseHrs
+            then (riseHrs, setHrs + 24)
+            else (riseHrs, setHrs)
+
+        transitHrs = (riseHrs' + setHrs') / 2
+        transitHrsClipped = if transitHrs >= 24 then transitHrs - 24 else transitHrs
+
+        -- Get the base date from gmtRise and add the time difference
+        gmtTransit = fromDateAndHours (getDay gmtRise) (Hrs transitHrsClipped)
+
+        -- Adjust day if transit crosses midnight
+        gmtTransit' = if transitHrs >= 24
+            then addDays 1 gmtTransit
+            else gmtTransit
+
+        -- Calculate planet position at transit time
+        earthHelCoords = calcHelLongAndDist earth gmtTransit'
+        planetHelCoords = calcHelLongAndDist planet gmtTransit'
+        (planetLong, planetLat) = calcEclCoords planet earth planetHelCoords earthHelCoords gmtTransit'
+        tilt = calcObliquityOfEcliptic gmtTransit'
+        (planetRA, planetDec) = eclToEqu planetLong planetLat tilt
+        planetDist = calcDistance planetHelCoords earthHelCoords
+        (planetRA', planetDec') = calcGeoParallax gmtTransit' planetRA planetDec (Left planetDist) lat long 0
+
+        -- At transit, LHA = 0 (object on meridian)
+        -- Calculate altitude using equToHor with LHA = 0
+        (alt, _) = equToHor (Hrs 0) planetDec' lat
+    in
+        let
+            Deg altDeg = toDeg alt
+        in
+            if altDeg > 0
+            then Just (gmtTransit', alt)
+            else Nothing

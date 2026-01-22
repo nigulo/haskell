@@ -36,6 +36,7 @@ module Ephem.Types (
     toLongitude,
     addDays,
     splitDayAndTime,
+    getDay,
     getHours,
     toDays,
     numCenturies,
@@ -398,6 +399,10 @@ splitDayAndTime date =
         time = jd - day
     in
        (JD day, Hrs (time * 24))
+
+getDay :: Date -> Date
+getDay date = day where
+    (day, _) = splitDayAndTime date
 
 getHours :: Date -> Hours
 getHours date = hrs where
