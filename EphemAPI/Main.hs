@@ -18,8 +18,10 @@ import qualified Network.Wai as Wai
 
 -- Import Ephem modules
 import Ephem.Sun
+import Ephem.CelestialBody
 import Ephem.Types hiding (addDays)
 import Ephem.OrbitalElements
+import Data.Char (toLower)
 
 main :: IO ()
 main = do
@@ -100,6 +102,81 @@ main = do
             -- Return JSON response
             json results
 
+        ----------------------------------------------------------------------------------------------------------------
+        -- Planet rise and set
+        ----------------------------------------------------------------------------------------------------------------
+        get (literal "/api/planet-sunrise-sunset") $ do
+            -- Get query parameters from request
+            req <- request
+            let queryParams = Wai.queryString req
+                lookupDouble name def = case lookup name queryParams of
+                    Just (Just val) -> case TR.double (TE.decodeUtf8 val) of
+                        Right (d, _) -> d
+                        Left _ -> def
+                    _ -> def
+                lookupString name def = case lookup name queryParams of
+                    Just (Just val) -> T.unpack $ TE.decodeUtf8 val
+                    _ -> def
+
+            let latParam = lookupDouble "lat" 0
+                lonParam = lookupDouble "lon" 0
+                planetParam = lookupString "planet" ""
+                startDateParam = lookupString "startDate" ""
+                endDateParam = lookupString "endDate" ""
+
+            case getPlanetElements planetParam of
+                Nothing -> do
+                    json $ object [
+                        Key.fromString "error" .= ("Invalid planet name. Valid planets: " ++ show validPlanets :: String)
+                        ]
+                Just planetElements -> do
+                    -- Get date range
+                    (startYear, startMonth, startDay, endYear, endMonth, endDay) <- liftIO $ dateRange startDateParam endDateParam
+
+                    -- Calculate latitude and longitude
+                    let lat = toLatitude (Deg latParam)
+                        lon = toLongitude (Deg lonParam)
+
+                    -- Generate date range
+                    let startDate = fromGregorian startYear startMonth startDay
+                        endDate = fromGregorian endYear endMonth endDay
+                        dayCount = fromInteger $ Cal.diffDays endDate startDate + 1
+                        dates = map (\i ->
+                            let day = addDays i startDate
+                                (y, m, d) = toGregorian day
+                            in YMD y m (fromIntegral d)
+                            ) [0..dayCount-1]
+
+                    -- Calculate rise and set for each date
+                    let results = map (\date ->
+                            let riseSet = calcPlanetRiseSet date planetElements earth2000 lat lon
+                            in case riseSet of
+                                Just ((riseTime, riseAzi), (setTime, setAzi)) ->
+                                    let YMD y m d = toYMD date
+                                        riseHMS = toHMS (getHours riseTime)
+                                        setHMS = toHMS (getHours setTime)
+                                        riseAziDeg = case toDeg riseAzi of Deg x -> x
+                                        setAziDeg = case toDeg setAzi of Deg x -> x
+                                    in object [
+                                        Key.fromString "date" .= formatDate (floor d) m y,
+                                        Key.fromString "planet" .= planetParam,
+                                        Key.fromString "rise" .= formatTime riseHMS,
+                                        Key.fromString "set" .= formatTime setHMS,
+                                        Key.fromString "riseAzimuth" .= riseAziDeg,
+                                        Key.fromString "setAzimuth" .= setAziDeg
+                                        ]
+                                Nothing ->
+                                    let YMD y m d = toYMD date
+                                    in object [
+                                        Key.fromString "date" .= formatDate (floor d) m y,
+                                        Key.fromString "planet" .= planetParam,
+                                        Key.fromString "error" .= ("No rise/set" :: String)
+                                        ]
+                            ) dates
+
+                    -- Return JSON response
+                    json results
+
 -- Helper functions
 formatTime :: Hours -> String
 formatTime (HMS h m s) =
@@ -142,3 +219,20 @@ dateRange startDateParam endDateParam =
                     (sy, sm, sd) = parseDate startDateParam
                     (ey, em, ed) = parseDate endDateParam
                 in (sy, sm, sd, ey, em, ed)
+
+-- Map planet name to orbital elements
+getPlanetElements :: String -> Maybe OrbitalElements
+getPlanetElements name = case map toLower name of
+    "mercury" -> Just mercury2000
+    "venus"   -> Just venus2000
+    "mars"    -> Just mars2000
+    "jupiter" -> Just jupiter2000
+    "saturn"  -> Just saturn2000
+    "uranus"  -> Just uranus2000
+    "neptune" -> Just neptune2000
+    "pluto"   -> Just pluto2000
+    _         -> Nothing
+
+-- List of valid planet names for error messages
+validPlanets :: [String]
+validPlanets = ["mercury", "venus", "mars", "jupiter", "saturn", "uranus", "neptune", "pluto"]
