@@ -280,21 +280,29 @@ calcPlanetRiseSet date planet earth lat long =
                     gmtRise = gstToGMT gstRise date
                     gmtSet = gstToGMT gstSet date
 
-                    earthHelCoords1 = calcHelLongAndDist earth gmtRise
-                    planetHelCoords1 = calcHelLongAndDist planet gmtRise
-                    (planetLong1, planetLat1) = calcEclCoords planet earth planetHelCoords1 earthHelCoords1 gmtRise
-                    tilt1 = calcObliquityOfEcliptic gmtRise
+                    eastWest = case long of
+                        Long _ E -> True
+                        _ -> False
+                    Hrs gmtRiseHrs = getHours gmtRise
+                    gmtRise' = if eastWest && gmtRiseHrs > 12 then addDays (-1) gmtRise else gmtRise
+                    Hrs gmtSetHrs = getHours gmtSet
+                    gmtSet' = if not eastWest && gmtSetHrs < 12 then addDays 1 gmtSet else gmtSet
+
+                    earthHelCoords1 = calcHelLongAndDist earth gmtRise'
+                    planetHelCoords1 = calcHelLongAndDist planet gmtRise'
+                    (planetLong1, planetLat1) = calcEclCoords planet earth planetHelCoords1 earthHelCoords1 gmtRise'
+                    tilt1 = calcObliquityOfEcliptic gmtRise'
                     (planetRA1, planetDec1) = eclToEqu planetLong1 planetLat1 tilt1
                     planetDist1 = calcDistance planetHelCoords1 earthHelCoords1
-                    (planetRA1', planetDec1') = calcGeoParallax gmtRise planetRA1 planetDec1 (Left planetDist1) lat long 0
+                    (planetRA1', planetDec1') = calcGeoParallax gmtRise' planetRA1 planetDec1 (Left planetDist1) lat long 0
 
-                    earthHelCoords2 = calcHelLongAndDist earth gmtSet
-                    planetHelCoords2 = calcHelLongAndDist planet gmtSet
-                    (planetLong2, planetLat2) = calcEclCoords planet earth planetHelCoords2 earthHelCoords2 gmtSet
-                    tilt2 = calcObliquityOfEcliptic gmtSet
+                    earthHelCoords2 = calcHelLongAndDist earth gmtSet'
+                    planetHelCoords2 = calcHelLongAndDist planet gmtSet'
+                    (planetLong2, planetLat2) = calcEclCoords planet earth planetHelCoords2 earthHelCoords2 gmtSet'
+                    tilt2 = calcObliquityOfEcliptic gmtSet'
                     (planetRA2, planetDec2) = eclToEqu planetLong2 planetLat2 tilt2
                     planetDist2 = calcDistance planetHelCoords2 earthHelCoords2
-                    (planetRA2', planetDec2') = calcGeoParallax gmtSet planetRA2 planetDec2 (Left planetDist2) lat long 0
+                    (planetRA2', planetDec2') = calcGeoParallax gmtSet' planetRA2 planetDec2 (Left planetDist2) lat long 0
                     
                 in
                     case calcRiseSet planetRA1' planetDec1' lat True of
@@ -305,9 +313,13 @@ calcPlanetRiseSet date planet earth lat long =
                                         gstRise1 = lstToGST lstRise1 long
                                         gstSet1 = lstToGST lstSet1 long
                                         gmtRise1 = gstToGMT gstRise1 date
+                                        Hrs gmtRiseHrs1 = getHours gmtRise1
+                                        gmtRise1' = if eastWest && gmtRiseHrs1 > 12 then addDays (1-siderealDayLength) gmtRise1 else gmtRise1
                                         gmtSet1 = gstToGMT gstSet1 date
+                                        Hrs gmtSetHrs1 = getHours gmtSet1
+                                        gmtSet1' = if not eastWest && gmtSetHrs1 < 12 then addDays (-1+siderealDayLength) gmtSet1 else gmtSet1
                                     in
-                                        Just ((gmtRise1, riseAzi1), (gmtSet1, setAzi1))
+                                        Just ((gmtRise1', riseAzi1), (gmtSet1', setAzi1))
                                 Nothing -> Nothing
                         Nothing -> Nothing
             Nothing -> Nothing
