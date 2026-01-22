@@ -103,6 +103,7 @@ calcSunRiseSet date earth lat long =
                                         gmtSet1' = if not eastWest && gmtSetHrs1 < 12 then addDays (-1+siderealDayLength) gmtSet1 else gmtSet1
                                     in
                                         Just ((gmtRise1', Rad $ clipAngleRad (riseAzi1 - deltaARise)), (gmtSet1', Rad $ clipAngleRad (setAzi1 + deltaASet)))
+                                Nothing -> Nothing
                         Nothing -> Nothing
             Nothing -> Nothing
 
