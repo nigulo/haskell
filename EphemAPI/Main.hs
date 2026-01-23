@@ -18,7 +18,7 @@ import qualified Network.Wai as Wai
 
 -- Import Ephem modules
 import Ephem.Sun
-import Ephem.Moon (calcMoon, calcMoonPhase, calcMoonElongation, getMoonPhaseName, MoonPhase(..), calcMoonDistance, calcMoonAngularDiameter, calcMoonHorizontalParallax, calcMoonRiseSet)
+import Ephem.Moon (calcMoon, calcMoonPhase, calcMoonElongation, getMoonPhaseName, MoonPhase(..), calcMoonDistance, calcMoonAngularDiameter, calcMoonHorizontalParallax, calcMoonRiseSetMeeus)
 import Ephem.CelestialBody
 import Ephem.Types hiding (addDays)
 import Ephem.OrbitalElements
@@ -251,7 +251,7 @@ main = do
                         horizParallax = calcMoonHorizontalParallax dist
                         Deg horizParallaxDeg = toDeg horizParallax
                         -- Calculate moon rise/set times
-                        moonRiseSet = calcMoonRiseSet date moon2010 earth2000 lat lon 0 3
+                        moonRiseSet = calcMoonRiseSetMeeus date lat lon 3
                         YMD y m d = toYMD date
                         Deg moonLongDeg = toDeg moonLong
                         Deg moonLatDeg = toDeg moonLat

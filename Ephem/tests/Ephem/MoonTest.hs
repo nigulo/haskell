@@ -158,7 +158,7 @@ test_calcMoonRiseSet = do
         lat = Lat (Deg 52) N
         maybeRiseSet = calcMoonRiseSet date moon1980 earth1980 lat long 0 1
     case maybeRiseSet of
-        Nothing -> 
+        Nothing ->
             assertFailure "calcSunMoonSet failed"
         Just (lstRise, lstSet) -> do
             assertEqualHours (Hrs 17.659648879829998) lstRise
@@ -170,6 +170,77 @@ test_calcMoonRiseSet = do
                 gmtSet = gstToGMT gstSet date
             assertEqualHours (HMS 18 38 32.653841) $ getHours gmtRise
             assertEqualHours (HMS 5 1 50.374631) $ getHours gmtSet
+
+-- | Test calcMoonRiseSetMeeus using data from NASA JPL Horizons
+-- Location: Tartu, Estonia (58.3743°N, 26.6893°E)
+-- Date: January 24, 2026
+-- Source: https://ssd.jpl.nasa.gov/horizons/
+-- Expected results (UTC):
+--   Moon rise: 07:51 UTC
+--   Moon set:  22:07 UTC
+test_calcMoonRiseSetMeeus :: Assertion
+test_calcMoonRiseSetMeeus = do
+    let
+        date = YMD 2026 1 24
+        long = Long (Deg 26.6893) E
+        lat = Lat (Deg 58.3743) N
+        maybeRiseSet = calcMoonRiseSetMeeus date lat long 3
+        -- Expected times in hours (UTC)
+        -- Rise: 07:51 = 7 + 51/60 = 7.85 hours
+        expectedRise = 7.0 + 51.0/60.0
+        -- Set: 22:07 = 22 + 7/60 = 22.1167 hours
+        expectedSet = 22.0 + 7.0/60.0
+    case maybeRiseSet of
+        Nothing ->
+            assertFailure "calcMoonRiseSetMeeus returned Nothing"
+        Just (Hrs riseHrs, Hrs setHrs) -> do
+            -- Allow 5 minute tolerance (0.083 hours)
+            assertBool ("Moon rise should be ~07:51 UTC, got " ++ show riseHrs ++ " hours")
+                       (abs (riseHrs - expectedRise) < 0.15)
+            assertBool ("Moon set should be ~22:07 UTC, got " ++ show setHrs ++ " hours")
+                       (abs (setHrs - expectedSet) < 0.15)
+
+-- | Test calcMoonMeeus using example from Meeus "Astronomical Algorithms" Chapter 47
+-- Example 47.a: April 12, 1992 at 0h TDT
+-- Expected results from Meeus:
+--   Geocentric longitude: λ = 133°10'00" (133.16667°)
+--   Geocentric latitude:  β = -3°13'45" (-3.22917°)
+--   Distance:             Δ = 368409.7 km
+--   Right ascension:      α = 8h 58m 45.2s
+--   Declination:          δ = +13° 46' 06"
+test_calcMoonMeeus :: Assertion
+test_calcMoonMeeus = do
+    let
+        -- April 12, 1992 at 0h TDT (JD 2448724.5)
+        date = ymd 1992 4 12
+        (moonLong, moonLat, Km moonDist) = calcMoonMeeus date
+        Deg longDeg = toDeg moonLong
+        Deg latDeg = toDeg moonLat
+        -- Convert to equatorial coordinates
+        tilt = calcObliquityOfEcliptic date
+        (moonRA, moonDec) = eclToEqu moonLong moonLat tilt
+        Hrs raHrs = toHrs moonRA
+        Deg decDeg = toDeg moonDec
+        -- Expected RA: 8h 58m 45.2s = 8 + 58/60 + 45.2/3600 = 8.97922 hours
+        expectedRA = 8.0 + 58.0/60.0 + 45.2/3600.0
+        -- Expected Dec: +13° 46' 06" = 13 + 46/60 + 6/3600 = 13.76833°
+        expectedDec = 13.0 + 46.0/60.0 + 6.0/3600.0
+    -- Meeus gives λ = 133°10'00" = 133.16667°
+    -- Allow tolerance for rounding in table terms
+    assertBool ("Longitude should be ~133.167°, got " ++ show longDeg)
+               (abs (longDeg - 133.16667) < 0.01)
+    -- Meeus gives β = -3°13'45" = -3.22917°
+    assertBool ("Latitude should be ~-3.229°, got " ++ show latDeg)
+               (abs (latDeg - (-3.22917)) < 0.01)
+    -- Meeus gives Δ = 368409.7 km
+    assertBool ("Distance should be ~368410 km, got " ++ show moonDist)
+               (abs (moonDist - 368409.7) < 10.0)
+    -- Meeus gives α = 8h 58m 45.2s = 8.97922h
+    assertBool ("Right ascension should be ~8.979h, got " ++ show raHrs)
+               (abs (raHrs - expectedRA) < 0.01)
+    -- Meeus gives δ = +13° 46' 06" = 13.76833°
+    assertBool ("Declination should be ~13.768°, got " ++ show decDeg)
+               (abs (decDeg - expectedDec) < 0.01)
 
 tests :: TestTree
 tests = testGroup "Ephem.MoonTest"
@@ -183,4 +254,6 @@ tests = testGroup "Ephem.MoonTest"
     , testCase "calcMoonAngularDiameter" test_calcMoonAngularDiameter
     , testCase "calcMoonHorizontalParallax" test_calcMoonHorizontalParallax
     , testCase "calcMoonRiseSet" test_calcMoonRiseSet
+    , testCase "calcMoonRiseSetMeeus" test_calcMoonRiseSetMeeus
+    , testCase "calcMoonMeeus" test_calcMoonMeeus
     ]
