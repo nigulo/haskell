@@ -13,6 +13,7 @@ module Ephem.OrbitalElements (
     panstarrsC2011L4,
     moon1980,
     moon2000,
+    moon2010,
     mercury2000,
     venus2000,
     earth2000,
@@ -177,7 +178,29 @@ moon2000 = OrbitalElements {
     epoch = ymd 2000 1 0,
     epochData = MeanLongitude (Deg 115.3654, Deg 13.0649929509),
     angularDiameter = Deg 0.5181 -- ^ at the distance of a (semi-major axis)
-    
+
+}
+
+-- | Moon orbital elements for J2010 epoch
+-- Base values from NASA JPL: https://ssd.jpl.nasa.gov/sats/elem/
+-- Rates from NASA eclipse page: https://eclipse.gsfc.nasa.gov/SEhelp/moonorbit.html
+-- Node rate: -0.05295°/day (westward), Perigee rate: +0.11140°/day (eastward)
+-- Values calculated from J2000 epoch (2000-01-01.5) to J2010 epoch (2010-01-01.0)
+moon2010 = OrbitalElements {
+    eccentricity = (0.0549, 0),
+    inclination = (Deg 5.145396, Deg 0),
+    -- J2000 node: 125.08° - (0.05295 * 3651.5 days) = 291.68°
+    longitudeOfAscedingNode = (Deg 291.682547, Deg (-0.0529538083)),
+    -- J2000 perigee longitude: 83.23° + (0.11140 * 3651.5 days) = 130.14°
+    periapsisOrientation = LongitudeOfPeriapsis (Deg 130.143076, Deg 0.1114040800),
+    elementsByOrbitType = ClosedOrbitElements {
+        semiMajorAxis = (Km 384401, Km 0),
+        period = 27.322 -- ^ period in days
+    },
+    epoch = ymd 2010 1 0,
+    -- J2000 mean longitude: ~100° + (13.176396 * 3651.5 days) = 91.93° (mod 360)
+    epochData = MeanLongitude (Deg 91.929336, Deg 13.176396),
+    angularDiameter = Deg 0.5181 -- ^ at the distance of a (semi-major axis)
 }
 
 -- | Keplerian elements and their rates, with respect to the mean ecliptic

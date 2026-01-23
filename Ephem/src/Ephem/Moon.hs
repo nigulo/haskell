@@ -2,6 +2,9 @@ module Ephem.Moon (
     calcMoon,
     calcMoon2,
     calcMoonPhase,
+    calcMoonElongation,
+    MoonPhase(..),
+    getMoonPhaseName,
     calcMoonDistance,
     calcMoonAngularDiameter,
     calcMoonHorizontalParallax,
@@ -46,7 +49,7 @@ calcMoon moonElements (sunLong, sunMean) date =
         ae = 0.1858 * sinmS -- yearly equation
         a3 = 0.37 * sinmS
         -- corrected mean anomaly
-        mM' = (trace ("m=" ++ show mM) mM) + ev + ae + a3
+        mM' = mM + ev + ae + a3
         mM'Rad = mM' * pi / 180
         ec = 6.2886 * sin mM'Rad
         a4 = 0.214 * sin (2 * mM'Rad)
@@ -136,8 +139,11 @@ calcMoon2 moonElements (sunLong, sunMean) date =
         (Rad moonEclLong `add` longPerturbations, Rad moonEclLat `add` latPerturbations, EarthRadii (moonDist + distPerturbations))
 
  
-calcMoonPhase :: 
-    EcLong -- ^ longitude of the sun 
+-- | Calculate moon illumination fraction (0 = new moon, 1 = full moon)
+-- Note: This returns the same value for first quarter and last quarter (both ~0.5)
+-- Use 'getMoonPhaseName' with 'calcMoonElongation' to distinguish waxing/waning phases
+calcMoonPhase ::
+    EcLong -- ^ longitude of the sun
     -> Angle -- ^ orbital longitude of the moon
     -> Double
 calcMoonPhase sunLong l'' =
@@ -146,6 +152,56 @@ calcMoonPhase sunLong l'' =
         Rad lM = toRad $ l''
     in
         (1 - cos (lM - lS)) / 2
+
+-- | Calculate moon elongation angle (0-360 degrees)
+-- This is the angle between the moon and sun as seen from Earth
+-- 0° = new moon, 90° = first quarter, 180° = full moon, 270° = last quarter
+calcMoonElongation ::
+    EcLong -- ^ longitude of the sun
+    -> Angle -- ^ orbital longitude of the moon
+    -> Angle -- ^ elongation in degrees (0-360)
+calcMoonElongation sunLong moonLong =
+    let
+        Deg lS = toDeg sunLong
+        Deg lM = toDeg moonLong
+        elongation = lM - lS
+        -- Normalize to 0-360 range
+        normalizedElong = if elongation < 0 then elongation + 360 else elongation
+    in
+        Deg (if normalizedElong >= 360 then normalizedElong - 360 else normalizedElong)
+
+-- | Moon phase names
+data MoonPhase
+    = NewMoon
+    | WaxingCrescent
+    | FirstQuarter
+    | WaxingGibbous
+    | FullMoon
+    | WaningGibbous
+    | LastQuarter
+    | WaningCrescent
+    deriving (Eq, Show)
+
+-- | Get moon phase name from elongation angle
+-- The elongation is the angle between moon and sun (0-360°)
+getMoonPhaseName ::
+    Angle -- ^ elongation angle from 'calcMoonElongation'
+    -> MoonPhase
+getMoonPhaseName elongation =
+    let
+        Deg e = toDeg elongation
+        -- Normalize to 0-360
+        en = if e < 0 then e + 360 else if e >= 360 then e - 360 else e
+    in
+        if en < 22.5 then NewMoon
+        else if en < 67.5 then WaxingCrescent
+        else if en < 112.5 then FirstQuarter
+        else if en < 157.5 then WaxingGibbous
+        else if en < 202.5 then FullMoon
+        else if en < 247.5 then WaningGibbous
+        else if en < 292.5 then LastQuarter
+        else if en < 337.5 then WaningCrescent
+        else NewMoon
 
 calcMoonDistance ::
     OrbitalElements -- ^ moon
@@ -190,14 +246,14 @@ calcMoonRiseSet ::
 calcMoonRiseSet date moon earth lat long height numIterations =
     let
         YMD y m d = toYMD date
-        date1 = YMD y m (fromIntegral (floor d)) 
+        date1 = YMD y m (fromIntegral (floor d))
         tilt = calcObliquityOfEcliptic date1
         sun1 = calcSun earth date1
-        (moonLong1, moonLat1, mM'1, _) = calcMoon moon1980 sun1 date1
+        (moonLong1, moonLat1, mM'1, _) = calcMoon moon sun1 date1
         (moonRA1, moonDec1) = eclToEqu moonLong1 moonLat1 tilt
         date2 = YMD y m ((fromIntegral (floor d)) + 0.5)
         sun2 = calcSun earth date2
-        (moonLong2, moonLat2, mM'2, _) = calcMoon moon1980 sun2 date2
+        (moonLong2, moonLat2, mM'2, _) = calcMoon moon sun2 date2
         (moonRA2, moonDec2) = eclToEqu moonLong2 moonLat2 tilt
         ctys1 = diffDays date1 (epoch moon) / 36525
         ctys2 = diffDays date2 (epoch moon) / 36525

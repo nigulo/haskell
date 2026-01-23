@@ -18,6 +18,7 @@ import qualified Network.Wai as Wai
 
 -- Import Ephem modules
 import Ephem.Sun
+import Ephem.Moon (calcMoon, calcMoonPhase, calcMoonElongation, getMoonPhaseName, MoonPhase(..), calcMoonDistance, calcMoonAngularDiameter, calcMoonHorizontalParallax, calcMoonRiseSet)
 import Ephem.CelestialBody
 import Ephem.Types hiding (addDays)
 import Ephem.OrbitalElements
@@ -33,7 +34,7 @@ main = do
 
         -- Health check endpoint
         get (literal "/") $ do
-            text $ TL.pack "Ephem API is running. Use /api/sunrise-sunset endpoint."
+            text $ TL.pack "Ephem API is running. Endpoints: /api/sunrise-sunset, /api/planet-rise-set-transit, /api/moon-phase"
 
         ----------------------------------------------------------------------------------------------------------------
         -- Sun rise and set
@@ -188,6 +189,99 @@ main = do
                     -- Return JSON response
                     json results
 
+        ----------------------------------------------------------------------------------------------------------------
+        -- Moon phase
+        ----------------------------------------------------------------------------------------------------------------
+        get (literal "/api/moon-phase") $ do
+            -- Get query parameters from request
+            req <- request
+            let queryParams = Wai.queryString req
+                lookupDouble name def = case lookup name queryParams of
+                    Just (Just val) -> case TR.double (TE.decodeUtf8 val) of
+                        Right (d, _) -> d
+                        Left _ -> def
+                    _ -> def
+                lookupString name def = case lookup name queryParams of
+                    Just (Just val) -> T.unpack $ TE.decodeUtf8 val
+                    _ -> def
+
+            let latParam = lookupDouble "lat" 0
+                lonParam = lookupDouble "lon" 0
+                startDateParam = lookupString "startDate" ""
+                endDateParam = lookupString "endDate" ""
+
+            -- Get date range
+            (startYear, startMonth, startDay, endYear, endMonth, endDay) <- liftIO $ dateRange startDateParam endDateParam
+
+            -- Calculate latitude and longitude
+            let lat = toLatitude (Deg latParam)
+                lon = toLongitude (Deg lonParam)
+
+            -- Generate date range
+            let startDate = fromGregorian startYear startMonth startDay
+                endDate = fromGregorian endYear endMonth endDay
+                dayCount = fromInteger $ Cal.diffDays endDate startDate + 1
+                dates = map (\i ->
+                    let day = addDays i startDate
+                        (y, m, d) = toGregorian day
+                    in YMD y m (fromIntegral d)
+                    ) [0..dayCount-1]
+
+            -- Calculate moon phase for each date
+            let results = map (\date ->
+                    let
+                        -- Calculate sun position (needed for moon calculations)
+                        (sunLong, sunMean) = calcSun earth2000 date
+                        -- Calculate moon position
+                        (moonLong, moonLat, mM', moonOrbitalLong) = calcMoon moon2010 (sunLong, sunMean) date
+                        -- Calculate moon illumination (0 = new moon, 1 = full moon)
+                        illumination = calcMoonPhase sunLong moonOrbitalLong
+                        -- Calculate elongation angle (needed for phase name)
+                        elongation = calcMoonElongation sunLong moonOrbitalLong
+                        Deg elongDeg = toDeg elongation
+                        -- Get phase name from elongation
+                        phase = getMoonPhaseName elongation
+                        phaseName = moonPhaseToString phase
+                        -- Calculate moon distance
+                        dist = calcMoonDistance moon2010 mM' date
+                        -- Calculate angular diameter
+                        angDiam = calcMoonAngularDiameter dist
+                        Deg angDiamDeg = toDeg angDiam
+                        -- Calculate horizontal parallax
+                        horizParallax = calcMoonHorizontalParallax dist
+                        Deg horizParallaxDeg = toDeg horizParallax
+                        -- Calculate moon rise/set times
+                        moonRiseSet = calcMoonRiseSet date moon2010 earth2000 lat lon 0 3
+                        YMD y m d = toYMD date
+                        Deg moonLongDeg = toDeg moonLong
+                        Deg moonLatDeg = toDeg moonLat
+                        -- Base moon data
+                        baseData = [
+                            Key.fromString "date" .= formatDate (floor d) m y,
+                            Key.fromString "phaseName" .= phaseName,
+                            Key.fromString "illumination" .= (illumination * 100),
+                            Key.fromString "elongation" .= elongDeg,
+                            Key.fromString "eclipticLongitude" .= moonLongDeg,
+                            Key.fromString "eclipticLatitude" .= moonLatDeg,
+                            Key.fromString "distance" .= dist,
+                            Key.fromString "angularDiameter" .= angDiamDeg,
+                            Key.fromString "horizontalParallax" .= horizParallaxDeg
+                            ]
+                        -- Add rise/set times if available
+                        riseSetData = case moonRiseSet of
+                            Just (riseTime, setTime) ->
+                                let riseHMS = toHMS riseTime
+                                    setHMS = toHMS setTime
+                                in [ Key.fromString "moonrise" .= formatTime riseHMS
+                                   , Key.fromString "moonset" .= formatTime setHMS
+                                   ]
+                            Nothing -> []
+                    in object $ baseData ++ riseSetData
+                    ) dates
+
+            -- Return JSON response
+            json results
+
 -- Helper functions
 formatTime :: Hours -> String
 formatTime (HMS h m s) =
@@ -247,3 +341,14 @@ getPlanetElements name = case map toLower name of
 -- List of valid planet names for error messages
 validPlanets :: [String]
 validPlanets = ["mercury", "venus", "mars", "jupiter", "saturn", "uranus", "neptune", "pluto"]
+
+-- Convert MoonPhase to String for JSON output
+moonPhaseToString :: MoonPhase -> String
+moonPhaseToString NewMoon        = "New Moon"
+moonPhaseToString WaxingCrescent = "Waxing Crescent"
+moonPhaseToString FirstQuarter   = "First Quarter"
+moonPhaseToString WaxingGibbous  = "Waxing Gibbous"
+moonPhaseToString FullMoon       = "Full Moon"
+moonPhaseToString WaningGibbous  = "Waning Gibbous"
+moonPhaseToString LastQuarter    = "Last Quarter"
+moonPhaseToString WaningCrescent = "Waning Crescent"
