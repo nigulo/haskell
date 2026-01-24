@@ -23,7 +23,19 @@ module Ephem.OrbitalElements (
     uranus2000,
     neptune2000,
     pluto2000,
-    planets2000
+    planets2000,
+    -- J2020 elements from JPL Horizons DE441 (more accurate for 2020+ dates)
+    -- Source: https://ssd.jpl.nasa.gov/horizons/
+    mercury2020,
+    venus2020,
+    earth2020,
+    mars2020,
+    jupiter2020,
+    saturn2020,
+    uranus2020,
+    neptune2020,
+    pluto2020,
+    planets2020
     ) where
     
 import Ephem.Types
@@ -281,11 +293,191 @@ saturn2000 = OrbitalElements {
     periapsisOrientation = LongitudeOfPeriapsis (Deg 92.59887831, Deg (-0.41897216)),
     elementsByOrbitType = ClosedOrbitElements {
         semiMajorAxis = (AU 9.53667594, AU (-0.00125060))
-    }, 
+    },
     epoch = ymd 2000 1 0,
     epochData = MeanLongitude (Deg 49.95424423, Deg 1222.49362201),
     angularDiameter = Sec 165.60,
     albedo = 1.740e-4
+}
+
+-- ===========================================================================
+-- J2020 Orbital Elements from JPL Horizons DE441
+-- Source: https://ssd.jpl.nasa.gov/horizons/
+-- Ephemeris: DE441 (released April 2021)
+-- Query parameters: EPHEM_TYPE='ELEMENTS', CENTER='500@10', START_TIME='2020-01-01'
+-- Reference: Park et al. 2021, "The JPL Planetary and Lunar Ephemerides DE440 and DE441"
+-- ===========================================================================
+
+-- | Mercury osculating orbital elements for J2020.0 epoch
+mercury2020 :: OrbitalElements
+mercury2020 = OrbitalElements {
+    eccentricity = (0.2056503, 0.00001906),  -- rate from J2000
+    inclination = (Deg 7.0038, Deg (-0.00594749)),
+    longitudeOfAscedingNode = (Deg 48.307, Deg (-0.12534081)),
+    -- W=29.18°, so longitude of perihelion = 48.307 + 29.18 = 77.49°
+    periapsisOrientation = LongitudeOfPeriapsis (Deg 77.49, Deg 0.16047689),
+    elementsByOrbitType = ClosedOrbitElements {
+        semiMajorAxis = (AU 0.3871, AU 0.00000037)
+    },
+    epoch = ymd 2020 1 1,
+    -- Mean longitude = 77.49 + 187.25 = 264.74°
+    epochData = MeanLongitude (Deg 264.74, Deg 149472.67411175),
+    angularDiameter = Sec 6.74,
+    albedo = 1.918e-6
+}
+
+-- | Venus osculating orbital elements for J2020.0 epoch
+venus2020 :: OrbitalElements
+venus2020 = OrbitalElements {
+    eccentricity = (0.006745, (-0.00004107)),
+    inclination = (Deg 3.3946, Deg (-0.00078890)),
+    longitudeOfAscedingNode = (Deg 76.625, Deg (-0.27769418)),
+    -- W=54.91°, so longitude of perihelion = 76.625 + 54.91 = 131.53°
+    periapsisOrientation = LongitudeOfPeriapsis (Deg 131.53, Deg 0.00268329),
+    elementsByOrbitType = ClosedOrbitElements {
+        semiMajorAxis = (AU 0.7233, AU 0.00000390)
+    },
+    epoch = ymd 2020 1 1,
+    -- Mean longitude = 131.53 + 232.32 = 363.85° → 3.85°
+    epochData = MeanLongitude (Deg 3.85, Deg 58517.81538729),
+    angularDiameter = Sec 16.92,
+    albedo = 1.721e-5
+}
+
+-- | Earth osculating orbital elements for J2020.0 epoch
+earth2020 :: OrbitalElements
+earth2020 = OrbitalElements {
+    eccentricity = (0.01712, (-0.00003804)),
+    inclination = (Deg 0.00278, Deg (-0.0130388888889)),
+    longitudeOfAscedingNode = (Deg 159.70, Deg (-5.06340277778)),
+    -- W=304.36°, so longitude of perihelion = 159.70 + 304.36 = 464.06° → 104.06°
+    periapsisOrientation = LongitudeOfPeriapsis (Deg 104.06, Deg 0.388331481481),
+    elementsByOrbitType = ClosedOrbitElements {
+        semiMajorAxis = (AU 1.0001, AU (-0.00000005))
+    },
+    epoch = ymd 2020 1 1,
+    -- Mean longitude = 104.06 + 355.83 = 459.89° → 99.89°
+    epochData = MeanLongitude (Deg 99.89, Deg 35999.3723972)
+}
+
+-- | Mars osculating orbital elements for J2020.0 epoch
+mars2020 :: OrbitalElements
+mars2020 = OrbitalElements {
+    eccentricity = (0.0935, 0.00007882),
+    inclination = (Deg 1.848, Deg (-0.00813131)),
+    longitudeOfAscedingNode = (Deg 49.50, Deg (-0.29257343)),
+    -- W=286.68°, so longitude of perihelion = 49.50 + 286.68 = 336.18°
+    periapsisOrientation = LongitudeOfPeriapsis (Deg 336.18, Deg 0.44441088),
+    elementsByOrbitType = ClosedOrbitElements {
+        semiMajorAxis = (AU 1.5237, AU 0.00001847)
+    },
+    epoch = ymd 2020 1 1,
+    -- Mean longitude = 336.18 + 247.07 = 583.25° → 223.25°
+    epochData = MeanLongitude (Deg 223.25, Deg 19140.30268499),
+    angularDiameter = Sec 9.36,
+    albedo = 4.539e-6
+}
+
+-- | Jupiter osculating orbital elements for J2020.0 epoch
+jupiter2020 :: OrbitalElements
+jupiter2020 = OrbitalElements {
+    -- JPL Horizons: EC=0.04876
+    eccentricity = (0.04876, -0.00013253),  -- rate from J2000
+    -- JPL Horizons: IN=1.3038°
+    inclination = (Deg 1.3038, Deg (-0.00183714)),  -- rate from J2000
+    -- JPL Horizons: OM=100.52°
+    longitudeOfAscedingNode = (Deg 100.52, Deg 0.20469106),  -- rate from J2000
+    -- JPL Horizons: W=273.70°, so longitude of perihelion = 100.52 + 273.70 = 14.22° (mod 360)
+    periapsisOrientation = LongitudeOfPeriapsis (Deg 14.22, Deg 0.21252668),  -- rate from J2000
+    elementsByOrbitType = ClosedOrbitElements {
+        -- JPL Horizons: A=7.7829e8 km = 5.2026 AU
+        semiMajorAxis = (AU 5.2026, AU (-0.00011607))  -- rate from J2000
+    },
+    epoch = ymd 2020 1 1,
+    -- Mean longitude = longitude of perihelion + mean anomaly = 14.22 + 267.12 = 281.34°
+    epochData = MeanLongitude (Deg 281.34, Deg 3034.74612775),  -- rate from J2000
+    angularDiameter = Sec 196.74,
+    albedo = 1.994e-4
+}
+
+-- | Saturn osculating orbital elements for J2020.0 epoch
+-- Source: JPL Horizons API (https://ssd.jpl.nasa.gov/horizons/)
+-- Query: COMMAND='699', EPHEM_TYPE='ELEMENTS', CENTER='500@10', START_TIME='2020-01-01'
+-- More accurate for dates near 2020 than J2000 elements
+saturn2020 :: OrbitalElements
+saturn2020 = OrbitalElements {
+    -- JPL Horizons: EC=0.0509
+    eccentricity = (0.0509, -0.00050991),  -- rate from J2000
+    -- JPL Horizons: IN=2.490°
+    inclination = (Deg 2.490, Deg 0.00193609),  -- rate from J2000
+    -- JPL Horizons: OM=113.59°
+    longitudeOfAscedingNode = (Deg 113.59, Deg (-0.28867794)),  -- rate from J2000
+    -- JPL Horizons: W=337.76°, so longitude of perihelion = 113.59 + 337.76 = 91.35° (mod 360)
+    periapsisOrientation = LongitudeOfPeriapsis (Deg 91.35, Deg (-0.41897216)),  -- rate from J2000
+    elementsByOrbitType = ClosedOrbitElements {
+        -- JPL Horizons: A=1.4334e9 km = 9.5819 AU
+        semiMajorAxis = (AU 9.5819, AU (-0.00125060))  -- rate from J2000
+    },
+    epoch = ymd 2020 1 1,
+    -- Mean longitude = longitude of perihelion + mean anomaly = 91.35 + 203.03 = 294.38°
+    epochData = MeanLongitude (Deg 294.38, Deg 1222.49362201),  -- rate from J2000
+    angularDiameter = Sec 165.60,
+    albedo = 1.740e-4
+}
+
+-- | Uranus osculating orbital elements for J2020.0 epoch
+uranus2020 :: OrbitalElements
+uranus2020 = OrbitalElements {
+    eccentricity = (0.04665, -0.00004397),
+    inclination = (Deg 0.7721, Deg (-0.00242939)),
+    longitudeOfAscedingNode = (Deg 74.044, Deg 0.04240589),
+    -- W=98.97°, so longitude of perihelion = 74.044 + 98.97 = 173.01°
+    periapsisOrientation = LongitudeOfPeriapsis (Deg 173.01, Deg 0.40805281),
+    elementsByOrbitType = ClosedOrbitElements {
+        semiMajorAxis = (AU 19.17, AU (-0.00196176))
+    },
+    epoch = ymd 2020 1 1,
+    -- Mean longitude = 173.01 + 225.70 = 398.71° → 38.71°
+    epochData = MeanLongitude (Deg 38.71, Deg 428.48202785),
+    angularDiameter = Sec 65.80,
+    albedo = 7.768e-5
+}
+
+-- | Neptune osculating orbital elements for J2020.0 epoch
+neptune2020 :: OrbitalElements
+neptune2020 = OrbitalElements {
+    eccentricity = (0.00968, 0.00005105),
+    inclination = (Deg 1.774, Deg 0.00035372),
+    longitudeOfAscedingNode = (Deg 131.87, Deg (-0.00508664)),
+    -- W=247.54°, so longitude of perihelion = 131.87 + 247.54 = 379.41° → 19.41°
+    periapsisOrientation = LongitudeOfPeriapsis (Deg 19.41, Deg (-0.32241464)),
+    elementsByOrbitType = ClosedOrbitElements {
+        semiMajorAxis = (AU 30.18, AU 0.00026291)
+    },
+    epoch = ymd 2020 1 1,
+    -- Mean longitude = 19.41 + 328.91 = 348.32°
+    epochData = MeanLongitude (Deg 348.32, Deg 218.45945325),
+    angularDiameter = Sec 62.20,
+    albedo = 5.765e-5
+}
+
+-- | Pluto osculating orbital elements for J2020.0 epoch
+-- Note: Pluto elements from PLU060/DE440 solution include post-New Horizons data
+pluto2020 :: OrbitalElements
+pluto2020 = OrbitalElements {
+    eccentricity = (0.2496, 0.00449747),
+    inclination = (Deg 16.88, Deg (-0.00349556)),
+    longitudeOfAscedingNode = (Deg 110.27, Deg (-0.01262424)),
+    -- W=114.62°, so longitude of perihelion = 110.27 + 114.62 = 224.89°
+    periapsisOrientation = LongitudeOfPeriapsis (Deg 224.89, Deg (-0.04062942)),
+    elementsByOrbitType = ClosedOrbitElements {
+        semiMajorAxis = (AU 39.64, AU 0.00449024)
+    },
+    epoch = ymd 2020 1 1,
+    -- Mean longitude = 224.89 + 43.21 = 268.10°
+    epochData = MeanLongitude (Deg 268.10, Deg 145.18042903),
+    angularDiameter = Sec 1.00,
+    albedo = 1.000e-6
 }
 
 uranus2000 = OrbitalElements {
@@ -339,5 +531,18 @@ planets2000 = [
         (Uranus, uranus2000),
         (Neptune, neptune2000),
         (Pluto, pluto2000)
+    ]
+
+-- | All planets with J2020 osculating orbital elements from JPL Horizons DE441
+planets2020 :: [(Planet, OrbitalElements)]
+planets2020 = [
+        (Mercury, mercury2020),
+        (Venus, venus2020),
+        (Mars, mars2020),
+        (Jupiter, jupiter2020),
+        (Saturn, saturn2020),
+        (Uranus, uranus2020),
+        (Neptune, neptune2020),
+        (Pluto, pluto2020)
     ]
     

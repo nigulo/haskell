@@ -77,7 +77,7 @@ main = do
 
             -- Calculate sunrise and sunset for each date
             let results = map (\date ->
-                    let riseSet = calcSunRiseSet date earth2000 lat lon
+                    let riseSet = calcSunRiseSet date earth2020 lat lon
                     in case riseSet of
                         Just ((riseTime, riseAzi), (setTime, setAzi)) ->
                             let YMD y m d = toYMD date
@@ -150,11 +150,11 @@ main = do
 
                     -- Calculate rise, set, and transit for each date
                     let results = map (\date ->
-                            let riseSet = calcPlanetRiseSet date planetElements earth2000 lat lon
+                            let riseSet = calcPlanetRiseSet date planetElements earth2020 lat lon
                             in case riseSet of
                                 Just ((riseTime, riseAzi), (setTime, setAzi)) ->
                                     let
-                                        transit = calcPlanetTransit date planetElements earth2000 lat lon (riseTime, setTime)
+                                        transit = calcPlanetTransit date planetElements earth2020 lat lon (riseTime, setTime)
                                         YMD y m d = toYMD date
                                         riseHMS = toHMS (getHours riseTime)
                                         setHMS = toHMS (getHours setTime)
@@ -231,7 +231,7 @@ main = do
             let results = map (\date ->
                     let
                         -- Calculate sun position (needed for moon calculations)
-                        (sunLong, sunMean) = calcSun earth2000 date
+                        (sunLong, sunMean) = calcSun earth2020 date
                         -- Calculate moon position
                         (moonLong, moonLat, mM', moonOrbitalLong) = calcMoon moon2010 (sunLong, sunMean) date
                         -- Calculate moon illumination (0 = new moon, 1 = full moon)
@@ -325,17 +325,17 @@ dateRange startDateParam endDateParam =
                     (ey, em, ed) = parseDate endDateParam
                 in (sy, sm, sd, ey, em, ed)
 
--- Map planet name to orbital elements
+-- Map planet name to orbital elements (using J2020 elements from JPL Horizons DE441)
 getPlanetElements :: String -> Maybe OrbitalElements
 getPlanetElements name = case map toLower name of
-    "mercury" -> Just mercury2000
-    "venus"   -> Just venus2000
-    "mars"    -> Just mars2000
-    "jupiter" -> Just jupiter2000
-    "saturn"  -> Just saturn2000
-    "uranus"  -> Just uranus2000
-    "neptune" -> Just neptune2000
-    "pluto"   -> Just pluto2000
+    "mercury" -> Just mercury2020
+    "venus"   -> Just venus2020
+    "mars"    -> Just mars2020
+    "jupiter" -> Just jupiter2020
+    "saturn"  -> Just saturn2020
+    "uranus"  -> Just uranus2020
+    "neptune" -> Just neptune2020
+    "pluto"   -> Just pluto2020
     _         -> Nothing
 
 -- List of valid planet names for error messages

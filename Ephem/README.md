@@ -63,14 +63,34 @@ The library includes orbital elements for multiple epochs:
 | Epoch | Elements | Source |
 |-------|----------|--------|
 | J1980.0 | Sun, Moon, planets | Duffett-Smith |
-| J2000.0 | Planets | NASA JPL |
+| J2000.0 | Planets | NASA JPL (Standish & Williams 1992) |
 | J2010.0 | Moon | NASA JPL / Hackage astro |
+| J2020.0 | Planets | JPL Horizons DE441 (Park et al. 2021) |
+
+### J2020 Planetary Elements
+
+The J2020 osculating orbital elements provide improved accuracy for dates near 2020 and beyond. They were obtained from the [JPL Horizons system](https://ssd.jpl.nasa.gov/horizons/) using the DE441 planetary ephemeris.
+
+**Reference**: Park, R.S., et al. (2021). "The JPL Planetary and Lunar Ephemerides DE440 and DE441". *The Astronomical Journal*, 161:105. [DOI: 10.3847/1538-3881/abd414](https://doi.org/10.3847/1538-3881/abd414)
+
+The DE440/DE441 ephemeris includes:
+- Juno radio ranging data for improved Jupiter orbit
+- Cassini mission data for improved Saturn orbit
+- Post-New Horizons encounter data for Pluto (PLU060 solution)
+
+**Query parameters used**:
+```
+EPHEM_TYPE='ELEMENTS'
+CENTER='500@10' (Sun, body center)
+START_TIME='2020-01-01'
+```
 
 ## Usage Example
 
 ```haskell
 import Ephem.Sun
 import Ephem.Moon
+import Ephem.CelestialBody
 import Ephem.OrbitalElements
 import Ephem.Types
 
@@ -79,14 +99,17 @@ let date = YMD 2026 1 24
     lat = Lat (Deg 58.3743) N   -- Tartu, Estonia
     lon = Long (Deg 26.6893) E
 
--- Sun rise/set
-sunRiseSet = calcSunRiseSet date earth2000 lat lon
+-- Sun rise/set (using J2020 Earth elements for best accuracy)
+sunRiseSet = calcSunRiseSet date earth2020 lat lon
 
 -- Moon position (high precision Meeus algorithm)
 (moonLong, moonLat, moonDist) = calcMoonMeeus date
 
 -- Moon rise/set
 moonRiseSet = calcMoonRiseSetMeeus date lat lon 3
+
+-- Planet rise/set (Saturn example with J2020 elements)
+saturnRiseSet = calcPlanetRiseSet date saturn2020 earth2020 lat lon
 ```
 
 ## Building
