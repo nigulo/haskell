@@ -1,12 +1,13 @@
-{-# OPTIONS_GHC -F -pgmF htfpp #-}
-module Math.IOLinearEquationsTest where
+module Math.IOLinearEquationsTest (tests) where
 
 import Math.IOLinearEquations
 import Math.IOVector as Vector
 import Math.IOMatrix as Matrix
 import Utils.Test
-import Test.Framework hiding (vector)
+import Test.Tasty
+import Test.Tasty.HUnit
 
+test_solveGauss :: Assertion
 test_solveGauss = do
     -- System of equations:
     -- 2x +  y +  3z = 1
@@ -23,3 +24,8 @@ test_solveGauss = do
         expectedResult = [3/10, 2/5, 0]
     result <- solveGauss m >>= values
     Utils.Test.assertEqualDoubleList expectedResult result
+
+tests :: TestTree
+tests = testGroup "Math.IOLinearEquationsTest"
+    [ testCase "solveGauss" test_solveGauss
+    ]

@@ -25,7 +25,7 @@ module Math.Function (
     ) where
 
 import qualified Math.Expression as E
-import Data.Map.Strict as M hiding (mapMaybe)
+import Data.Map.Strict as M hiding (mapMaybe, take, drop)
 import Data.List as L
 import Data.Complex
 import qualified Utils.Xml as Xml

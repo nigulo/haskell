@@ -1,6 +1,5 @@
-{-# OPTIONS_GHC -F -pgmF htfpp #-}
 module Utils.Test (
-    assertEqualDouble, 
+    assertEqualDouble,
     assertEqualFloat,
     assertEqualDoubleList,
     assertEqualFloatList,
@@ -8,29 +7,37 @@ module Utils.Test (
     assertEqualApproxList
     ) where
 
-import Test.Framework
+import Test.Tasty.HUnit
 
-assertEqualDouble x y = 
-    assertEqual (fromIntegral (round (x * 1e11) :: Integer) * 1e-11 :: Double) (fromIntegral (round (y * 1e11) :: Integer) * 1e-11 :: Double)        
+assertEqualDouble :: Double -> Double -> Assertion
+assertEqualDouble x y =
+    assertEqual "" (fromIntegral (round (x * 1e11) :: Integer) * 1e-11 :: Double) (fromIntegral (round (y * 1e11) :: Integer) * 1e-11 :: Double)
 
-assertEqualFloat x y = 
-    assertEqual (fromIntegral (round (x * 1e6) :: Integer) * 1e-6 :: Double) (fromIntegral (round (y * 1e6) :: Integer) * 1e-6 :: Double)        
+assertEqualFloat :: Double -> Double -> Assertion
+assertEqualFloat x y =
+    assertEqual "" (fromIntegral (round (x * 1e6) :: Integer) * 1e-6 :: Double) (fromIntegral (round (y * 1e6) :: Integer) * 1e-6 :: Double)
 
-assertEqualDoubleList [] [] = return () 
-assertEqualDoubleList (x:xs) (y:ys) = do 
+assertEqualDoubleList :: [Double] -> [Double] -> Assertion
+assertEqualDoubleList [] [] = return ()
+assertEqualDoubleList (x:xs) (y:ys) = do
     assertEqualDouble x y
     assertEqualDoubleList xs ys
+assertEqualDoubleList _ _ = assertFailure "Lists have different lengths"
 
-assertEqualFloatList [] [] = return () 
-assertEqualFloatList (x:xs) (y:ys) = do 
+assertEqualFloatList :: [Double] -> [Double] -> Assertion
+assertEqualFloatList [] [] = return ()
+assertEqualFloatList (x:xs) (y:ys) = do
     assertEqualFloat x y
     assertEqualFloatList xs ys
-    
-assertEqualApprox epsilon x y =
-    assertEqual (fromIntegral (round (x / epsilon) :: Integer) * epsilon :: Double) (fromIntegral (round (y / epsilon) :: Integer) * epsilon :: Double)        
+assertEqualFloatList _ _ = assertFailure "Lists have different lengths"
 
-assertEqualApproxList epsilon [] [] = return () 
-assertEqualApproxList epsilon (x:xs) (y:ys) = do 
+assertEqualApprox :: Double -> Double -> Double -> Assertion
+assertEqualApprox epsilon x y =
+    assertEqual "" (fromIntegral (round (x / epsilon) :: Integer) * epsilon :: Double) (fromIntegral (round (y / epsilon) :: Integer) * epsilon :: Double)
+
+assertEqualApproxList :: Double -> [Double] -> [Double] -> Assertion
+assertEqualApproxList _ [] [] = return ()
+assertEqualApproxList epsilon (x:xs) (y:ys) = do
     assertEqualApprox epsilon x y
     assertEqualApproxList epsilon xs ys
-    
+assertEqualApproxList _ _ _ = assertFailure "Lists have different lengths"

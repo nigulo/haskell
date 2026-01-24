@@ -1,12 +1,13 @@
-{-# OPTIONS_GHC -F -pgmF htfpp #-}
-module Math.LinearEquationsTest where
+module Math.LinearEquationsTest (tests) where
 
 import Math.LinearEquations
 import Math.Vector as Vector
 import Math.Matrix as Matrix
 import Utils.Test
-import Test.Framework hiding (vector)
+import Test.Tasty
+import Test.Tasty.HUnit
 
+test_solveGauss :: Assertion
 test_solveGauss = do
     let
         -- System of equations:
@@ -24,6 +25,7 @@ test_solveGauss = do
         result = values $ solveGauss m
     Utils.Test.assertEqualDoubleList expectedResult result
 
+test_backSubstitutionIO :: Assertion
 test_backSubstitutionIO = do
     let
         m = matrix [
@@ -38,5 +40,9 @@ test_backSubstitutionIO = do
     let
         result = values v
     Utils.Test.assertEqualDoubleList expectedResult result
-    
-        
+
+tests :: TestTree
+tests = testGroup "Math.LinearEquationsTest"
+    [ testCase "solveGauss" test_solveGauss
+    , testCase "backSubstitutionIO" test_backSubstitutionIO
+    ]

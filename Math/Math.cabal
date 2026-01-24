@@ -1,27 +1,28 @@
 name:           Math
 version:        0.0.1
-cabal-version:  >=1.2
+cabal-version:  >= 1.10
 build-type:     Simple
 license:        AllRightsReserved
+
 executable Math
-  build-depends:   
+  build-depends:
                Utils -any,
-               base -any,
+               base >= 4,
                HUnit -any,
                HaXml -any,
                array -any,
-               base -any,
                containers -any,
                pretty -any,
                random -any,
                time -any,
-               containers -any,
-               pretty -any,
-               random -any
+               statistics -any,
+               vector -any,
+               math-functions -any,
+               Math
   hs-source-dirs:  src
   ghc-options:     -O2 -fexcess-precision -threaded -fprof-auto "-with-rtsopts=-N -p -s -h -i0.001"
   main-is:         Main.hs
-  other-modules:   
+  other-modules:
                    Math.Expression,
                    Math.Function,
                    Math.IOLinearEquations,
@@ -31,7 +32,8 @@ executable Math
                    Math.LinearEquations,
                    Math.Matrix,
                    Math.Vector
-  extensions:      
+  default-language: Haskell2010
+  default-extensions:
                ExistentialQuantification,
                FlexibleInstances,
                ScopedTypeVariables,
@@ -39,29 +41,23 @@ executable Math
                MultiParamTypeClasses,
                FlexibleContexts
 
-library 
-  build-depends:    
+library
+  build-depends:
                Utils -any,
-               base -any,
+               base >= 4,
                HUnit -any,
                HaXml -any,
                array -any,
-               base -any,
                containers -any,
                pretty -any,
                random -any,
                time -any,
-               containers -any,
-               pretty -any,
-               random -any,
                statistics -any,
                vector -any,
-               math-functions -any,
-               accelerate -any
+               math-functions -any
   hs-source-dirs:   src
   ghc-options:      -O2 -fexcess-precision
-  exposed-modules:  
-                   Math.CUDALinearEquations,
+  exposed-modules:
                    Math.Expression,
                    Math.Function,
                    Math.IOLinearEquations,
@@ -73,7 +69,8 @@ library
                    Math.LinearEquations,
                    Math.Matrix,
                    Math.Vector
-  extensions:       
+  default-language: Haskell2010
+  default-extensions:
                    FlexibleInstances,
                    MultiParamTypeClasses,
                    FlexibleContexts
@@ -82,22 +79,24 @@ test-suite MathTests
   type:            exitcode-stdio-1.0
   main-is:         MathTests.hs
   ghc-options:     -Wall -rtsopts
-  build-depends:   base >= 4, HTF > 0.9
-  hs-source-dirs:  
-                   src, 
-                   src/Math, 
-                   tests
-  other-modules:   
-                   CUDALinearEquations,
+  build-depends:
+                   base >= 4,
+                   tasty -any,
+                   tasty-hunit -any,
+                   random -any,
+                   array -any,
+                   Utils -any,
+                   Math
+  hs-source-dirs:  tests
+  other-modules:
                    Math.ExpressionTest,
                    Math.FunctionTest,
-                   IODoubleVector,
-                   IODoubleMatrix,
                    Math.LinearEquationsTest,
                    Math.IOLinearEquationsTest,
                    Math.IODoubleLinearEquationsTest,
                    Math.IODoubleVectorTest
-  extensions:      
-                   FlexibleInstances, 
-                   ScopedTypeVariables
+  default-language: Haskell2010
+  default-extensions:
+                   FlexibleInstances,
+                   ScopedTypeVariables,
                    FlexibleContexts

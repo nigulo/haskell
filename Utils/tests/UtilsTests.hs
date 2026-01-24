@@ -1,10 +1,15 @@
-{-# OPTIONS_GHC -F -pgmF htfpp #-}
 module Main where
 
+import Test.Tasty
 
-import Test.Framework
-import {-@ HTF_TESTS @-} Utils.MiscTest
-import {-@ HTF_TESTS @-} Utils.ConcurrentTest
+import qualified Utils.MiscTest
+import qualified Utils.ConcurrentTest
 
-main :: IO()
-main = htfMain htf_importedTests
+main :: IO ()
+main = defaultMain tests
+
+tests :: TestTree
+tests = testGroup "Utils Tests"
+    [ Utils.MiscTest.tests
+    , Utils.ConcurrentTest.tests
+    ]
