@@ -1,217 +1,284 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLabels #-}
 
 module GUI.Widget (
-    module System.Glib.UTFString,
     labelWithImage,
     labelWithButton,
     ItemChooser,
     itemChooserNew,
-    itemChooserToWidget,
+    itemChooserGetWidget,
     itemChooserGetChoice,
-    createComboBox,
-    comboBoxGetActiveString,
-    comboBoxAppendString,
+    createDropDown,
+    dropDownGetActiveString,
     entryGetString
     ) where
 
 import Data.List
+import Data.Text (Text)
+import qualified Data.Text as T
+import Data.GI.Base
+import Data.Word (Word32)
+import Data.Int (Int32)
 
-import Graphics.UI.Gtk hiding (addWidget)
-import Graphics.UI.Gtk.ModelView.ListStore
-import Graphics.UI.Gtk.ModelView.TreeView
-import Graphics.UI.Gtk.ModelView.TreeSelection
-import Graphics.UI.Gtk.ModelView.TreeViewColumn
-import System.Glib.UTFString
+import qualified GI.Gtk as Gtk
+import qualified GI.Gio as Gio
+import qualified GI.GObject as GObject
 
 import Control.Monad.IO.Class
+import Control.Monad (forM_, when)
 
-labelWithImage :: Maybe String -> Maybe StockId -> IO (HBox)
-labelWithImage maybeLabelText maybeStockId =
-    do
-        hBox <- hBoxNew False 0
-        label <- labelNew maybeLabelText
-        boxPackStart hBox label PackGrow 2
+labelWithImage :: Maybe Text -> Maybe Text -> IO Gtk.Box
+labelWithImage maybeLabelText maybeIconName = do
+    hBox <- Gtk.boxNew Gtk.OrientationHorizontal 0
 
-        case maybeStockId of
-            Just stockId -> 
-                do
-                    image <- imageNewFromStock stockId IconSizeMenu
-                    boxPackStart hBox image PackNatural 2
-            otherwise -> return ()
-            
-        return hBox
+    case maybeLabelText of
+        Just labelText -> do
+            label <- Gtk.labelNew (Just labelText)
+            Gtk.boxAppend hBox label
+        Nothing -> return ()
 
-labelWithButton :: Maybe String -> StockId -> IO () -> IO (HBox)
-labelWithButton maybeLabelText stockId onClickAction =
-    do
-        hBox <- hBoxNew False 0
-        label <- labelNew maybeLabelText
-        boxPackStart hBox label PackGrow 2
+    case maybeIconName of
+        Just iconName -> do
+            image <- Gtk.imageNewFromIconName (Just iconName)
+            Gtk.boxAppend hBox image
+        Nothing -> return ()
 
-        image <- imageNewFromStock stockId IconSizeMenu
-        button <- buttonNew
-        buttonSetImage button image
-        buttonSetRelief button ReliefNone
-        on button buttonReleaseEvent $ liftIO (onClickAction >> return True)
-        boxPackStart hBox button PackNatural 2
-        
-        --button `onEnter` (widgetShow button)
-        --button `onLeave` (widgetHide button)
-        
-        return hBox
+    return hBox
+
+labelWithButton :: Maybe Text -> Text -> IO () -> IO Gtk.Box
+labelWithButton maybeLabelText iconName onClickAction = do
+    hBox <- Gtk.boxNew Gtk.OrientationHorizontal 0
+
+    case maybeLabelText of
+        Just labelText -> do
+            label <- Gtk.labelNew (Just labelText)
+            Gtk.widgetSetHexpand label True
+            Gtk.boxAppend hBox label
+        Nothing -> return ()
+
+    image <- Gtk.imageNewFromIconName (Just iconName)
+    button <- Gtk.buttonNew
+    Gtk.buttonSetChild button (Just image)
+    Gtk.buttonSetHasFrame button False
+
+    _ <- Gtk.onButtonClicked button onClickAction
+    Gtk.boxAppend hBox button
+
+    return hBox
 
 --------------------------------------------------------------------------------
--- | Item chooser
-newtype ItemChooser = ItemChooser (Frame, ListStore String {-options-}, ListStore String {-chosen-})
- 
-itemChooserNew :: Maybe String -> String -> [String] -> String -> [String] -> IO ItemChooser
-itemChooserNew title optionsTitle options chosenTitle chosen = 
-    do
+-- | Item chooser using ListBox (GTK4 replacement for TreeView in simple cases)
+data ItemChooser = ItemChooser
+    { itemChooserFrame :: Gtk.Frame
+    , itemChooserOptionsList :: Gtk.StringList
+    , itemChooserChosenList :: Gtk.StringList
+    , itemChooserOptionsListBox :: Gtk.ListBox
+    , itemChooserChosenListBox :: Gtk.ListBox
+    }
 
-        list1 <- listStoreNew options
-        treeView1 <- treeViewNewWithModel list1
-        col1 <- treeViewColumnNew
-        alignment1 <- alignmentNew 0 0 0 0 
-        invisible1 <- invisibleNew
-        containerAdd alignment1 invisible1
-        treeViewColumnSetWidget col1 (Just alignment1)
-        --treeViewColumnSetTitle col1 optionsTitle
-        renderer1 <- cellRendererTextNew
-        cellLayoutPackStart col1 renderer1 False
-        cellLayoutSetAttributes col1 renderer1 list1 $ \ind -> [cellText := ind]
-        treeViewAppendColumn treeView1 col1
-           
-        list2 <- listStoreNew chosen
-        treeView2 <- treeViewNewWithModel list2
-        col2 <- treeViewColumnNew
-        alignment2 <- alignmentNew 0 0 0 0 
-        invisible2 <- invisibleNew
-        containerAdd alignment2 invisible2
-        treeViewColumnSetWidget col2 (Just alignment2)
-        --treeViewColumnSetTitle col2 chosenTitle
-        renderer2 <- cellRendererTextNew
-        cellLayoutPackStart col2 renderer2 False
-        cellLayoutSetAttributes col2 renderer2 list2 $ \ind -> [cellText := ind]
-        treeViewAppendColumn treeView2 col2
-        
-        frame <- frameNew
-        case title of
-            Just title -> frameSetLabel frame title
-            otherwise -> return ()
-        
-        hBox <- hBoxNew False 0
-        boxPackStart hBox treeView1 PackGrow 2
-        
-        buttonBox1 <- vButtonBoxNew
-        buttonBoxSetLayout buttonBox1 ButtonboxCenter        
-        rightButton <- buttonNewWithLabel "Add >>"
-        leftButton <- buttonNewWithLabel "Remove"
-        
-        on rightButton buttonReleaseEvent $ liftIO $
-            do
-                selection1 <- treeViewGetSelection treeView1
-                sel1 <- treeSelectionGetSelectedRows selection1
-                if length sel1 > 0
-                    then  
-                        do
-                            vals1 <- mapM (listStoreGetValue list1) $ (head sel1)
-                            vals2 <- listStoreToList list2
-                            mapM_ (listStoreAppend list2) $ vals1 \\ vals2
-                            return True
-                    else
-                            return True
-        on leftButton buttonReleaseEvent $ liftIO $
-            do
-                selection2 <- treeViewGetSelection treeView2
-                sel2 <- treeSelectionGetSelectedRows selection2
-                if length sel2 > 0  
-                    then
-                        do
-                            mapM_ (listStoreRemove list2) $ head sel2
-                            return True
-                    else
-                        return True
-        
-        boxPackStart buttonBox1 rightButton PackNatural 2
-        boxPackStart buttonBox1 leftButton PackNatural 2
+itemChooserNew :: Maybe Text -> Text -> [Text] -> Text -> [Text] -> IO ItemChooser
+itemChooserNew title optionsTitle options chosenTitle chosen = do
+    -- Create string lists for options and chosen items
+    optionsList <- Gtk.stringListNew (Just options)
+    chosenList <- Gtk.stringListNew (Just chosen)
 
-        boxPackStart hBox buttonBox1 PackNatural 2
-        
-        boxPackStart hBox treeView2 PackGrow 2
-        
-        buttonBox2 <- vButtonBoxNew
-        buttonBoxSetLayout buttonBox2 ButtonboxCenter        
-        upButton <- buttonNewWithLabel "Up"
-        downButton <- buttonNewWithLabel "Down"
+    -- Create list boxes
+    optionsListBox <- Gtk.listBoxNew
+    Gtk.listBoxBindModel optionsListBox (Just optionsList) (Just createListBoxRow)
+    Gtk.widgetSetVexpand optionsListBox True
 
-        on upButton buttonReleaseEvent $ liftIO $
-            do
-                selection <- treeViewGetSelection treeView2
-                sel <- treeSelectionGetSelectedRows selection
-                let selIndex = head (head sel)
-                if length sel > 0 && selIndex > 0
-                    then  
-                        do
-                            val <- listStoreGetValue list2 $ selIndex
-                            listStoreRemove list2 selIndex
-                            listStoreInsert list2 (selIndex - 1) val
-                            treeSelectionSelectPath selection [selIndex - 1]
-                            return True
-                    else
-                        return True
-        on downButton buttonReleaseEvent $ liftIO $
-            do
-                selection <- treeViewGetSelection treeView2
-                sel <- treeSelectionGetSelectedRows selection
-                size <- listStoreGetSize list2
-                let selIndex = head (head sel)
-                if length sel > 0 && selIndex < size - 1
-                    then  
-                        do
-                            val <- listStoreGetValue list2 $ selIndex
-                            listStoreRemove list2 selIndex
-                            listStoreInsert list2 (selIndex + 1) val
-                            treeSelectionSelectPath selection [selIndex + 1]
-                            return True
-                    else
-                        return True
-        boxPackStart buttonBox2 upButton PackNatural 2
-        boxPackStart buttonBox2 downButton PackNatural 2
+    chosenListBox <- Gtk.listBoxNew
+    Gtk.listBoxBindModel chosenListBox (Just chosenList) (Just createListBoxRow)
+    Gtk.widgetSetVexpand chosenListBox True
 
-        boxPackStart hBox buttonBox2 PackNatural 2
-        
-        containerAdd frame hBox
-        return $ ItemChooser (frame, list1, list2)
+    -- Wrap in scrolled windows
+    optionsScroll <- Gtk.scrolledWindowNew
+    Gtk.scrolledWindowSetChild optionsScroll (Just optionsListBox)
+    Gtk.widgetSetVexpand optionsScroll True
+    Gtk.widgetSetHexpand optionsScroll True
 
-itemChooserToWidget :: ItemChooser -> Frame
-itemChooserToWidget (ItemChooser (frame, _, _)) = frame
+    chosenScroll <- Gtk.scrolledWindowNew
+    Gtk.scrolledWindowSetChild chosenScroll (Just chosenListBox)
+    Gtk.widgetSetVexpand chosenScroll True
+    Gtk.widgetSetHexpand chosenScroll True
 
-itemChooserGetChoice :: ItemChooser -> IO [String]
-itemChooserGetChoice (ItemChooser (_, _, list2)) =
-    do
-        choice <- listStoreToList list2
-        return choice
- 
-createComboBox :: [String] -> IO ComboBox
-createComboBox options = 
-    do
-        comboBox <- comboBoxNew --WithEntry
-        comboBoxSetModelText comboBox
-        mapM_ (comboBoxAppendText comboBox . stringToGlib) options
-        return comboBox
-        
-comboBoxGetActiveString :: ComboBox -> IO (Maybe String)
-comboBoxGetActiveString comboBox = do
-    maybeText <- comboBoxGetActiveText comboBox
-    case maybeText of
-        Just text -> return $ Just $ glibToString text
-        Nothing -> return Nothing
-    
-comboBoxAppendString :: ComboBox -> String -> IO ()
-comboBoxAppendString comboBox str = do
-    comboBoxAppendText comboBox (stringToGlib str)
-    return ()
+    -- Create frame
+    frame <- Gtk.frameNew title
 
-entryGetString :: Entry -> IO String
+    -- Main horizontal box
+    hBox <- Gtk.boxNew Gtk.OrientationHorizontal 4
+    Gtk.boxAppend hBox optionsScroll
+
+    -- Button box for Add/Remove
+    buttonBox1 <- Gtk.boxNew Gtk.OrientationVertical 4
+    Gtk.widgetSetValign buttonBox1 Gtk.AlignCenter
+
+    rightButton <- Gtk.buttonNewWithLabel "Add >>"
+    leftButton <- Gtk.buttonNewWithLabel "Remove"
+
+    _ <- Gtk.onButtonClicked rightButton $ do
+        maybeRow <- Gtk.listBoxGetSelectedRow optionsListBox
+        case maybeRow of
+            Just row -> do
+                idx <- Gtk.listBoxRowGetIndex row
+                when (idx >= 0) $ do
+                    maybeItem <- Gio.listModelGetItem optionsList (fromIntegral idx)
+                    case maybeItem of
+                        Just item -> do
+                            strObj <- GObject.unsafeCastTo Gtk.StringObject item
+                            str <- Gtk.stringObjectGetString strObj
+                            -- Check if already in chosen list
+                            n <- Gio.listModelGetNItems chosenList
+                            alreadyExists <- checkStringInList chosenList str (fromIntegral n)
+                            when (not alreadyExists) $ do
+                                Gtk.stringListAppend chosenList str
+                        Nothing -> return ()
+            Nothing -> return ()
+
+    _ <- Gtk.onButtonClicked leftButton $ do
+        maybeRow <- Gtk.listBoxGetSelectedRow chosenListBox
+        case maybeRow of
+            Just row -> do
+                idx <- Gtk.listBoxRowGetIndex row
+                when (idx >= 0) $ do
+                    Gtk.stringListRemove chosenList (fromIntegral idx)
+            Nothing -> return ()
+
+    Gtk.boxAppend buttonBox1 rightButton
+    Gtk.boxAppend buttonBox1 leftButton
+    Gtk.boxAppend hBox buttonBox1
+
+    Gtk.boxAppend hBox chosenScroll
+
+    -- Button box for Up/Down
+    buttonBox2 <- Gtk.boxNew Gtk.OrientationVertical 4
+    Gtk.widgetSetValign buttonBox2 Gtk.AlignCenter
+
+    upButton <- Gtk.buttonNewWithLabel "Up"
+    downButton <- Gtk.buttonNewWithLabel "Down"
+
+    _ <- Gtk.onButtonClicked upButton $ do
+        maybeRow <- Gtk.listBoxGetSelectedRow chosenListBox
+        case maybeRow of
+            Just row -> do
+                idx <- Gtk.listBoxRowGetIndex row
+                when (idx > 0) $ do
+                    maybeItem <- Gio.listModelGetItem chosenList (fromIntegral idx)
+                    case maybeItem of
+                        Just item -> do
+                            strObj <- GObject.unsafeCastTo Gtk.StringObject item
+                            str <- Gtk.stringObjectGetString strObj
+                            Gtk.stringListRemove chosenList (fromIntegral idx)
+                            -- GTK4 StringList doesn't have insert, so we need to rebuild
+                            -- For simplicity, we splice at position
+                            Gtk.stringListSplice chosenList (fromIntegral (idx - 1)) 0 (Just [str])
+                            -- Reselect the moved item
+                            newRow <- Gtk.listBoxGetRowAtIndex chosenListBox (idx - 1)
+                            case newRow of
+                                Just r -> Gtk.listBoxSelectRow chosenListBox (Just r)
+                                Nothing -> return ()
+                        Nothing -> return ()
+            Nothing -> return ()
+
+    _ <- Gtk.onButtonClicked downButton $ do
+        maybeRow <- Gtk.listBoxGetSelectedRow chosenListBox
+        case maybeRow of
+            Just row -> do
+                idx <- Gtk.listBoxRowGetIndex row
+                n <- Gio.listModelGetNItems chosenList
+                when (idx >= 0 && fromIntegral idx < n - 1) $ do
+                    maybeItem <- Gio.listModelGetItem chosenList (fromIntegral idx)
+                    case maybeItem of
+                        Just item -> do
+                            strObj <- GObject.unsafeCastTo Gtk.StringObject item
+                            str <- Gtk.stringObjectGetString strObj
+                            Gtk.stringListRemove chosenList (fromIntegral idx)
+                            Gtk.stringListSplice chosenList (fromIntegral (idx + 1)) 0 (Just [str])
+                            -- Reselect the moved item
+                            newRow <- Gtk.listBoxGetRowAtIndex chosenListBox (idx + 1)
+                            case newRow of
+                                Just r -> Gtk.listBoxSelectRow chosenListBox (Just r)
+                                Nothing -> return ()
+                        Nothing -> return ()
+            Nothing -> return ()
+
+    Gtk.boxAppend buttonBox2 upButton
+    Gtk.boxAppend buttonBox2 downButton
+    Gtk.boxAppend hBox buttonBox2
+
+    Gtk.frameSetChild frame (Just hBox)
+
+    return $ ItemChooser frame optionsList chosenList optionsListBox chosenListBox
+
+-- Helper to create a row widget from a StringObject
+createListBoxRow :: GObject.Object -> IO Gtk.Widget
+createListBoxRow obj = do
+    strObj <- GObject.unsafeCastTo Gtk.StringObject obj
+    str <- Gtk.stringObjectGetString strObj
+    label <- Gtk.labelNew (Just str)
+    Gtk.widgetSetHalign label Gtk.AlignStart
+    Gtk.toWidget label
+
+-- Helper to check if string exists in StringList
+checkStringInList :: Gtk.StringList -> Text -> Word32 -> IO Bool
+checkStringInList _ _ 0 = return False
+checkStringInList list str n = do
+    maybeItem <- Gio.listModelGetItem list (n - 1)
+    case maybeItem of
+        Just item -> do
+            strObj <- GObject.unsafeCastTo Gtk.StringObject item
+            itemStr <- Gtk.stringObjectGetString strObj
+            if itemStr == str
+                then return True
+                else checkStringInList list str (n - 1)
+        Nothing -> checkStringInList list str (n - 1)
+
+itemChooserGetWidget :: ItemChooser -> Gtk.Frame
+itemChooserGetWidget = itemChooserFrame
+
+itemChooserGetChoice :: ItemChooser -> IO [Text]
+itemChooserGetChoice chooser = do
+    let list = itemChooserChosenList chooser
+    n <- Gio.listModelGetNItems list
+    getStrings list 0 (fromIntegral n)
+  where
+    getStrings :: Gtk.StringList -> Word32 -> Word32 -> IO [Text]
+    getStrings _ idx total | idx >= total = return []
+    getStrings list idx total = do
+        maybeItem <- Gio.listModelGetItem list idx
+        case maybeItem of
+            Just item -> do
+                strObj <- GObject.unsafeCastTo Gtk.StringObject item
+                str <- Gtk.stringObjectGetString strObj
+                rest <- getStrings list (idx + 1) total
+                return (str : rest)
+            Nothing -> getStrings list (idx + 1) total
+
+-- | Create a dropdown (GTK4 replacement for ComboBox)
+createDropDown :: [Text] -> IO Gtk.DropDown
+createDropDown options = do
+    dropDown <- Gtk.dropDownNewFromStrings options
+    return dropDown
+
+dropDownGetActiveString :: Gtk.DropDown -> IO (Maybe Text)
+dropDownGetActiveString dropDown = do
+    idx <- Gtk.dropDownGetSelected dropDown
+    if idx == maxBound  -- GTK_INVALID_LIST_POSITION
+        then return Nothing
+        else do
+            maybeModel <- Gtk.dropDownGetModel dropDown
+            case maybeModel of
+                Just model -> do
+                    maybeItem <- Gio.listModelGetItem model idx
+                    case maybeItem of
+                        Just item -> do
+                            strObj <- GObject.unsafeCastTo Gtk.StringObject item
+                            str <- Gtk.stringObjectGetString strObj
+                            return (Just str)
+                        Nothing -> return Nothing
+                Nothing -> return Nothing
+
+entryGetString :: Gtk.Entry -> IO Text
 entryGetString entry = do
-    text <- entryGetText entry
-    return (glibToString text)
+    buffer <- Gtk.entryGetBuffer entry
+    Gtk.entryBufferGetText buffer

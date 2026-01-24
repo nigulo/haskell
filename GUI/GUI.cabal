@@ -1,39 +1,62 @@
 name:                GUI
 version:             0.0.1
-cabal-version:       >= 1.2
+cabal-version:       >= 1.10
 build-type:          Simple
 license:             AllRightsReserved
-extra-source-files:  
-extra-tmp-files:   
-library 
-  build-depends:    
+
+library
+  build-depends:
                     Math -any,
                     Utils -any,
-                    base -any,
+                    base >= 4,
                     containers -any,
-                    gtk3 -any,
-                    glib -any,
+                    gi-gtk >= 4.0,
+                    gi-gdk >= 4.0,
+                    gi-cairo-render -any,
+                    gi-cairo-connector -any,
+                    gi-glib -any,
+                    gi-gio -any,
+                    gi-gobject -any,
+                    haskell-gi-base -any,
                     cairo -any,
                     transformers -any,
-                    vector -any
+                    vector -any,
+                    text -any
   hs-source-dirs:   src
   ghc-options:      -O2 -fexcess-precision
-  exposed-modules:  
+  exposed-modules:
                     GUI.Plot,
                     GUI.Widget
-  extensions:       ScopedTypeVariables
+  default-language: Haskell2010
+  default-extensions:
+                    ScopedTypeVariables,
+                    OverloadedStrings,
+                    OverloadedLabels
 
 executable GUI
-  build-depends:   
+  build-depends:
                    Math -any,
                    Utils -any,
-                   base -any,
+                   base >= 4,
                    cairo -any,
+                   gi-cairo -any,
+                   gi-cairo-render -any,
+                   gi-cairo-connector -any,
                    containers -any,
-                   gtk3 -any,
-                   transformers -any
+                   gi-gtk >= 4.0,
+                   gi-gdk >= 4.0,
+                   gi-glib -any,
+                   gi-gio -any,
+                   gi-gobject -any,
+                   haskell-gi-base -any,
+                   transformers -any,
+                   vector -any,
+                   text -any
   hs-source-dirs:  src
-  ghc-options:     -O2 -fexcess-precision
+  ghc-options:     -O2 -fexcess-precision -threaded
   main-is:         Main.hs
-  extensions:      ScopedTypeVariables
-
+  default-language: Haskell2010
+  default-extensions:
+                    ScopedTypeVariables,
+                    OverloadedStrings,
+                    OverloadedLabels

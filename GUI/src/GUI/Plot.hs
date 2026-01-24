@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLabels #-}
 
 module GUI.Plot (
     PlotArea (..),
@@ -18,19 +20,25 @@ module GUI.Plot (
     FontSlant (..),
     FontWeight (..),
     PlotTool (..),
+    ScrollDirection(..),
+    MouseButton(..),
+    Click(..),
+    Modifier(..),
     toScreenCoords,
     toGraphCoords,
     onKeyDown,
     onMouseScroll,
     onMouseButton,
     onMouseMove,
-    plot
+    plot,
+    renderPlot
     ) where
 
-import Graphics.UI.Gtk as Gtk hiding (addWidget, Plus, Cross, Circle, Font, rectangle)
-import Graphics.Rendering.Cairo hiding (Pattern, FontSlant, FontWeight)
-import Graphics.Rendering.Cairo.Matrix as M hiding (rotate)
-import Graphics.UI.Gtk.Gdk.Events hiding (Rectangle)
+import qualified GI.Gtk as Gtk
+import qualified GI.Gdk as Gdk
+import qualified GI.Cairo.Render as Cairo
+import GI.Cairo.Render.Connector (renderWithContext)
+import qualified GI.Cairo.Render.Matrix as M
 
 import Debug.Trace
 
@@ -38,13 +46,22 @@ import Utils.Math
 import Utils.Misc
 
 import Data.List
-import Data.Char
+import Data.Char hiding (Control)
 import Data.Maybe
 import Data.Tuple
+import Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as V
 import Control.Monad
+import Data.Int (Int32)
+import Data.Word (Word32)
+import Foreign.Ptr (Ptr)
 
-data PlotPointType = Point | Plus | Cross | PlusCross | Square | FilledSquare | Circle | FilledCircle | 
+-- Re-export scroll direction for use by Main
+data ScrollDirection = ScrollUp | ScrollDown | ScrollLeft | ScrollRight
+    deriving (Show, Read, Eq)
+
+data PlotPointType = Point | Plus | Cross | PlusCross | Square | FilledSquare | Circle | FilledCircle |
     Triangle | FilledTriangle | DownTriangle  | FilledDownTriangle | Diamond | FilledDiamond |
     Pentagon | FilledPentagon |
     Impulse deriving (Show, Read, Eq)
@@ -55,7 +72,7 @@ data PlotArea = PlotArea {
     plotAreaBottom :: Double,
     plotAreaTop :: Double,
     plotAreaBack :: Double,
-    plotAreaFront :: Double 
+    plotAreaFront :: Double
 } deriving (Show, Read)
 
 data ScreenArea = ScreenArea {
@@ -64,24 +81,24 @@ data ScreenArea = ScreenArea {
     screenAreaBottom :: Double,
     screenAreaTop :: Double,
     screenAreaBack :: Double,
-    screenAreaFront :: Double 
+    screenAreaFront :: Double
 } deriving (Show, Read)
 
-data PlotPointAttributes = 
+data PlotPointAttributes =
     PlotPointAttributes {
-        plotPointType :: PlotPointType, 
+        plotPointType :: PlotPointType,
         plotPointSize :: Double,
         plotPointColor :: (Double, Double, Double, Double) -- RGBA
     } deriving (Show, Read)
-    
-data PlotLineAttributes = 
+
+data PlotLineAttributes =
     PlotLineAttributes {
         plotLineDash :: [Double], -- ^ a list specifying alternate lengths of on and off portions of the stroke
-        plotLineWidth :: Double, 
+        plotLineWidth :: Double,
         plotLineColor :: (Double, Double, Double, Double) -- RGBA
     } deriving (Show, Read)
 
-data PlotData = 
+data PlotData =
     PlotData {
         plotDataValues :: V.Vector ((Double {-x-}, Double {-error-}), (Double {-y-}, Double {-error-})),
         plotDataPointAttributes :: Maybe PlotPointAttributes,
@@ -131,7 +148,7 @@ data Rectangle = Rectangle {
     rectangleTop :: Double
 } deriving (Show, Read)
 
-data Pattern = 
+data Pattern =
     LinearPattern {
         linearPatternStart :: (Double, Double),
         linearPatternEnd :: (Double, Double),
@@ -162,13 +179,13 @@ data FontWeight = FontWeightNormal | FontWeightBold deriving (Show, Read)
 data PlotSelection = PlotSelection {
     plotSelectionRectangle :: Maybe GUI.Plot.Rectangle,
     plotSelectionLineAttributes :: PlotLineAttributes
-        
+
 } deriving (Show, Read)
 
 data PlotSegments = PlotSegments {
     plotSegmentsData :: [Double],
     plotSegmentsLineAttributes :: PlotLineAttributes
-        
+
 } deriving (Show, Read)
 
 data PlotTool = PlotToolSelect | PlotToolSegment deriving (Show, Read)
@@ -185,339 +202,316 @@ data PlotSettings = PlotSettings {
     plotSelection :: Maybe PlotSelection,
     plotSegments :: Maybe PlotSegments,
     plotTool :: PlotTool
-    
+
 } deriving (Show, Read)
 
-plot :: DrawingArea -> [(PlotSettings, [PlotData])] -> Maybe String-> IO ()
-plot canvas settings maybeFileName = 
-    do
-        Just win <- widgetGetWindow canvas
-        w <- widgetGetAllocatedWidth canvas
-        h <- widgetGetAllocatedHeight canvas
-        
-        case maybeFileName of
-            Nothing ->
-                do
-                    surface <- createImageSurface FormatRGB24 w h
-                    renderWith surface (mapM_ (\(plotSettings, plotData) -> plot' plotSettings plotData) settings)
-                    surfaceFlush surface
-                    surfaceFinish surface
-                                        
-                    drawWindowBeginPaintRect win (Gtk.Rectangle 0 0 w h)
---                    renderWithDrawWindow win $ do
---                        setSourceSurface surface 0 0
---                        setOperator OperatorSource
---                        paint
-                    renderWithDrawWindow win $
-                        mapM_ (\(plotSettings, plotData) -> plot' plotSettings plotData) settings
-                    drawWindowEndPaint win
-            Just fileName -> 
-                do
-                    withPDFSurface (if ".pdf" `isSuffixOf` (map toLower fileName) then fileName else fileName ++ ".pdf") (fromIntegral w) (fromIntegral h)
-                        (flip renderWith (mapM_ (\(plotSettings, plotData) -> plot' plotSettings plotData) settings)) 
-                        
-plot' :: PlotSettings -> [PlotData] -> Render ()
-plot' plotSettings plotData =
-    do
-        let
-            scrArea = screenArea plotSettings
-            left = screenAreaLeft scrArea
-            top = screenAreaTop scrArea
-            right = screenAreaRight scrArea
-            bottom = screenAreaBottom scrArea
-            (r, g, b) = plotBackground plotSettings
-        
-        setSourceRGB r g b    
-        rectangle left top right bottom
-        fill
-        mapM_ (drawData plotSettings) plotData
-        drawUnits plotSettings (getUnits plotSettings)
-        drawSelection plotSettings
-        drawSegments plotSettings
-    
-drawSelection :: PlotSettings -> Render ()
+-- | Render plot to a Cairo context (for use with DrawingArea's draw function)
+renderPlot :: [(PlotSettings, [PlotData])] -> Cairo.Render ()
+renderPlot settings =
+    mapM_ (\(plotSettings, plotData) -> plot' plotSettings plotData) settings
+
+-- | Legacy plot function for compatibility - renders to DrawingArea
+plot :: Gtk.DrawingArea -> [(PlotSettings, [PlotData])] -> Maybe String -> IO ()
+plot canvas settings maybeFileName = do
+    w <- Gtk.widgetGetWidth canvas
+    h <- Gtk.widgetGetHeight canvas
+
+    case maybeFileName of
+        Nothing -> do
+            -- For GTK4, drawing is done via the draw function callback
+            -- This function now just triggers a redraw
+            Gtk.widgetQueueDraw canvas
+        Just fileName -> do
+            -- For PDF export, create a PDF surface and render
+            Cairo.withPDFSurface
+                (if ".pdf" `isSuffixOf` (map toLower fileName) then fileName else fileName ++ ".pdf")
+                (fromIntegral w) (fromIntegral h)
+                (\surface -> Cairo.renderWith surface (renderPlot settings))
+
+plot' :: PlotSettings -> [PlotData] -> Cairo.Render ()
+plot' plotSettings plotData = do
+    let
+        scrArea = screenArea plotSettings
+        left = screenAreaLeft scrArea
+        top = screenAreaTop scrArea
+        right = screenAreaRight scrArea
+        bottom = screenAreaBottom scrArea
+        (r, g, b) = plotBackground plotSettings
+
+    Cairo.setSourceRGB r g b
+    Cairo.rectangle left top right bottom
+    Cairo.fill
+    mapM_ (drawData plotSettings) plotData
+    drawUnits plotSettings (getUnits plotSettings)
+    drawSelection plotSettings
+    drawSegments plotSettings
+
+drawSelection :: PlotSettings -> Cairo.Render ()
 drawSelection plotSettings =
     case plotSelection plotSettings of
         Nothing -> return ()
         Just sel ->
             case plotSelectionRectangle sel of
                 Nothing -> return ()
-                Just rect ->
-                    do
-                        let
-                            scrArea = screenArea plotSettings
-                            lineAttributes = plotSelectionLineAttributes sel
-                            (r, g, b, a) = plotLineColor lineAttributes
-                            (x1, y1, _) = toScreenCoords scrArea (plotArea plotSettings) (rectangleLeft rect, rectangleBottom rect, 0)
-                            (x2, y2, _) = toScreenCoords scrArea (plotArea plotSettings) (rectangleRight rect, rectangleTop rect, 0)
-                            x = min x1 x2
-                            dx = abs (x2 - x1)
-                            y = min y1 y2
-                            dy = abs (y2 - y1)
-                        setSourceRGBA r g b a
-                        setLineWidth $ plotLineWidth lineAttributes
-                        setLineJoin LineJoinRound
-                        setDash (plotLineDash lineAttributes) 0
-                        rectangle x y dx dy
-                        stroke
-drawSegments :: PlotSettings -> Render ()
-drawSegments plotSettings = 
-    case plotSegments plotSettings of
-        Nothing -> return ()
-        Just segments ->
-            do
-                let
-                    scrArea = screenArea plotSettings
-                    lineAttributes = plotSegmentsLineAttributes segments
-                    (r, g, b, a) = plotLineColor lineAttributes
-                setSourceRGBA r g b a
-                setLineWidth $ plotLineWidth lineAttributes
-                setLineJoin LineJoinRound
-                setDash (plotLineDash lineAttributes) 0
-
-                mapM_ (\x ->
-                    do
-                        let
-                            (x1, _, _) = toScreenCoords scrArea (plotArea plotSettings) (x, 0, 0)
-                        moveTo x1 (screenAreaBottom scrArea)
-                        lineTo x1 (screenAreaTop scrArea)
-
-                    ) (plotSegmentsData segments)
-                stroke
-drawData :: PlotSettings -> PlotData -> Render ()
-drawData plotSettings plotData = 
-    do
-
-        let
-            scrArea = screenArea plotSettings
-        
-            formattedArea = formatScreenArea scrArea
-            left = screenAreaLeft formattedArea
-            right = screenAreaRight formattedArea
-            top = screenAreaTop formattedArea
-            bottom = screenAreaBottom formattedArea
-            back = screenAreaBack formattedArea
-            front = screenAreaFront formattedArea
-            width = right - left
-            height = bottom - top
-            depth = front - back
-            xSpace = (right - left) / 20
-            ySpace = (top - bottom) / 20 -- Note that ySpace is negative
-            zSpace = (front - back) / 20
-            
-            leftPlusSpace = left + xSpace
-            rightMinusSpace = right - xSpace
-            topMinusSpace = top - ySpace
-            bottomPlusSpace = bottom + ySpace
-            backPlusSpace = back + zSpace
-            frontMinusSpace = front - zSpace
-            
-            calcIntersections i points = 
-                if (i == 0) then points V.! i `V.cons` calcIntersections (i + 1) points
-                else if (i >= V.length points) 
-                    then V.empty
-                    else
-                        let
-                            p1@((x, _), (y, _)) = points V.! i 
-                            ((x1, wx1), (y1, wy1)) = points V.! (i - 1)
-                            calcIntersection (coords1@(_, _), coords2@(_, _), boundaryCoord) =
-                                let
-                                    (coord11, coord12) = maximumBy (\(coord1, _) (coord2, _) -> compare coord1 coord2) [coords1, coords2]
-                                    (coord21, coord22) = minimumBy (\(coord1, _) (coord2, _) -> compare coord1 coord2) [coords1, coords2]
-                                in
-                                    if coord11 > boundaryCoord && coord21 < boundaryCoord
-                                        then Just (boundaryCoord, coord22 + (coord12 - coord22) * (boundaryCoord - coord21) / (coord11 - coord21))
-                                        else Nothing
-                            xIntersections = catMaybes $ map (calcIntersection) [
-                                ((x, y), (x1, y1), leftPlusSpace), 
-                                ((x, y), (x1, y1), rightMinusSpace)]
-                            yIntersections = map swap $ catMaybes $ map (calcIntersection) [
-                                ((y, x), (y1, x1), topMinusSpace), 
-                                ((y, x), (y1, x1), bottomPlusSpace)]
-                            -- TODO: correct interpolation of errors
-                            intersections = map (\(x, y) -> ((x, wx1), (y, wy1))) $ sortBy (\(x1, _) (x2, _) -> compare x1 x2) $ xIntersections ++ yIntersections
-                        in
-                            if x < leftPlusSpace && x1 < leftPlusSpace || x > rightMinusSpace && x1 > rightMinusSpace 
-                                then 
-                                    calcIntersections (i + 1) points
-                                else if intersections /= [] then 
-                                    ((V.fromList intersections) `V.snoc` p1) V.++ calcIntersections (i + 1) points 
-                                else
-                                    p1 `V.cons` calcIntersections (i + 1) points
-            
-            dataToScreen d@(PlotData _ _ _) =
-                V.filter (\((x, _), (y, _)) -> x >= leftPlusSpace && x < rightMinusSpace && y >= topMinusSpace && y < bottomPlusSpace) $
-                    toScreenCoordss_ formattedArea (plotArea plotSettings) (plotDataValues d)
-            dataLinesToScreen d@(PlotData _ _ _) =
-                -- Additional terms xSpace / 1000 and ySpace / 1000 are workaround for rounding errors
-                fst $ Utils.Misc.segmentVector (\((x, _), (y, _)) -> x >= leftPlusSpace - xSpace / 1000 && x < rightMinusSpace + xSpace / 1000 && y >= topMinusSpace + ySpace / 1000 && y < bottomPlusSpace - ySpace / 1000) $
-                    calcIntersections 0 $
-                    toScreenCoordss_ formattedArea (plotArea plotSettings) (plotDataValues d)
-            dataToScreen3d d@(PlotData3d _) =
-                V.filter (\(x1, x2, z) -> x1 >= leftPlusSpace && x1 < rightMinusSpace && x2 >= topMinusSpace && x2 < bottomPlusSpace  && z >= backPlusSpace && z < frontMinusSpace) $
-                    V.map (\(x1, x2, z) -> 
-                        let
-                            ((screenX1, _) , (screenX2, _), screenZ) = toScreenCoords1 formattedArea (plotArea plotSettings) ((x1, 0), (x2, 0), z)
-                        in (screenX1, screenX2, screenZ)
-                        ) $ plotDataValues3d d
-            zeroScreenCoords = toScreenCoords scrArea (plotArea plotSettings) (0, 0, 0)
-        case plotData of
-            PlotData _ _ _ ->
-                do
+                Just rect -> do
                     let
-                        maybePointAttributes = plotDataPointAttributes plotData
-                        maybeLineAttributes = plotDataLineAttributes plotData
-                        dataPoints :: V.Vector ((Double, Double), (Double, Double)) = dataToScreen plotData
-                        dataLines :: [V.Vector ((Double, Double), (Double, Double))] = dataLinesToScreen plotData
-                    case maybePointAttributes of
-                        Just pointAttributes ->
-                            do
-                                let
-                                    ptSize = (plotPointSize pointAttributes) * (min width height) / 200
-                                    (r, g, b, a) = plotPointColor pointAttributes
-                                setSourceRGBA r g b a
-                                case maybeLineAttributes of
-                                    Just lineAttributes ->
-                                        if (plotLineWidth lineAttributes) > 0
-                                        then setLineWidth (plotLineWidth lineAttributes)
-                                        else setLineWidth 1
-                                    otherwise -> setLineWidth 1 
-                                setLineJoin LineJoinMiter
-                                
-                                V.mapM_ (\(x, y) -> drawDataSymbol (left, top, right, bottom) (x, y) ptSize (plotPointType pointAttributes) zeroScreenCoords) dataPoints
-                                stroke
-                        otherwise ->
-                            return ()
-                    case maybeLineAttributes of
-                        Just lineAttributes ->
-                            if all (== 0) (plotLineDash lineAttributes) || plotLineWidth lineAttributes == 0
-                            then return ()
-                            else
-                                do
-                                    let
-                                        (r, g, b, a) = plotLineColor lineAttributes
-                                    setLineWidth $ plotLineWidth lineAttributes
-                                    setLineJoin LineJoinRound
-                                    setDash (plotLineDash lineAttributes) 0
-                                    --drawDataLines' (trace ("dataLines: " ++ show dataLines) dataLines) (r, g, b, a)
-                                    drawDataLines' dataLines (r, g, b, a)
-                        otherwise ->
-                            return ()
-            PlotData3d _ ->
-                draw3dData (dataToScreen3d plotData)
-            PlotVectors _ _ _ _ ->
-                do
-                    let 
-                        lineAttributes = plotVectorLineAttributes plotData
+                        scrArea = screenArea plotSettings
+                        lineAttributes = plotSelectionLineAttributes sel
                         (r, g, b, a) = plotLineColor lineAttributes
-                        screenVectors = 
-                            V.filter (\((x1, y1, z1), (x2, y2, z2)) -> x1 >= left + xSpace && x1 < right - xSpace && y1 >= top - ySpace && y1 < bottom + ySpace &&
-                                x2 >= left + xSpace && x2 < right - xSpace && y2 >= top - ySpace && y2 < bottom + ySpace) $
-                            V.map (\((x1, y1, z1), (x2, y2, z2)) -> 
-                            (toScreenCoords scrArea (plotArea plotSettings) (x1, y1, z1), toScreenCoords scrArea (plotArea plotSettings) (x2, y2, z2))) $ 
-                            plotVectors plotData 
-                    setSourceRGBA r g b a
-                    setLineWidth $ plotLineWidth lineAttributes
-                    setLineJoin LineJoinRound
-                    setDash (plotLineDash lineAttributes) 0
-                    drawVectors screenVectors (plotVectorStartStyle plotData) (plotVectorEndStyle plotData)
-            PlotRectangle _ _ _ _ _ (rf, gf, bf, af) ->
-                do
-                    let
-                        lineAttributes = plotRectangleLineAttributes plotData
-                        (r, g, b, a) = plotLineColor lineAttributes
-                        (x1, y1, _) = toScreenCoords scrArea (plotArea plotSettings) (plotRectangleLeft plotData, plotRectangleBottom plotData, 0)
-                        (x2, y2, _) = toScreenCoords scrArea (plotArea plotSettings) (plotRectangleRight plotData, plotRectangleTop plotData, 0)
+                        (x1, y1, _) = toScreenCoords scrArea (plotArea plotSettings) (rectangleLeft rect, rectangleBottom rect, 0)
+                        (x2, y2, _) = toScreenCoords scrArea (plotArea plotSettings) (rectangleRight rect, rectangleTop rect, 0)
                         x = min x1 x2
                         dx = abs (x2 - x1)
                         y = min y1 y2
                         dy = abs (y2 - y1)
-                    rectangle x y dx dy
-                    setSourceRGBA rf gf bf af
-                    fillPreserve
-                    setSourceRGBA r g b a
-                    setLineWidth $ plotLineWidth lineAttributes
-                    setLineJoin LineJoinRound
-                    setDash (plotLineDash lineAttributes) 0
-                    stroke
-            PlotPolygon polygon pattern ->
-                do
+                    Cairo.setSourceRGBA r g b a
+                    Cairo.setLineWidth $ plotLineWidth lineAttributes
+                    Cairo.setLineJoin Cairo.LineJoinRound
+                    Cairo.setDash (plotLineDash lineAttributes) 0
+                    Cairo.rectangle x y dx dy
+                    Cairo.stroke
+
+drawSegments :: PlotSettings -> Cairo.Render ()
+drawSegments plotSettings =
+    case plotSegments plotSettings of
+        Nothing -> return ()
+        Just segments -> do
+            let
+                scrArea = screenArea plotSettings
+                lineAttributes = plotSegmentsLineAttributes segments
+                (r, g, b, a) = plotLineColor lineAttributes
+            Cairo.setSourceRGBA r g b a
+            Cairo.setLineWidth $ plotLineWidth lineAttributes
+            Cairo.setLineJoin Cairo.LineJoinRound
+            Cairo.setDash (plotLineDash lineAttributes) 0
+
+            mapM_ (\x -> do
                     let
-                        colorStops = patternColorStops pattern
-                        patternFunc pat = do
-                            mapM_ (\(ColorStop offset (r, g, b, a)) ->
-                                    patternAddColorStopRGBA pat offset r g b a
-                                ) colorStops 
-                            setSource pat
-                            newPath
+                        (x1, _, _) = toScreenCoords scrArea (plotArea plotSettings) (x, 0, 0)
+                    Cairo.moveTo x1 (screenAreaBottom scrArea)
+                    Cairo.lineTo x1 (screenAreaTop scrArea)
+                ) (plotSegmentsData segments)
+            Cairo.stroke
+
+drawData :: PlotSettings -> PlotData -> Cairo.Render ()
+drawData plotSettings plotData = do
+    let
+        scrArea = screenArea plotSettings
+
+        formattedArea = formatScreenArea scrArea
+        left = screenAreaLeft formattedArea
+        right = screenAreaRight formattedArea
+        top = screenAreaTop formattedArea
+        bottom = screenAreaBottom formattedArea
+        back = screenAreaBack formattedArea
+        front = screenAreaFront formattedArea
+        width = right - left
+        height = bottom - top
+        depth = front - back
+        xSpace = (right - left) / 20
+        ySpace = (top - bottom) / 20 -- Note that ySpace is negative
+        zSpace = (front - back) / 20
+
+        leftPlusSpace = left + xSpace
+        rightMinusSpace = right - xSpace
+        topMinusSpace = top - ySpace
+        bottomPlusSpace = bottom + ySpace
+        backPlusSpace = back + zSpace
+        frontMinusSpace = front - zSpace
+
+        calcIntersections i points =
+            if (i == 0) then points V.! i `V.cons` calcIntersections (i + 1) points
+            else if (i >= V.length points)
+                then V.empty
+                else
+                    let
+                        p1@((x, _), (y, _)) = points V.! i
+                        ((x1, wx1), (y1, wy1)) = points V.! (i - 1)
+                        calcIntersection (coords1@(_, _), coords2@(_, _), boundaryCoord) =
                             let
-                                (x, y) = head $ polygonVertices polygon
-                                (scrX, scrY, _) = toScreenCoords scrArea (plotArea plotSettings) (x, y, 0)
-                            moveTo scrX scrY
-                            mapM_ (\(x, y) -> do
-                                let
-                                    (scrX, scrY, _) = toScreenCoords scrArea (plotArea plotSettings) (x, y, 0)
-                                lineTo scrX scrY
-                                ) (tail (polygonVertices polygon))
-                            closePath
-                            fill
-                            stroke
-                            
-                    case pattern of 
-                        LinearPattern (x0, y0) (x1, y1) _ ->
-                            do
-                                let
-                                    (scrX0, scrY0, _) = toScreenCoords scrArea (plotArea plotSettings) (x0, y0, 0)
-                                    (scrX1, scrY1, _) = toScreenCoords scrArea (plotArea plotSettings) (x1, y1, 0)
-                                withLinearPattern scrX0 scrY0 scrX1 scrY1 patternFunc
-                        RadialPattern (x0, y0, r0) (x1, y1, r1) _ ->
-                            do
-                                let
-                                        (scrX0, scrY0, _) = toScreenCoords scrArea (plotArea plotSettings) (x0, y0, 0)
-                                        (scrX1, scrY1, _) = toScreenCoords scrArea (plotArea plotSettings) (x1, y1, 0)
-                                        -- here we assume x and y axis have the equal units
-                                        (xZero, _, _) = toScreenCoords scrArea (plotArea plotSettings) (0, 0, 0)
-                                        (xR0, _, _) = toScreenCoords scrArea (plotArea plotSettings) (r0, 0, 0)
-                                        (xR1, _, _) = toScreenCoords scrArea (plotArea plotSettings) (r1, 0, 0)
-                                        scrR0 = abs $ xZero - xR0
-                                        scrR1 = abs $ xZero - xR1
-                                withRadialPattern scrX0 scrY0 scrR0 scrX1 scrY1 scrR1 patternFunc
-            PlotText text (Font fontFace fontSlant fontWeight fontSize) (x, y) textAngle textSize maybeLineAttributes (r, g, b, a) -> do
-                let
-                    (scrX0, scrY0, _) = toScreenCoords scrArea (plotArea plotSettings) (x, y, 0)
-                    toCairoFontSlant GUI.Plot.FontSlantNormal = Graphics.Rendering.Cairo.FontSlantNormal
-                    toCairoFontSlant GUI.Plot.FontSlantItalic = Graphics.Rendering.Cairo.FontSlantItalic
-                    toCairoFontSlant GUI.Plot.FontSlantOblique = Graphics.Rendering.Cairo.FontSlantOblique
-                    toCairoFontWeight GUI.Plot.FontWeightNormal = Graphics.Rendering.Cairo.FontWeightNormal
-                    toCairoFontWeight GUI.Plot.FontWeightBold = Graphics.Rendering.Cairo.FontWeightBold
-                moveTo scrX0 scrY0
-                save
-                let
-                    textAngleRad = textAngle * pi / 180.0
-                selectFontFace fontFace (toCairoFontSlant fontSlant) (toCairoFontWeight fontWeight)
-                determineFontSize plotSettings text fontSize textSize textAngleRad
-                rotate textAngleRad
-                textPath text
-                setSourceRGBA r g b a
-                fillPreserve
-                case maybeLineAttributes of 
-                    Just (PlotLineAttributes lineDash lineWidth (r, g, b, a)) -> do
-                        setSourceRGBA r g b a
-                        setLineWidth lineWidth
-                        setDash lineDash 0
-                    Nothing -> return ()
-                stroke
-                restore
+                                (coord11, coord12) = maximumBy (\(coord1, _) (coord2, _) -> compare coord1 coord2) [coords1, coords2]
+                                (coord21, coord22) = minimumBy (\(coord1, _) (coord2, _) -> compare coord1 coord2) [coords1, coords2]
+                            in
+                                if coord11 > boundaryCoord && coord21 < boundaryCoord
+                                    then Just (boundaryCoord, coord22 + (coord12 - coord22) * (boundaryCoord - coord21) / (coord11 - coord21))
+                                    else Nothing
+                        xIntersections = catMaybes $ map (calcIntersection) [
+                            ((x, y), (x1, y1), leftPlusSpace),
+                            ((x, y), (x1, y1), rightMinusSpace)]
+                        yIntersections = map swap $ catMaybes $ map (calcIntersection) [
+                            ((y, x), (y1, x1), topMinusSpace),
+                            ((y, x), (y1, x1), bottomPlusSpace)]
+                        -- TODO: correct interpolation of errors
+                        intersections = map (\(x, y) -> ((x, wx1), (y, wy1))) $ sortBy (\(x1, _) (x2, _) -> compare x1 x2) $ xIntersections ++ yIntersections
+                    in
+                        if x < leftPlusSpace && x1 < leftPlusSpace || x > rightMinusSpace && x1 > rightMinusSpace
+                            then
+                                calcIntersections (i + 1) points
+                            else if intersections /= [] then
+                                ((V.fromList intersections) `V.snoc` p1) V.++ calcIntersections (i + 1) points
+                            else
+                                p1 `V.cons` calcIntersections (i + 1) points
+
+        dataToScreen d@(PlotData _ _ _) =
+            V.filter (\((x, _), (y, _)) -> x >= leftPlusSpace && x < rightMinusSpace && y >= topMinusSpace && y < bottomPlusSpace) $
+                toScreenCoordss_ formattedArea (plotArea plotSettings) (plotDataValues d)
+        dataLinesToScreen d@(PlotData _ _ _) =
+            -- Additional terms xSpace / 1000 and ySpace / 1000 are workaround for rounding errors
+            fst $ Utils.Misc.segmentVector (\((x, _), (y, _)) -> x >= leftPlusSpace - xSpace / 1000 && x < rightMinusSpace + xSpace / 1000 && y >= topMinusSpace + ySpace / 1000 && y < bottomPlusSpace - ySpace / 1000) $
+                calcIntersections 0 $
+                toScreenCoordss_ formattedArea (plotArea plotSettings) (plotDataValues d)
+        dataToScreen3d d@(PlotData3d _) =
+            V.filter (\(x1, x2, z) -> x1 >= leftPlusSpace && x1 < rightMinusSpace && x2 >= topMinusSpace && x2 < bottomPlusSpace  && z >= backPlusSpace && z < frontMinusSpace) $
+                V.map (\(x1, x2, z) ->
+                    let
+                        ((screenX1, _) , (screenX2, _), screenZ) = toScreenCoords1 formattedArea (plotArea plotSettings) ((x1, 0), (x2, 0), z)
+                    in (screenX1, screenX2, screenZ)
+                    ) $ plotDataValues3d d
+        zeroScreenCoords = toScreenCoords scrArea (plotArea plotSettings) (0, 0, 0)
+    case plotData of
+        PlotData _ _ _ -> do
+            let
+                maybePointAttributes = plotDataPointAttributes plotData
+                maybeLineAttributes = plotDataLineAttributes plotData
+                dataPoints :: V.Vector ((Double, Double), (Double, Double)) = dataToScreen plotData
+                dataLines :: [V.Vector ((Double, Double), (Double, Double))] = dataLinesToScreen plotData
+            case maybePointAttributes of
+                Just pointAttributes -> do
+                    let
+                        ptSize = (plotPointSize pointAttributes) * (min width height) / 200
+                        (r, g, b, a) = plotPointColor pointAttributes
+                    Cairo.setSourceRGBA r g b a
+                    case maybeLineAttributes of
+                        Just lineAttributes ->
+                            if (plotLineWidth lineAttributes) > 0
+                            then Cairo.setLineWidth (plotLineWidth lineAttributes)
+                            else Cairo.setLineWidth 1
+                        _ -> Cairo.setLineWidth 1
+                    Cairo.setLineJoin Cairo.LineJoinMiter
+
+                    V.mapM_ (\(x, y) -> drawDataSymbol (left, top, right, bottom) (x, y) ptSize (plotPointType pointAttributes) zeroScreenCoords) dataPoints
+                    Cairo.stroke
+                _ ->
+                    return ()
+            case maybeLineAttributes of
+                Just lineAttributes ->
+                    if all (== 0) (plotLineDash lineAttributes) || plotLineWidth lineAttributes == 0
+                    then return ()
+                    else do
+                        let
+                            (r, g, b, a) = plotLineColor lineAttributes
+                        Cairo.setLineWidth $ plotLineWidth lineAttributes
+                        Cairo.setLineJoin Cairo.LineJoinRound
+                        Cairo.setDash (plotLineDash lineAttributes) 0
+                        drawDataLines' dataLines (r, g, b, a)
+                _ ->
+                    return ()
+        PlotData3d _ ->
+            draw3dData (dataToScreen3d plotData)
+        PlotVectors _ _ _ _ -> do
+            let
+                lineAttributes = plotVectorLineAttributes plotData
+                (r, g, b, a) = plotLineColor lineAttributes
+                screenVectors =
+                    V.filter (\((x1, y1, z1), (x2, y2, z2)) -> x1 >= left + xSpace && x1 < right - xSpace && y1 >= top - ySpace && y1 < bottom + ySpace &&
+                        x2 >= left + xSpace && x2 < right - xSpace && y2 >= top - ySpace && y2 < bottom + ySpace) $
+                    V.map (\((x1, y1, z1), (x2, y2, z2)) ->
+                    (toScreenCoords scrArea (plotArea plotSettings) (x1, y1, z1), toScreenCoords scrArea (plotArea plotSettings) (x2, y2, z2))) $
+                    plotVectors plotData
+            Cairo.setSourceRGBA r g b a
+            Cairo.setLineWidth $ plotLineWidth lineAttributes
+            Cairo.setLineJoin Cairo.LineJoinRound
+            Cairo.setDash (plotLineDash lineAttributes) 0
+            drawVectors screenVectors (plotVectorStartStyle plotData) (plotVectorEndStyle plotData)
+        PlotRectangle _ _ _ _ _ (rf, gf, bf, af) -> do
+            let
+                lineAttributes = plotRectangleLineAttributes plotData
+                (r, g, b, a) = plotLineColor lineAttributes
+                (x1, y1, _) = toScreenCoords scrArea (plotArea plotSettings) (plotRectangleLeft plotData, plotRectangleBottom plotData, 0)
+                (x2, y2, _) = toScreenCoords scrArea (plotArea plotSettings) (plotRectangleRight plotData, plotRectangleTop plotData, 0)
+                x = min x1 x2
+                dx = abs (x2 - x1)
+                y = min y1 y2
+                dy = abs (y2 - y1)
+            Cairo.rectangle x y dx dy
+            Cairo.setSourceRGBA rf gf bf af
+            Cairo.fillPreserve
+            Cairo.setSourceRGBA r g b a
+            Cairo.setLineWidth $ plotLineWidth lineAttributes
+            Cairo.setLineJoin Cairo.LineJoinRound
+            Cairo.setDash (plotLineDash lineAttributes) 0
+            Cairo.stroke
+        PlotPolygon polygon pattern -> do
+            let
+                colorStops = patternColorStops pattern
+                patternFunc pat = do
+                    mapM_ (\(ColorStop offset (r, g, b, a)) ->
+                            Cairo.patternAddColorStopRGBA pat offset r g b a
+                        ) colorStops
+                    Cairo.setSource pat
+                    Cairo.newPath
+                    let
+                        (x, y) = head $ polygonVertices polygon
+                        (scrX, scrY, _) = toScreenCoords scrArea (plotArea plotSettings) (x, y, 0)
+                    Cairo.moveTo scrX scrY
+                    mapM_ (\(x, y) -> do
+                        let
+                            (scrX, scrY, _) = toScreenCoords scrArea (plotArea plotSettings) (x, y, 0)
+                        Cairo.lineTo scrX scrY
+                        ) (tail (polygonVertices polygon))
+                    Cairo.closePath
+                    Cairo.fill
+                    Cairo.stroke
+
+            case pattern of
+                LinearPattern (x0, y0) (x1, y1) _ -> do
+                    let
+                        (scrX0, scrY0, _) = toScreenCoords scrArea (plotArea plotSettings) (x0, y0, 0)
+                        (scrX1, scrY1, _) = toScreenCoords scrArea (plotArea plotSettings) (x1, y1, 0)
+                    Cairo.withLinearPattern scrX0 scrY0 scrX1 scrY1 patternFunc
+                RadialPattern (x0, y0, r0) (x1, y1, r1) _ -> do
+                    let
+                            (scrX0, scrY0, _) = toScreenCoords scrArea (plotArea plotSettings) (x0, y0, 0)
+                            (scrX1, scrY1, _) = toScreenCoords scrArea (plotArea plotSettings) (x1, y1, 0)
+                            -- here we assume x and y axis have the equal units
+                            (xZero, _, _) = toScreenCoords scrArea (plotArea plotSettings) (0, 0, 0)
+                            (xR0, _, _) = toScreenCoords scrArea (plotArea plotSettings) (r0, 0, 0)
+                            (xR1, _, _) = toScreenCoords scrArea (plotArea plotSettings) (r1, 0, 0)
+                            scrR0 = abs $ xZero - xR0
+                            scrR1 = abs $ xZero - xR1
+                    Cairo.withRadialPattern scrX0 scrY0 scrR0 scrX1 scrY1 scrR1 patternFunc
+        PlotText text (Font fontFace fontSlant fontWeight fontSize) (x, y) textAngle textSize maybeLineAttributes (r, g, b, a) -> do
+            let
+                (scrX0, scrY0, _) = toScreenCoords scrArea (plotArea plotSettings) (x, y, 0)
+                toCairoFontSlant GUI.Plot.FontSlantNormal = Cairo.FontSlantNormal
+                toCairoFontSlant GUI.Plot.FontSlantItalic = Cairo.FontSlantItalic
+                toCairoFontSlant GUI.Plot.FontSlantOblique = Cairo.FontSlantOblique
+                toCairoFontWeight GUI.Plot.FontWeightNormal = Cairo.FontWeightNormal
+                toCairoFontWeight GUI.Plot.FontWeightBold = Cairo.FontWeightBold
+            Cairo.moveTo scrX0 scrY0
+            Cairo.save
+            let
+                textAngleRad = textAngle * pi / 180.0
+            Cairo.selectFontFace (T.pack fontFace) (toCairoFontSlant fontSlant) (toCairoFontWeight fontWeight)
+            determineFontSize plotSettings text fontSize textSize textAngleRad
+            Cairo.rotate textAngleRad
+            Cairo.textPath (T.pack text)
+            Cairo.setSourceRGBA r g b a
+            Cairo.fillPreserve
+            case maybeLineAttributes of
+                Just (PlotLineAttributes lineDash lineWidth (r, g, b, a)) -> do
+                    Cairo.setSourceRGBA r g b a
+                    Cairo.setLineWidth lineWidth
+                    Cairo.setDash lineDash 0
+                Nothing -> return ()
+            Cairo.stroke
+            Cairo.restore
 
 determineFontSize plotSettings text fontSize (tw, th) angle = do
     let
-        --area = plotArea plotSettings
-        --plotWidth = plotAreaRight area - plotAreaLeft area
-        --plotHeight = plotAreaTop area - plotAreaBottom area
-        --coef = plotHeight / plotWidth
         scrArea = screenArea plotSettings
-        scrWidth = screenAreaRight scrArea - screenAreaLeft scrArea 
-        scrHeight = screenAreaBottom scrArea - screenAreaTop scrArea 
+        scrWidth = screenAreaRight scrArea - screenAreaLeft scrArea
+        scrHeight = screenAreaBottom scrArea - screenAreaTop scrArea
         precision = min (scrWidth / 10000) (scrHeight / 10000)
         (checkWidth, textWidth) = case tw of
             Just tw -> (True, tw)
@@ -548,7 +542,7 @@ determineFontSize plotSettings text fontSize (tw, th) angle = do
                             newSize = if not checkWidth then fontSize
                                 else if max lastWidth1 lastWidth2 >= scrTextWidth && min lastWidth1 lastWidth2 <= scrTextWidth
                                     then (lastSizeX1 + lastSizeX2) / 2
-                                else if min lastWidth1 lastWidth2 > scrTextWidth 
+                                else if min lastWidth1 lastWidth2 > scrTextWidth
                                     then (min lastSizeX1 lastSizeX2) / 2
                                 else (max lastSizeX1 lastSizeX2) * 2
                         in
@@ -557,466 +551,418 @@ determineFontSize plotSettings text fontSize (tw, th) angle = do
                 (heightOk, newSizeY, lastHeight1, lastHeight2, lastSizeY1, lastSizeY2) = case eitherLastHeightAndSizeOrNewSize of
                     Left (lastHeight1, lastHeight2, lastSizeY1, lastSizeY2) ->
                         let
-                            newSize = if not checkHeight then fontSize 
+                            newSize = if not checkHeight then fontSize
                                 else if max lastHeight1 lastHeight2 >= scrTextHeight && min lastHeight1 lastHeight2 <= scrTextHeight
                                     then (lastSizeY1 + lastSizeY2) / 2
-                                else if min lastHeight1 lastHeight2 > scrTextHeight 
+                                else if min lastHeight1 lastHeight2 > scrTextHeight
                                     then (min lastSizeY1 lastSizeY2) / 2
                                 else (max lastSizeY1 lastSizeY2) * 2
                         in
                             (abs (floor newSize - floor lastSizeY1) <= 1, newSize, lastHeight1, lastHeight2, lastSizeY1, lastSizeY2)
                     Right (newSize) -> (True, newSize, 0, 0, 0, 0)
-            --if floor (trace ("lastWidth1, lastWidth2, scrTextWidth=" ++ show lastWidth1 ++ ", " ++ show lastWidth2 ++ ", " ++ show scrTextWidth) lastWidth1) == floor scrTextWidth && floor (trace ("lastHeight1=" ++ show lastHeight1) lastHeight1) == floor scrTextHeight
-            --if (trace ("newSizeX, lastSizeX1, lastSizeX2=" ++ show newSizeX ++ ", " ++ show lastSizeX1 ++ ", " ++ show lastSizeX2 ++ "\nnewSizeY, lastSizeY1, lastSizey2=" ++ show newSizeY ++ ", " ++ show lastSizeY1 ++ ", " ++ show lastSizeY2) (widthOk && heightOk)) 
-            if widthOk && heightOk 
+            if widthOk && heightOk
                 then return ()
                 else do
-                    setFontMatrix $ M.scale newSizeX newSizeY M.identity
-                    (TextExtents xb yb w h _ _) <- textExtents text
+                    Cairo.setFontMatrix $ M.scale newSizeX newSizeY M.identity
+                    (Cairo.TextExtents xb yb w h _ _) <- Cairo.textExtents (T.pack text)
                     let
                         (lastWidth, lastSizeX) = if w < scrTextWidth then (max lastWidth1 lastWidth2, max lastSizeX1 lastSizeX2) else (min lastWidth1 lastWidth2, min lastSizeX1 lastSizeX2)
                         (lastHeight, lastSizeY) = if h < scrTextHeight then (max lastHeight1 lastHeight2, max lastSizeY1 lastSizeY2) else (min lastHeight1 lastHeight2, min lastSizeY1 lastSizeY2)
-                    --determineFontSize' (if widthOk then (Right newSizeX) else Left ((trace ("w,h=" ++ show w ++ ", " ++ show h) w), lastWidth, newSizeX, lastSizeX)) (if heightOk then (Right newSizeY) else Left ((trace ("w,h=" ++ show w ++ ", " ++ show h) h), lastHeight, newSizeY, lastSizeY))
                     determineFontSize' (if widthOk then (Right newSizeX) else Left (w, lastWidth, newSizeX, lastSizeX)) (if heightOk then (Right newSizeY) else Left (h, lastHeight, newSizeY, lastSizeY))
-    setFontMatrix $ M.scale fontSize fontSize M.identity
-    (TextExtents xb yb w h _ _) <- textExtents text
+    Cairo.setFontMatrix $ M.scale fontSize fontSize M.identity
+    (Cairo.TextExtents xb yb w h _ _) <- Cairo.textExtents (T.pack text)
     determineFontSize' (Left (w, w, fontSize, fontSize)) (Left (h, h, fontSize, fontSize))
-                                 
-drawVectors :: V.Vector ((Double, Double, Double), (Double, Double, Double)) -> Int -> Int -> Render ()
-drawVectors vectors startStyle ensStyle = 
-    do
-        let
-            drawVector ((x1, y1, z1), (x2, y2, z2)) = 
-                do
-                    moveTo x1 y1
-                    lineTo x2 y2
-                    case ensStyle of
-                        1 ->
-                            do
-                                let
-                                    l = sqrt ((x2 - x1) ^ 2 + (y2 - y1) ^ 2)
-                                return ()
-                        otherwise ->
-                            return ()
-        V.mapM_ drawVector vectors
-        stroke
 
-draw3dData :: V.Vector (Double, Double, Double) -> Render ()
-draw3dData xyz =
-    do
-        let 
-            (x1s, x2s, ys) = V.unzip3 xyz
+drawVectors :: V.Vector ((Double, Double, Double), (Double, Double, Double)) -> Int -> Int -> Cairo.Render ()
+drawVectors vectors startStyle ensStyle = do
+    let
+        drawVector ((x1, y1, z1), (x2, y2, z2)) = do
+            Cairo.moveTo x1 y1
+            Cairo.lineTo x2 y2
+            case ensStyle of
+                1 -> do
+                    let
+                        l = sqrt ((x2 - x1) ^ 2 + (y2 - y1) ^ 2)
+                    return ()
+                _ ->
+                    return ()
+    V.mapM_ drawVector vectors
+    Cairo.stroke
 
-            (xMin1, xMin2) = (V.minimum x1s, V.minimum x2s)
-            (xMax1, xMax2) = (V.maximum x1s, V.maximum x2s)
-            numx1 = V.length $ nubVector x1s
-            numx2 = V.length $ nubVector x2s
-            yMin = V.minimum ys
-            yRange = V.maximum ys - yMin
+draw3dData :: V.Vector (Double, Double, Double) -> Cairo.Render ()
+draw3dData xyz = do
+    let
+        (x1s, x2s, ys) = V.unzip3 xyz
 
-            stepx1 = (xMax1 - xMin1) / fromIntegral numx1
-            stepx2 = (xMax2 - xMin2) / fromIntegral numx2
-        V.mapM_ (\(x1, x2, y) ->
-                do
-                    let 
-                        (r, g, b) = getColor y yMin yRange
-                        
-                    setSourceRGB r g b
-                    (prevX1, prevX2) <- getCurrentPoint
-                    if (abs (prevX1 - x1) >= 1 || abs (prevX2 - x2) >= 1)
-                        then
-                            do
-                                moveTo x1 x2
-                                rectangle (x1 - stepx1 / 2 - 1) (x2 - stepx2 / 2 - 1) (stepx1 + 1) (stepx2 + 1)
-                                if (stepx1 > 0 && stepx2 > 0)
-                                    then
-                                        do
-                                            Graphics.Rendering.Cairo.fill
-                                    else
-                                        return ()  
-                                stroke
+        (xMin1, xMin2) = (V.minimum x1s, V.minimum x2s)
+        (xMax1, xMax2) = (V.maximum x1s, V.maximum x2s)
+        numx1 = V.length $ nubVector x1s
+        numx2 = V.length $ nubVector x2s
+        yMin = V.minimum ys
+        yRange = V.maximum ys - yMin
+
+        stepx1 = (xMax1 - xMin1) / fromIntegral numx1
+        stepx2 = (xMax2 - xMin2) / fromIntegral numx2
+    V.mapM_ (\(x1, x2, y) -> do
+            let
+                (r, g, b) = getColor y yMin yRange
+
+            Cairo.setSourceRGB r g b
+            (prevX1, prevX2) <- Cairo.getCurrentPoint
+            if (abs (prevX1 - x1) >= 1 || abs (prevX2 - x2) >= 1)
+                then do
+                    Cairo.moveTo x1 x2
+                    Cairo.rectangle (x1 - stepx1 / 2 - 1) (x2 - stepx2 / 2 - 1) (stepx1 + 1) (stepx2 + 1)
+                    if (stepx1 > 0 && stepx2 > 0)
+                        then do
+                            Cairo.fill
                         else
                             return ()
-            ) xyz 
+                    Cairo.stroke
+                else
+                    return ()
+        ) xyz
 
 getColor :: Double -> Double -> Double -> (Double, Double, Double)
 getColor y yMin yRange =
     let
         color = (y - yMin) / yRange
-        r = 
-            if color <= 0.5 
-                then 1.5 * color 
-                else 0.75 
+        r =
+            if color <= 0.5
+                then 1.5 * color
+                else 0.75
         g = 2 * (max 0 (color - 0.5))
         b = 2 * (max 0 (0.5 - color))
     in (r, g, b)
 
+drawDataSymbol :: (Double, Double, Double, Double) -> ((Double, Double), (Double, Double)) -> Double -> PlotPointType -> (Double, Double, Double) -> Cairo.Render ()
+drawDataSymbol (left, top, right, bottom) ((x, xErr), (y, yErr)) size symbol (x0, y0, z0) = do
+    let
+        drawPlus = do
+            Cairo.moveTo (x - size) y
+            Cairo.lineTo (x + size) y
+            Cairo.moveTo x (y - size)
+            Cairo.lineTo x (y + size)
+        drawCross = do
+            Cairo.moveTo (x - size) (y - size)
+            Cairo.lineTo (x + size) (y + size)
+            Cairo.moveTo (x - size) (y + size)
+            Cairo.lineTo (x + size) (y - size)
+        drawTriangle = do
+            Cairo.moveTo (x - size) (y + (size / sqrt(3)))
+            Cairo.lineTo x (y - (size / sqrt(3)))
+            Cairo.lineTo (x + size) (y + (size / sqrt(3)))
+            Cairo.lineTo (x - size) (y + (size / sqrt(3)))
+        drawDownTriangle = do
+            Cairo.moveTo (x - size) (y - (size / sqrt(3)))
+            Cairo.lineTo x (y + (size / sqrt(3)))
+            Cairo.lineTo (x + size) (y - (size / sqrt(3)))
+            Cairo.lineTo (x - size) (y - (size / sqrt(3)))
+        drawDiamond = do
+            Cairo.moveTo (x - size) y
+            Cairo.lineTo x (y + size)
+            Cairo.lineTo (x + size) y
+            Cairo.lineTo x (y - size)
+            Cairo.lineTo (x - size) y
+        drawPentagon = do
+            let
+                h = size * (sqrt(5) - 1) / 4
+                a = size * sqrt((5 + sqrt(5)) / 2) / 2
+                s = size * sqrt((5 - (sqrt(5))) / 2) / 2
+                h2 = sqrt (size * size - s * s)
+            Cairo.moveTo (x - a) (y - h)
+            Cairo.lineTo x (y - size)
+            Cairo.lineTo (x + a) (y - h)
+            Cairo.lineTo (x + s) (y + h2)
+            Cairo.lineTo (x - s) (y + h2)
+            Cairo.lineTo (x - a) (y - h)
 
-
-drawDataSymbol :: (Double, Double, Double, Double) -> ((Double, Double), (Double, Double)) -> Double -> PlotPointType -> (Double, Double, Double) -> Render ()
-drawDataSymbol (left, top, right, bottom) ((x, xErr), (y, yErr)) size symbol (x0, y0, z0) =
-    do
-        let
-            drawPlus =
-                do
-                    moveTo (x - size) y
-                    lineTo (x + size) y
-                    moveTo x (y - size)
-                    lineTo x (y + size)
-            drawCross =
-                do
-                    moveTo (x - size) (y - size)
-                    lineTo (x + size) (y + size)
-                    moveTo (x - size) (y + size)
-                    lineTo (x + size) (y - size)
-            drawTriangle =
-                do
-                    moveTo (x - size) (y + (size / sqrt(3)))
-                    lineTo x (y - (size / sqrt(3)))
-                    lineTo (x + size) (y + (size / sqrt(3)))
-                    lineTo (x - size) (y + (size / sqrt(3)))
-            drawDownTriangle =
-                do
-                    moveTo (x - size) (y - (size / sqrt(3)))
-                    lineTo x (y + (size / sqrt(3)))
-                    lineTo (x + size) (y - (size / sqrt(3)))
-                    lineTo (x - size) (y - (size / sqrt(3)))
-            drawDiamond =
-                do
-                    moveTo (x - size) y
-                    lineTo x (y + size)
-                    lineTo (x + size) y
-                    lineTo x (y - size)
-                    lineTo (x - size) y
-            drawPentagon =
-                do
-                    let
-                        h = size * (sqrt(5) - 1) / 4
-                        a = size * sqrt((5 + sqrt(5)) / 2) / 2
-                        s = size * sqrt((5 - (sqrt(5))) / 2) / 2
-                        h2 = sqrt (size * size - s * s)
-                    moveTo (x - a) (y - h) 
-                    lineTo x (y - size)
-                    lineTo (x + a) (y - h)
-                    lineTo (x + s) (y + h2)
-                    lineTo (x - s) (y + h2)
-                    lineTo (x - a) (y - h) 
-            
-        case symbol of
-            Point ->
-                do
-                    rectangle x y 1 1
-            Plus -> drawPlus
-            Cross -> drawCross
-            PlusCross ->
-                do
-                    drawPlus
-                    drawCross
-            Square ->
-                do
-                    rectangle (x - size) (y - size) (size * 2) (size * 2)
-            FilledSquare ->
-                do
-                    rectangle (x - size) (y - size) (size * 2) (size * 2)
-                    fill
-            Circle ->
-                do
-                    moveTo (x + size) y
-                    arc x y size 0 (2 * pi)
-            FilledCircle ->
-                do
-                    moveTo (x + size) y
-                    arc x y size 0 (2 * pi)
-                    fill
-            Triangle -> drawTriangle
-            FilledTriangle ->
-                do 
-                    drawTriangle
-                    fill
-            DownTriangle -> drawDownTriangle
-            FilledDownTriangle ->
-                do 
-                    drawDownTriangle
-                    fill
-            Diamond -> drawDiamond
-            FilledDiamond ->
-                do  
-                    drawDiamond
-                    fill
-            Pentagon -> drawPentagon
-            FilledPentagon ->
-                do 
-                    drawPentagon
-                    fill
-            Impulse -> 
-                do
-                    moveTo x (if y0 < bottom then if y0 > top then y0 else top else bottom)
-                    lineTo x y
-        if xErr > 0
-            then do
-                moveTo (x - xErr) y
-                lineTo (x + xErr) y
-                moveTo (x - xErr) (y - size)
-                lineTo (x - xErr) (y + size)
-                moveTo (x + xErr) (y - size)
-                lineTo (x + xErr) (y + size)
-            else 
-                return ()
-        if yErr > 0
-            then do
-                moveTo x (y - yErr)
-                lineTo x (y + yErr)
-                moveTo (x - size) (y - yErr)
-                lineTo (x + size) (y - yErr)
-                moveTo (x - size) (y + yErr)
-                lineTo (x + size) (y + yErr)
-            else 
-                return ()
-        --stroke
+    case symbol of
+        Point -> do
+            Cairo.rectangle x y 1 1
+        Plus -> drawPlus
+        Cross -> drawCross
+        PlusCross -> do
+            drawPlus
+            drawCross
+        Square -> do
+            Cairo.rectangle (x - size) (y - size) (size * 2) (size * 2)
+        FilledSquare -> do
+            Cairo.rectangle (x - size) (y - size) (size * 2) (size * 2)
+            Cairo.fill
+        Circle -> do
+            Cairo.moveTo (x + size) y
+            Cairo.arc x y size 0 (2 * pi)
+        FilledCircle -> do
+            Cairo.moveTo (x + size) y
+            Cairo.arc x y size 0 (2 * pi)
+            Cairo.fill
+        Triangle -> drawTriangle
+        FilledTriangle -> do
+            drawTriangle
+            Cairo.fill
+        DownTriangle -> drawDownTriangle
+        FilledDownTriangle -> do
+            drawDownTriangle
+            Cairo.fill
+        Diamond -> drawDiamond
+        FilledDiamond -> do
+            drawDiamond
+            Cairo.fill
+        Pentagon -> drawPentagon
+        FilledPentagon -> do
+            drawPentagon
+            Cairo.fill
+        Impulse -> do
+            Cairo.moveTo x (if y0 < bottom then if y0 > top then y0 else top else bottom)
+            Cairo.lineTo x y
+    if xErr > 0
+        then do
+            Cairo.moveTo (x - xErr) y
+            Cairo.lineTo (x + xErr) y
+            Cairo.moveTo (x - xErr) (y - size)
+            Cairo.lineTo (x - xErr) (y + size)
+            Cairo.moveTo (x + xErr) (y - size)
+            Cairo.lineTo (x + xErr) (y + size)
+        else
+            return ()
+    if yErr > 0
+        then do
+            Cairo.moveTo x (y - yErr)
+            Cairo.lineTo x (y + yErr)
+            Cairo.moveTo (x - size) (y - yErr)
+            Cairo.lineTo (x + size) (y - yErr)
+            Cairo.moveTo (x - size) (y + yErr)
+            Cairo.lineTo (x + size) (y + yErr)
+        else
+            return ()
 
 -- | Data points are grouped by gaps to avoid horizontal connection lines
-drawDataLines' :: [V.Vector ((Double, Double), (Double, Double))] -> (Double, Double, Double, Double) -> Render ()
+drawDataLines' :: [V.Vector ((Double, Double), (Double, Double))] -> (Double, Double, Double, Double) -> Cairo.Render ()
 drawDataLines' points (r, g, b, a) =
     drawDataLines points $ map (\points -> V.replicate (V.length points) (r, g, b, a)) points
 
-drawDataLines :: [V.Vector ((Double, Double), (Double, Double))] -> [V.Vector (Double, Double, Double, Double)] -> Render ()
-drawDataLines points colors = 
-    do
-        zipWithM_ (\points colors -> do
-                let
-                    drawDataLine (((x, _), (y, _)), (r, g, b, a)) =
-                        do 
-                            (prevX, prevY) <- getCurrentPoint
-                            if (abs (prevX - x) >= 0.5 || abs (prevY - y) >= 0.5)
-                                then
-                                    do
-                                        let 
-                                            setColors = if (V.length colors > 1)
-                                                then
-                                                    setSourceRGBA r g b a
-                                                else
-                                                    return ()
-                                        setColors
-                                        lineTo x y
-                                else
-                                    return ()
-                if (V.length points > 0) 
-                    then 
-                        do
-                            let ((x, _), (y, _)) = V.head points
-                            moveTo x y
-                    else return ()
-                if V.length colors == 1
-                    then
-                        do
+drawDataLines :: [V.Vector ((Double, Double), (Double, Double))] -> [V.Vector (Double, Double, Double, Double)] -> Cairo.Render ()
+drawDataLines points colors = do
+    zipWithM_ (\points colors -> do
+            let
+                drawDataLine (((x, _), (y, _)), (r, g, b, a)) = do
+                    (prevX, prevY) <- Cairo.getCurrentPoint
+                    if (abs (prevX - x) >= 0.5 || abs (prevY - y) >= 0.5)
+                        then do
                             let
-                                (r, g, b, a) = colors V.! 0
-                            setSourceRGBA r g b a
-                    else
-                        return ()
-                V.mapM_ drawDataLine $ V.zip points colors
-                if not (V.null ((V.filter (\((_, _), (_, yErr)) -> yErr > 0) points)))
-                    then
-                        do
-                            let ((x, _), (y, yErr)) = V.head points
-                            moveTo x (y - yErr)
-                            V.mapM_ drawDataLine $ V.zip (V.map (\((x, _), (y, yErr)) -> ((x, 0 :: Double), (y - yErr, 0 :: Double))) points) colors
-                            moveTo x (y + yErr)
-                            V.mapM_ drawDataLine $ V.zip (V.map (\((x, _), (y, yErr)) -> ((x, 0 :: Double), (y + yErr, 0 :: Double))) points) colors
-                    else
-                        return ()
-            ) points colors
-        stroke
+                                setColors = if (V.length colors > 1)
+                                    then
+                                        Cairo.setSourceRGBA r g b a
+                                    else
+                                        return ()
+                            setColors
+                            Cairo.lineTo x y
+                        else
+                            return ()
+            if (V.length points > 0)
+                then do
+                    let ((x, _), (y, _)) = V.head points
+                    Cairo.moveTo x y
+                else return ()
+            if V.length colors == 1
+                then do
+                    let
+                        (r, g, b, a) = colors V.! 0
+                    Cairo.setSourceRGBA r g b a
+                else
+                    return ()
+            V.mapM_ drawDataLine $ V.zip points colors
+            if not (V.null ((V.filter (\((_, _), (_, yErr)) -> yErr > 0) points)))
+                then do
+                    let ((x, _), (y, yErr)) = V.head points
+                    Cairo.moveTo x (y - yErr)
+                    V.mapM_ drawDataLine $ V.zip (V.map (\((x, _), (y, yErr)) -> ((x, 0 :: Double), (y - yErr, 0 :: Double))) points) colors
+                    Cairo.moveTo x (y + yErr)
+                    V.mapM_ drawDataLine $ V.zip (V.map (\((x, _), (y, yErr)) -> ((x, 0 :: Double), (y + yErr, 0 :: Double))) points) colors
+                else
+                    return ()
+        ) points colors
+    Cairo.stroke
 
-setLineSettings :: (Double, Double, Double) -> Double -> Render ()
-setLineSettings (r, g, b) lineWidth =
-    do
-        setSourceRGB r g b
-        setDash [1, 1] 0
-        setLineWidth lineWidth
-        setLineCap LineCapRound
-        setLineJoin LineJoinRound
+setLineSettings :: (Double, Double, Double) -> Double -> Cairo.Render ()
+setLineSettings (r, g, b) lineWidth = do
+    Cairo.setSourceRGB r g b
+    Cairo.setDash [1, 1] 0
+    Cairo.setLineWidth lineWidth
+    Cairo.setLineCap Cairo.LineCapRound
+    Cairo.setLineJoin Cairo.LineJoinRound
 
-unitLabel (width, height) xy beforeOrAfter ((x, y, _), (screenX, screenY, _))  =
-    do
-        let 
-            val = if xy then x else y
-            label = (show $ epsilonRound val)
-        TextExtents _ _ w h _ _ <- textExtents label
-        if xy 
-            then
-                if beforeOrAfter
-                    then
-                        return (screenX - (w / 2), screenY - (height / 100 + h), label)
-                    else
-                        return (screenX - (w / 2), screenY + (height / 100 + h), label)
-            else
-                if beforeOrAfter
-                    then
-                        return (screenX - (w + width / 167), screenY + h / 2, label)
-                    else
-                        return (screenX + (width / 167), screenY + h / 2, label)
+unitLabel (width, height) xy beforeOrAfter ((x, y, _), (screenX, screenY, _)) = do
+    let
+        val = if xy then x else y
+        label = T.pack (show $ epsilonRound val)
+    Cairo.TextExtents _ _ w h _ _ <- Cairo.textExtents label
+    if xy
+        then
+            if beforeOrAfter
+                then
+                    return (screenX - (w / 2), screenY - (height / 100 + h), label)
+                else
+                    return (screenX - (w / 2), screenY + (height / 100 + h), label)
+        else
+            if beforeOrAfter
+                then
+                    return (screenX - (w + width / 167), screenY + h / 2, label)
+                else
+                    return (screenX + (width / 167), screenY + h / 2, label)
 
-drawUnits :: 
+drawUnits ::
              PlotSettings
              -> (
-                 (Bool, Bool), -- ^ draw x and y minor units  
+                 (Bool, Bool), -- ^ draw x and y minor units
                  (Bool, Bool), -- ^ draw x and y major units
                  ([Double], [Double], [Double]), -- ^ x, y and z minor units
                  ([Double], [Double], [Double])  -- ^ x, y and z major units
-             ) -> Render ()
-drawUnits plotSettings ((drawXMinorUnits, drawYMinorUnits), (drawXMajorUnits, drawYMajorUnits), (xMinorUnits, yMinorUnits, zMinorUnits), (xMajorUnits, yMajorUnits, zMajorUnits)) = 
-    do
-        let
-            scrArea = screenArea plotSettings
-            scrLeft = screenAreaLeft (screenArea plotSettings)
-            scrRight = screenAreaRight (screenArea plotSettings)
-            scrTop = screenAreaTop (screenArea plotSettings)
-            scrBottom = screenAreaBottom (screenArea plotSettings)
-            width = scrRight - scrLeft
-            height = scrBottom - scrTop
-            lineWidth = ((min width height) / 320)
+             ) -> Cairo.Render ()
+drawUnits plotSettings ((drawXMinorUnits, drawYMinorUnits), (drawXMajorUnits, drawYMajorUnits), (xMinorUnits, yMinorUnits, zMinorUnits), (xMajorUnits, yMajorUnits, zMajorUnits)) = do
+    let
+        scrArea = screenArea plotSettings
+        scrLeft = screenAreaLeft (screenArea plotSettings)
+        scrRight = screenAreaRight (screenArea plotSettings)
+        scrTop = screenAreaTop (screenArea plotSettings)
+        scrBottom = screenAreaBottom (screenArea plotSettings)
+        width = scrRight - scrLeft
+        height = scrBottom - scrTop
+        lineWidth = ((min width height) / 320)
 
-        setLineSettings (0, 0, 0) lineWidth
-        setFontSize $ ((min (width * 3) (height * 4)) / 160)
-        let 
-            clip = False -- whether to clip graph boundaries to ticks
-            minXUnit = if clip then minimum [(minimum xMinorUnits), (minimum xMajorUnits)] else plotAreaLeft (plotArea plotSettings)
-            minYUnit = if clip then minimum [(minimum yMinorUnits), (minimum yMajorUnits)] else plotAreaBottom (plotArea plotSettings)
-            maxXUnit = if clip then maximum [(maximum xMinorUnits), (maximum xMajorUnits)] else plotAreaRight (plotArea plotSettings)
-            maxYUnit = if clip then maximum [(maximum yMinorUnits), (maximum yMajorUnits)] else plotAreaTop (plotArea plotSettings)
-            drawUnits2 :: Bool -> [Double] -> Double -> Bool -> Render ()
-            drawUnits2 xy units lineLength drawLabel =
-                do
-                    let 
-                        -- min and max prefixes denote either lower or upper instance of x-axis and left or right instance of y-axis 
-                        (minCoords, maxCoords) = 
-                            if xy then
-                                unzip $ map (\unit -> ((unit, minYUnit, 0), (unit, maxYUnit, 0))) units
-                            else
-                                unzip $ map (\unit -> ((minXUnit, unit, 0), (maxXUnit, unit, 0))) units
-                        -- | Screen coords of unit line start points
-                        screenMinCoords = map (toScreenCoords scrArea (plotArea plotSettings)) minCoords
-                        screenMaxCoords = map (toScreenCoords scrArea (plotArea plotSettings)) maxCoords
-                        -- | Screen coords of unit line end points
-                        (lineEndMinCoords, lineEndMaxCoords) = 
-                            if xy then
-                                (map (\(x, y, _) -> (x, y - (lineLength))) screenMinCoords, map (\(x, y, _) -> (x, y + (lineLength))) screenMaxCoords) 
-                            else
-                                (map (\(x, y, _) -> (x + (lineLength), y)) screenMinCoords, map (\(x, y, _) -> (x - (lineLength), y)) screenMaxCoords)
-                    zipWithM_ (\(x1, y1, _) (x2, y2) -> do moveTo x1 y1; lineTo x2 y2) screenMinCoords lineEndMinCoords
-                    zipWithM_ (\(x1, y1, _) (x2, y2) -> do moveTo x1 y1; lineTo x2 y2) screenMaxCoords lineEndMaxCoords
-                    stroke
-                    if drawLabel
-                        then
-                            do
-                                labels <- mapM (unitLabel (width, height) xy (not xy)) (zip minCoords screenMinCoords)
-                                setSourceRGB 0 0 0
-                                mapM_ (\(x, y, label) -> do moveTo x y; showText label) labels
-                        else return ()
-            -- draw ticks and units
-            majorTickSize = (min (width * 3) (height * 4)) / 200
-        if drawXMinorUnits then drawUnits2 True xMinorUnits (majorTickSize / 2) False else return ()
-        if drawXMajorUnits then drawUnits2 True xMajorUnits majorTickSize True else return ()
-        if drawYMinorUnits then drawUnits2 False yMinorUnits (majorTickSize / 2) False else return ()
-        if drawYMajorUnits then drawUnits2 False yMajorUnits majorTickSize True else return ()
-        let
-            minZUnit = if clip then minimum [(minimum zMinorUnits), (minimum zMajorUnits)] else plotAreaBack (plotArea plotSettings)
-            maxZUnit = if clip then maximum [(maximum zMinorUnits), (maximum zMajorUnits)] else plotAreaFront (plotArea plotSettings)
-            (screenXMin, screenYMin, screenZMin) = toScreenCoords scrArea (plotArea plotSettings) (minXUnit, minYUnit, minZUnit)
-            (screenXMax, screenYMax, screenZMax) = toScreenCoords scrArea (plotArea plotSettings) (maxXUnit, maxYUnit, maxZUnit)
-        setSourceRGB 0 0 0
-        -- draw axis
-        if drawXMinorUnits || drawXMajorUnits 
-            then
-                do
-                    moveTo screenXMin screenYMin
-                    lineTo screenXMax screenYMin
-                    moveTo screenXMin screenYMax
-                    lineTo screenXMax screenYMax
-            else
-                return ()
-        if drawYMinorUnits || drawYMajorUnits
-            then
-                do 
-                    moveTo screenXMin screenYMin
-                    lineTo screenXMin screenYMax
-                    moveTo screenXMax screenYMin
-                    lineTo screenXMax screenYMax
-            else
-                return ()
-            
-        stroke
-        drawColorBox (scrRight - width / 10, scrTop + height / 5) (scrRight - width / 15, scrBottom - height / 5) zMinorUnits zMajorUnits lineWidth (width, height)
-        stroke
-
-drawColorBox :: (Double, Double) -> (Double, Double) -> [Double] -> [Double] -> Double -> (Double, Double) -> Render ()
-drawColorBox (left, top) (right, bottom) minUnits maxUnits lineWidth (width, height) =
-    if length minUnits > 0 || length maxUnits > 0 then
-        do
+    setLineSettings (0, 0, 0) lineWidth
+    Cairo.setFontSize $ ((min (width * 3) (height * 4)) / 160)
+    let
+        clip = False -- whether to clip graph boundaries to ticks
+        minXUnit = if clip then minimum [(minimum xMinorUnits), (minimum xMajorUnits)] else plotAreaLeft (plotArea plotSettings)
+        minYUnit = if clip then minimum [(minimum yMinorUnits), (minimum yMajorUnits)] else plotAreaBottom (plotArea plotSettings)
+        maxXUnit = if clip then maximum [(maximum xMinorUnits), (maximum xMajorUnits)] else plotAreaRight (plotArea plotSettings)
+        maxYUnit = if clip then maximum [(maximum yMinorUnits), (maximum yMajorUnits)] else plotAreaTop (plotArea plotSettings)
+        drawUnits2 :: Bool -> [Double] -> Double -> Bool -> Cairo.Render ()
+        drawUnits2 xy units lineLength drawLabel = do
             let
-                yMin = minimum maxUnits
-                yRange = maximum maxUnits - yMin
-                yCoef = (top - bottom) / yRange
+                -- min and max prefixes denote either lower or upper instance of x-axis and left or right instance of y-axis
+                (minCoords, maxCoords) =
+                    if xy then
+                        unzip $ map (\unit -> ((unit, minYUnit, 0), (unit, maxYUnit, 0))) units
+                    else
+                        unzip $ map (\unit -> ((minXUnit, unit, 0), (maxXUnit, unit, 0))) units
+                -- | Screen coords of unit line start points
+                screenMinCoords = map (toScreenCoords scrArea (plotArea plotSettings)) minCoords
+                screenMaxCoords = map (toScreenCoords scrArea (plotArea plotSettings)) maxCoords
+                -- | Screen coords of unit line end points
+                (lineEndMinCoords, lineEndMaxCoords) =
+                    if xy then
+                        (map (\(x, y, _) -> (x, y - (lineLength))) screenMinCoords, map (\(x, y, _) -> (x, y + (lineLength))) screenMaxCoords)
+                    else
+                        (map (\(x, y, _) -> (x + (lineLength), y)) screenMinCoords, map (\(x, y, _) -> (x - (lineLength), y)) screenMaxCoords)
+            zipWithM_ (\(x1, y1, _) (x2, y2) -> do Cairo.moveTo x1 y1; Cairo.lineTo x2 y2) screenMinCoords lineEndMinCoords
+            zipWithM_ (\(x1, y1, _) (x2, y2) -> do Cairo.moveTo x1 y1; Cairo.lineTo x2 y2) screenMaxCoords lineEndMaxCoords
+            Cairo.stroke
+            if drawLabel
+                then do
+                    labels <- mapM (unitLabel (width, height) xy (not xy)) (zip minCoords screenMinCoords)
+                    Cairo.setSourceRGB 0 0 0
+                    mapM_ (\(x, y, label) -> do Cairo.moveTo x y; Cairo.showText label) labels
+                else return ()
+        -- draw ticks and units
+        majorTickSize = (min (width * 3) (height * 4)) / 200
+    if drawXMinorUnits then drawUnits2 True xMinorUnits (majorTickSize / 2) False else return ()
+    if drawXMajorUnits then drawUnits2 True xMajorUnits majorTickSize True else return ()
+    if drawYMinorUnits then drawUnits2 False yMinorUnits (majorTickSize / 2) False else return ()
+    if drawYMajorUnits then drawUnits2 False yMajorUnits majorTickSize True else return ()
+    let
+        minZUnit = if clip then minimum [(minimum zMinorUnits), (minimum zMajorUnits)] else plotAreaBack (plotArea plotSettings)
+        maxZUnit = if clip then maximum [(maximum zMinorUnits), (maximum zMajorUnits)] else plotAreaFront (plotArea plotSettings)
+        (screenXMin, screenYMin, screenZMin) = toScreenCoords scrArea (plotArea plotSettings) (minXUnit, minYUnit, minZUnit)
+        (screenXMax, screenYMax, screenZMax) = toScreenCoords scrArea (plotArea plotSettings) (maxXUnit, maxYUnit, maxZUnit)
+    Cairo.setSourceRGB 0 0 0
+    -- draw axis
+    if drawXMinorUnits || drawXMajorUnits
+        then do
+            Cairo.moveTo screenXMin screenYMin
+            Cairo.lineTo screenXMax screenYMin
+            Cairo.moveTo screenXMin screenYMax
+            Cairo.lineTo screenXMax screenYMax
+        else
+            return ()
+    if drawYMinorUnits || drawYMajorUnits
+        then do
+            Cairo.moveTo screenXMin screenYMin
+            Cairo.lineTo screenXMin screenYMax
+            Cairo.moveTo screenXMax screenYMin
+            Cairo.lineTo screenXMax screenYMax
+        else
+            return ()
 
-            mapM_ (\(y1, y2) ->
-                do
-                    mapM_ (\(y1', y2') ->
-                        do
-                            let 
-                                (r, g, b) = getColor ((y1' + y2') / 2) yMin yRange
-                                yScreen2 = bottom + (y2' - yMin) * yCoef
-                                yScreen1 = bottom + (y1' - yMin) * yCoef
-                                
-                            setSourceRGB r g b
-                            rectangle (left + 1) (yScreen2) (right - left - 1) (yScreen1 - yScreen2)
-                            Graphics.Rendering.Cairo.fill
-                        ) (zip [y1, y1 + (y2 - y1) / 10 .. y2 - (y2 - y1) / 10] [y1 + (y2 - y1) / 10, y1 + (y2 - y1) / 5 .. y2])
-                    let
-                        yScreen2 = bottom + (y2 - yMin) * yCoef
-                    stroke
+    Cairo.stroke
+    drawColorBox (scrRight - width / 10, scrTop + height / 5) (scrRight - width / 15, scrBottom - height / 5) zMinorUnits zMajorUnits lineWidth (width, height)
+    Cairo.stroke
 
-                ) $ zip (init maxUnits) (tail maxUnits)
-            mapM_ (\y ->
-                do
-                    let 
-                        yScreen = bottom + (y - yMin) * yCoef
-                    setLineSettings (0, 0, 0) lineWidth
-                    moveTo left yScreen; lineTo right yScreen
-                    (x, y, label) <- unitLabel (width, height) False False ((0, y, 0), (right, yScreen, 0))
-                    moveTo x y; showText label
-                    stroke
-                ) maxUnits
-            rectangle left top (right - left) (bottom - top)
+drawColorBox :: (Double, Double) -> (Double, Double) -> [Double] -> [Double] -> Double -> (Double, Double) -> Cairo.Render ()
+drawColorBox (left, top) (right, bottom) minUnits maxUnits lineWidth (width, height) =
+    if length minUnits > 0 || length maxUnits > 0 then do
+        let
+            yMin = minimum maxUnits
+            yRange = maximum maxUnits - yMin
+            yCoef = (top - bottom) / yRange
+
+        mapM_ (\(y1, y2) -> do
+            mapM_ (\(y1', y2') -> do
+                let
+                    (r, g, b) = getColor ((y1' + y2') / 2) yMin yRange
+                    yScreen2 = bottom + (y2' - yMin) * yCoef
+                    yScreen1 = bottom + (y1' - yMin) * yCoef
+
+                Cairo.setSourceRGB r g b
+                Cairo.rectangle (left + 1) (yScreen2) (right - left - 1) (yScreen1 - yScreen2)
+                Cairo.fill
+                ) (zip [y1, y1 + (y2 - y1) / 10 .. y2 - (y2 - y1) / 10] [y1 + (y2 - y1) / 10, y1 + (y2 - y1) / 5 .. y2])
+            let
+                yScreen2 = bottom + (y2 - yMin) * yCoef
+            Cairo.stroke
+
+            ) $ zip (init maxUnits) (tail maxUnits)
+        mapM_ (\y -> do
+            let
+                yScreen = bottom + (y - yMin) * yCoef
+            setLineSettings (0, 0, 0) lineWidth
+            Cairo.moveTo left yScreen; Cairo.lineTo right yScreen
+            (x, y, label) <- unitLabel (width, height) False False ((0, y, 0), (right, yScreen, 0))
+            Cairo.moveTo x y; Cairo.showText label
+            Cairo.stroke
+            ) maxUnits
+        Cairo.rectangle left top (right - left) (bottom - top)
     else
         return ()
 
 getUnits :: PlotSettings ->
             (
-                (Bool, Bool), -- ^ draw x and y minor units  
+                (Bool, Bool), -- ^ draw x and y minor units
                 (Bool, Bool), -- ^ draw x and y major units
                 ([Double], [Double], [Double]), -- ^ x, y and z minor units
                 ([Double], [Double], [Double])  -- ^ x, y and z major units
-            ) 
-getUnits plotSettings = 
+            )
+getUnits plotSettings =
     let
         area = plotArea plotSettings
         (xLeft, xRight) = (plotAreaLeft area, plotAreaRight area)
-        (xMinUnit, yMinUnit, zMinUnit, xMaxUnit, yMaxUnit, zMaxUnit) = 
+        (xMinUnit, yMinUnit, zMinUnit, xMaxUnit, yMaxUnit, zMaxUnit) =
             let
                 xRange = xRight - xLeft
                 yRange = plotAreaTop area - plotAreaBottom area
                 zRange = plotAreaFront area - plotAreaBack area
-                getMaxUnit range = 
-                    let 
+                getMaxUnit range =
+                    let
                         maxUnit = 10 ^^ ceiling (logBase 10 (range / 5))
                     in
-                        if range / maxUnit < 2 
-                            then maxUnit / 5 
-                        else if range / maxUnit < 5 
+                        if range / maxUnit < 2
+                            then maxUnit / 5
+                        else if range / maxUnit < 5
                             then maxUnit / 2
-                        else maxUnit where
-                getMinUnit range maxUnit = 
+                        else maxUnit
+                getMinUnit range maxUnit =
                     if round (range / maxUnit) > 5 then
                         maxUnit / 5
                     else
@@ -1028,43 +974,43 @@ getUnits plotSettings =
                 yMinUnit = getMinUnit yRange yMaxUnit
                 zMinUnit = case zMaxUnit of
                     Just zMaxUnit -> Just (getMinUnit zRange zMaxUnit)
-                    otherwise -> Nothing
+                    _ -> Nothing
             in
-                (            
-                    case plotMinorXUnit plotSettings of 
+                (
+                    case plotMinorXUnit plotSettings of
                         Left _ -> Just xMinUnit
                         Right mu -> Just mu,
-                    case plotMinorYUnit plotSettings of 
+                    case plotMinorYUnit plotSettings of
                         Left _ -> Just yMinUnit
                         Right mu -> Just mu,
                     zMinUnit,
-                    case plotMajorXUnit plotSettings of 
+                    case plotMajorXUnit plotSettings of
                         Left _ -> Just xMaxUnit
                         Right mu -> Just mu,
-                    case plotMajorYUnit plotSettings of 
+                    case plotMajorYUnit plotSettings of
                         Left _ -> Just yMaxUnit
                         Right mu -> Just mu,
                     zMaxUnit
-                )                  
+                )
         units :: Double -> Double -> Maybe Double -> [Double]
-        units minValue maxValue unit = 
-            case unit of 
+        units minValue maxValue unit =
+            case unit of
                 Nothing -> []
                 Just unit -> [x | x <- [startValue, startValue + unit .. endValue]] where
                     startValue = unit * (fromIntegral (ceiling (minValue / unit)))
                     endValue = unit * (fromIntegral (floor (maxValue / unit)))
-        drawXMinorUnits = case plotMinorXUnit plotSettings of 
+        drawXMinorUnits = case plotMinorXUnit plotSettings of
             Left False -> False
-            otherwise -> True
-        drawYMinorUnits = case plotMinorYUnit plotSettings of 
+            _ -> True
+        drawYMinorUnits = case plotMinorYUnit plotSettings of
             Left False -> False
-            otherwise -> True
-        drawXMajorUnits = case plotMajorXUnit plotSettings of 
+            _ -> True
+        drawXMajorUnits = case plotMajorXUnit plotSettings of
             Left False -> False
-            otherwise -> True
-        drawYMajorUnits = case plotMajorYUnit plotSettings of 
+            _ -> True
+        drawYMajorUnits = case plotMajorYUnit plotSettings of
             Left False -> False
-            otherwise -> True
+            _ -> True
     in
         (
             (drawXMinorUnits, drawYMinorUnits),
@@ -1092,18 +1038,18 @@ formatScreenArea scrArea =
         h1 = h - 3 * vSpace
     in
         scrArea {
-            screenAreaLeft = left', 
+            screenAreaLeft = left',
             screenAreaTop = top',
             screenAreaRight = left' + w1,
             screenAreaBottom = top' + h1
         }
 
-toScreenCoords :: 
-                  ScreenArea -> 
+toScreenCoords ::
+                  ScreenArea ->
                   PlotArea ->
-                  (Double, Double, Double) -> 
+                  (Double, Double, Double) ->
                   (Double, Double, Double)
-toScreenCoords scrArea plotArea (x, y, z) = 
+toScreenCoords scrArea plotArea (x, y, z) =
     let
         ((screenX, _), (screenY, _), screenZ) = toScreenCoords1 (formatScreenArea scrArea) plotArea ((x, 0), (y, 0), z)
     in
@@ -1111,10 +1057,10 @@ toScreenCoords scrArea plotArea (x, y, z) =
 
 toScreenCoords1 :: ScreenArea ->
                    PlotArea ->
-                  ((Double, Double), (Double, Double), Double) -> 
+                  ((Double, Double), (Double, Double), Double) ->
                   ((Double, Double), (Double, Double), Double)
 toScreenCoords1 formattedArea plotArea xyz =
-    let 
+    let
         left = screenAreaLeft formattedArea
         right = screenAreaRight formattedArea
         bottom = screenAreaBottom formattedArea
@@ -1133,42 +1079,42 @@ toScreenCoords1 formattedArea plotArea xyz =
         xCoef = (width) / (xMax - xMin)
         yCoef = (height) / (yMax - yMin)
         zCoef = (depth) / (zMax - zMin)
-    in 
+    in
         toScreenCoords2 (xMin, yMin, zMin) (left, bottom, back) (xCoef, yCoef, zCoef) xyz
 
 toScreenCoords2 :: (Double, Double, Double) ->
                    (Double, Double, Double) ->
                    (Double, Double, Double) ->
-                  ((Double, Double), (Double, Double), Double) -> 
+                  ((Double, Double), (Double, Double), Double) ->
                   ((Double, Double), (Double, Double), Double)
 toScreenCoords2 (xMin, yMin, zMin) (left, bottom, back) (xCoef, yCoef, zCoef) ((x, xErr), (y, yErr), z) =
-    let 
+    let
 
         screenX = left + ((x - xMin) * xCoef)
         screenY = bottom + ((yMin - y) * yCoef)
         screenZ = back + ((z - zMin) * zCoef)
-    in 
+    in
         ((screenX, xErr * xCoef), (screenY, yErr * yCoef), screenZ)
 
 toScreenCoords2_ :: (Double, Double) ->
                    (Double, Double) ->
                    (Double, Double) ->
-                  ((Double, Double), (Double, Double)) -> 
+                  ((Double, Double), (Double, Double)) ->
                   ((Double, Double), (Double, Double))
 toScreenCoords2_ (xMin, yMin) (left, bottom) (xCoef, yCoef) ((x, xErr), (y, yErr)) =
-    let 
+    let
 
         screenX = left + ((x - xMin) * xCoef)
         screenY = bottom + ((yMin - y) * yCoef)
-    in 
+    in
         ((screenX, xErr * xCoef), (screenY, yErr * yCoef))
 
 toScreenCoordss :: ScreenArea ->
                    PlotArea ->
-                  V.Vector ((Double, Double), (Double, Double), Double) -> 
+                  V.Vector ((Double, Double), (Double, Double), Double) ->
                   V.Vector ((Double, Double), (Double, Double), Double)
 toScreenCoordss formattedArea plotArea xyzs =
-    let 
+    let
         left = screenAreaLeft formattedArea
         right = screenAreaRight formattedArea
         bottom = screenAreaBottom formattedArea
@@ -1187,15 +1133,15 @@ toScreenCoordss formattedArea plotArea xyzs =
         xCoef = (width) / (xMax - xMin)
         yCoef = (height) / (yMax - yMin)
         zCoef = (depth) / (zMax - zMin)
-    in 
+    in
         V.map (toScreenCoords2 (xMin, yMin, zMin) (left, bottom, back) (xCoef, yCoef, zCoef)) xyzs
 
 toScreenCoordss_ :: ScreenArea ->
                    PlotArea ->
-                  V.Vector ((Double, Double), (Double, Double)) -> 
+                  V.Vector ((Double, Double), (Double, Double)) ->
                   V.Vector ((Double, Double), (Double, Double))
 toScreenCoordss_ formattedArea plotArea xys =
-    let 
+    let
         left = screenAreaLeft formattedArea
         right = screenAreaRight formattedArea
         bottom = screenAreaBottom formattedArea
@@ -1208,15 +1154,15 @@ toScreenCoordss_ formattedArea plotArea xys =
         height = bottom - top
         xCoef = (width) / (xMax - xMin)
         yCoef = (height) / (yMax - yMin)
-    in 
+    in
         V.map (toScreenCoords2_ (xMin, yMin) (left, bottom) (xCoef, yCoef)) xys
 
-toGraphCoords :: ScreenArea -> 
+toGraphCoords :: ScreenArea ->
                    PlotArea ->
-                  (Double, Double) -> 
+                  (Double, Double) ->
                   (Double, Double)
 toGraphCoords screenArea plotArea (x, y) =
-    let 
+    let
         formattedArea = formatScreenArea screenArea
         left = screenAreaLeft formattedArea
         top = screenAreaTop formattedArea
@@ -1229,17 +1175,17 @@ toGraphCoords screenArea plotArea (x, y) =
         yMax = plotAreaTop plotArea
         xCoef = (xMax - xMin) / (width)
         yCoef = (yMax - yMin) / (height)
-    in 
-        (xMin + ((x - left) * xCoef), 
+    in
+        (xMin + ((x - left) * xCoef),
             yMin + ((y - bottom) * yCoef))
 
 --------------------------------------------------------------------------------
 -- Event handling
 
-onKeyDown :: String -> DrawingArea -> PlotSettings -> (PlotSettings -> IO ()) -> IO Bool
+onKeyDown :: String -> Gtk.DrawingArea -> PlotSettings -> (PlotSettings -> IO ()) -> IO Bool
 onKeyDown keyName canvas plotSettings updateFunc = do
-    let 
-            
+    let
+
         area = plotArea $ plotSettings
         left = plotAreaLeft area
         right = plotAreaRight area
@@ -1258,16 +1204,12 @@ onKeyDown keyName canvas plotSettings updateFunc = do
                 "Up" -> area {plotAreaBottom = bottom + yChange, plotAreaTop = top + yChange}
                 "Down" -> area {plotAreaBottom = bottom - yChange, plotAreaTop = top - yChange}
                 _ -> area
-        areaChanged = 
-            plotAreaLeft newArea /= left || 
+        areaChanged =
+            plotAreaLeft newArea /= left ||
             plotAreaRight newArea /= right ||
             plotAreaTop newArea /= top ||
             plotAreaBottom newArea /= bottom
-        
---    case keyName of 
---        "f" -> windowFullscreen $ window state
---        "u" -> windowUnfullscreen $ window state
---        _ -> return ()
+
     updateFunc $ plotSettings {plotArea = newArea}
     return True
 
@@ -1296,9 +1238,21 @@ onMouseScroll (x, y) direction plotSettings updateFunc = do
             case direction of
                 ScrollUp -> area {plotAreaLeft = left + xChangeLeft, plotAreaRight = right - xChangeRight, plotAreaBottom = bottom + yChangeBottom, plotAreaTop = top - yChangeTop}
                 ScrollDown -> area {plotAreaLeft = left - xChangeLeft, plotAreaRight = right + xChangeRight, plotAreaBottom = bottom - yChangeBottom, plotAreaTop = top + yChangeTop}
-                otherwise -> area
+                _ -> area
     updateFunc $ plotSettings {plotArea = newArea}
     return True
+
+-- | Mouse button types for event handling
+data MouseButton = LeftButton | RightButton | MiddleButton | OtherButton
+    deriving (Show, Read, Eq)
+
+-- | Click types
+data Click = SingleClick | DoubleClick | TripleClick | ReleaseClick
+    deriving (Show, Read, Eq)
+
+-- | Modifier keys
+data Modifier = Shift | Control | Alt | Button1 | Button2 | Button3
+    deriving (Show, Read, Eq)
 
 onMouseButton :: MouseButton -> [Modifier] -> Click -> (Double, Double) -> PlotSettings -> (PlotSettings -> IO ()) -> IO Bool
 onMouseButton button modifiers click (x, y) plotSettings updateFunc = do
@@ -1308,17 +1262,14 @@ onMouseButton button modifiers click (x, y) plotSettings updateFunc = do
         right = plotAreaRight area
         bottom = plotAreaBottom area
         top = plotAreaTop area
-    
-    case button of 
+
+    case button of
         LeftButton -> do
             let
                 newPos =
                     case click of
                         ReleaseClick -> Nothing
-                        otherwise -> Just (x, y)
-                    --case mousePos plotSettings of
-                    --    Just (xStart, yStart) -> Nothing
-                    --    otherwise -> Just (x, y)
+                        _ -> Just (x, y)
 
                 (x1, y1) = toGraphCoords (screenArea plotSettings) (plotArea plotSettings) (x, y)
                 (newSelection, newSegments) =
@@ -1335,14 +1286,14 @@ onMouseButton button modifiers click (x, y) plotSettings updateFunc = do
                                                             if rectangleLeft rect == x1 || rectangleTop rect == y1
                                                                 then Nothing
                                                                 else  Just $ rect {rectangleRight = x1, rectangleBottom = y1}
-                                                        otherwise -> Nothing
+                                                        _ -> Nothing
                                                 }
                                             ) (plotSelection plotSettings)
-                                        otherwise ->
+                                        _ ->
                                             fmap (\sel ->
                                                 sel {
                                                     plotSelectionRectangle = Just $ GUI.Plot.Rectangle {
-                                                        rectangleLeft = x1, 
+                                                        rectangleLeft = x1,
                                                         rectangleRight = x1,
                                                         rectangleTop = y1,
                                                         rectangleBottom = y1
@@ -1351,29 +1302,28 @@ onMouseButton button modifiers click (x, y) plotSettings updateFunc = do
                                             ) (plotSelection plotSettings)
                                 else plotSelection plotSettings,
                                 plotSegments plotSettings)
-                        PlotToolSegment -> 
-                            (plotSelection plotSettings, 
+                        PlotToolSegment ->
+                            (plotSelection plotSettings,
                             if Shift `elem` modifiers then
                                 case click of
                                     SingleClick -> fmap (\segments -> segments {plotSegmentsData = plotSegmentsData segments ++ [x1]}) (plotSegments plotSettings)
-                                    otherwise -> plotSegments plotSettings
-                            else if Graphics.UI.Gtk.Gdk.Events.Control `elem` modifiers then
+                                    _ -> plotSegments plotSettings
+                            else if Control `elem` modifiers then
                                 case click of
                                     SingleClick -> fmap (\segments -> segments {plotSegmentsData = []}) (plotSegments plotSettings)
-                                    otherwise -> plotSegments plotSettings
+                                    _ -> plotSegments plotSettings
                             else plotSegments plotSettings
                             )
-                        
+
             updateFunc $ plotSettings {mousePos = newPos, plotSelection = newSelection, plotSegments = newSegments}
             return ()
-        RightButton -> 
+        RightButton ->
             case click of
-                ReleaseClick ->
-                    do
-                        return ()
-                            
-                otherwise -> return ()
-        otherwise -> return ()
+                ReleaseClick -> do
+                    return ()
+
+                _ -> return ()
+        _ -> return ()
     return True
 
 onMouseMove :: (Double, Double) -> [Modifier] -> PlotSettings -> (PlotSettings -> IO ()) -> IO Bool
@@ -1392,35 +1342,29 @@ onMouseMove (x, y) modifiers plotSettings updateFunc = do
                         xChange = (xStart - x) * (right - left) / (screenAreaRight scrArea - screenAreaLeft scrArea)
                         yChange = (yStart - y) * (top - bottom) / (screenAreaTop scrArea - screenAreaBottom scrArea)
                     in
-                        -- modifier not present somehow, ignore the button altogether
-                        --if Button1 `elem` (trace ("modifiers: " ++ show modifiers) modifiers)
-                        --    then
-                                if Graphics.UI.Gtk.Gdk.Events.Control `elem` modifiers
-                                    -- Scale
-                                    then
-                                        (area {plotAreaLeft = left - xChange, plotAreaRight = right + xChange, plotAreaBottom = bottom - yChange, plotAreaTop = top + yChange}, Just (x, y), plotSelection plotSettings)
-                                else if Shift `elem` modifiers
-                                    -- Change selection
-                                    then
-                                        let
-                                            (x1, y1) = toGraphCoords (screenArea plotSettings) (plotArea plotSettings) (x, y)
-                                            newSel =
-                                                fmap (\sel ->
-                                                        sel {plotSelectionRectangle = fmap (\rect ->
-                                                            rect {rectangleRight = x1, rectangleBottom = y1}
-                                                        ) (plotSelectionRectangle sel)
-                                                    }
-                                                ) (plotSelection plotSettings)
+                        if Control `elem` modifiers
+                            -- Scale
+                            then
+                                (area {plotAreaLeft = left - xChange, plotAreaRight = right + xChange, plotAreaBottom = bottom - yChange, plotAreaTop = top + yChange}, Just (x, y), plotSelection plotSettings)
+                        else if Shift `elem` modifiers
+                            -- Change selection
+                            then
+                                let
+                                    (x1, y1) = toGraphCoords (screenArea plotSettings) (plotArea plotSettings) (x, y)
+                                    newSel =
+                                        fmap (\sel ->
+                                                sel {plotSelectionRectangle = fmap (\rect ->
+                                                    rect {rectangleRight = x1, rectangleBottom = y1}
+                                                ) (plotSelectionRectangle sel)
+                                            }
+                                        ) (plotSelection plotSettings)
 
-                                        in
-                                            (area , Just (x, y), newSel)
-                                else
-                                    -- Move
-                                    (area {plotAreaLeft = left + xChange, plotAreaRight = right + xChange, plotAreaBottom = bottom + yChange, plotAreaTop = top + yChange}, Just (x, y), plotSelection plotSettings)
-                        --    else 
-                        --        (area, Nothing, plotSelection plotSettings)
-                otherwise -> (area, Nothing, plotSelection plotSettings)
+                                in
+                                    (area , Just (x, y), newSel)
+                        else
+                            -- Move
+                            (area {plotAreaLeft = left + xChange, plotAreaRight = right + xChange, plotAreaBottom = bottom + yChange, plotAreaTop = top + yChange}, Just (x, y), plotSelection plotSettings)
+                _ -> (area, Nothing, plotSelection plotSettings)
     updateFunc $ plotSettings {plotArea = newArea, mousePos = newPos, plotSelection = newSelection}
-        
-    return True
 
+    return True

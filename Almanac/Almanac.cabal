@@ -1,23 +1,34 @@
 name:                Almanac
 version:             0.0.1
-cabal-version:       >= 1.2
+cabal-version:       >= 1.10
 build-type:          Simple
 license:             AllRightsReserved
-extra-source-files:  extra-tmp-files:
 
 executable Almanac
-  build-depends:   
+  build-depends:
                    base >= 4,
                    Utils -any,
                    Ephem -any,
                    GUI -any,
                    cairo -any,
+                   gi-cairo -any,
+                   gi-cairo-render -any,
+                   gi-cairo-connector -any,
                    containers -any,
-                   gtk3 -any,
+                   gi-gtk >= 4.0,
+                   gi-gdk >= 4.0,
+                   gi-gio -any,
+                   gi-glib -any,
+                   gi-gobject -any,
+                   haskell-gi-base -any,
                    transformers -any,
                    vector -any,
-                   time -any
+                   time -any,
+                   text -any
   hs-source-dirs:  src
   ghc-options:     -Wall -rtsopts
   main-is:         Main.hs
-
+  default-language: Haskell2010
+  default-extensions:
+                   OverloadedStrings,
+                   OverloadedLabels
