@@ -78,6 +78,12 @@ import Data.Maybe
 import qualified Data.Vector.Unboxed as V
 import qualified Statistics.Sample as S
 
+-- | Strip "fromList " prefix if present (for compatibility with old vector Show format)
+stripFromList :: String -> String
+stripFromList s
+    | "fromList " `isPrefixOf` s = drop 9 s
+    | otherwise = s
+
 data Data = 
     Data1 (V.Vector (Double {-y-}, Double {-w-})) |
     Data2 (V.Vector (Double {-x-}, Double {-y-}, Double {-w-})) |
@@ -94,32 +100,34 @@ instance Xml.XmlElement Data where
     fromElement e =
         let
             version = maybe_ "0" $ Xml.maybeAttrValue e "version"
+            -- Helper to read vector data, stripping "fromList " prefix if present
+            readVec s = V.fromList $ read $ stripFromList s
         in
             case (Xml.attrValue e "type") of
                 "data" ->
-                    case version of 
+                    case version of
                         "0" -> Data2 $ V.fromList $ map (\s -> read s) (Xml.contentTexts e)
-                        otherwise -> data2 $ read $ head $ Xml.contentTexts e
-                        
-                "data1" -> Data1 $ read $ head $ Xml.contentTexts e
-                "data2" -> Data2 $ read $ head $ Xml.contentTexts e
-                "data3" -> Data3 $ read $ head $ Xml.contentTexts e
+                        otherwise -> data2 $ read $ stripFromList $ head $ Xml.contentTexts e
+
+                "data1" -> Data1 $ readVec $ head $ Xml.contentTexts e
+                "data2" -> Data2 $ readVec $ head $ Xml.contentTexts e
+                "data3" -> Data3 $ readVec $ head $ Xml.contentTexts e
                 "spectrum" ->
                     case version of
-                        "0" -> 
+                        "0" ->
                             let
                                 offset = read (Xml.attrValue e "offset")
                                 step = read (Xml.attrValue e "step")
                                 vals = map (\s -> read s) (Xml.contentTexts e)
                             in
-                                spectrum1 $ V.fromList (zipWith (\(y, w) i -> (offset + step * fromIntegral i, y, w)) vals [0 ..]) 
-                        otherwise -> 
-                            let 
-                                (offsetsAndSteps, vals) = read $ head $ Xml.contentTexts e
+                                spectrum1 $ V.fromList (zipWith (\(y, w) i -> (offset + step * fromIntegral i, y, w)) vals [0 ..])
+                        otherwise ->
+                            let
+                                (offsetsAndSteps, vals) = read $ stripFromList $ head $ Xml.contentTexts e
                             in
                                  case offsetsAndSteps of
                                     [(offset, step)] -> spectrum1 $ V.fromList (zipWith (\(y, w) i -> (offset + step * fromIntegral i, y, w)) vals [0 ..])
-                "spectrum2" -> Spectrum2 $ read $ head $ Xml.contentTexts e
+                "spectrum2" -> Spectrum2 $ read $ stripFromList $ head $ Xml.contentTexts e
 
 xmlElementName :: String
 xmlElementName = "data"

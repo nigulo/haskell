@@ -1,13 +1,13 @@
 name:                Regression
 version:             0.0.1
-cabal-version:       >= 1.2
+cabal-version:       >= 1.10
 build-type:          Simple
 license:             AllRightsReserved
 data-dir:            ""
-extra-source-files:  extra-tmp-files:
 
-library 
-  build-depends:    
+library
+  default-language: Haskell2010
+  build-depends:
                    Math -any,
                    Utils -any,
                    base -any,
@@ -16,21 +16,19 @@ library
                    SafeSemaphore -any,
                    mwc-random -any,
                    vector -any,
-                   accelerate -any,
-                   fft -any,
+                   fft >= 0.1.8,
                    carray -any,
                    statistics -any,
                    cubicspline -any,
                    numeric-limits -any,
-                   eigen -any
+                   hmatrix -any
   hs-source-dirs:   src
   ghc-options:      -O2 -fexcess-precision
-  exposed-modules:  
+  exposed-modules:
                    Regression.AnalyticData,
                    Regression.AnalyticDataWrapper,
                    Regression.Bayes,
                    Regression.Bootstrap,
-                   Regression.CUDALeastSquares,
                    Regression.Data,
                    Regression.FFT,
                    Regression.Functions,
@@ -42,22 +40,31 @@ library
                    Regression.Spline,
                    Regression.Statistic,
                    Regression.Utils
-  extensions:       
+  default-extensions:
                     ExistentialQuantification,
                     FlexibleInstances,
                     ScopedTypeVariables,
                     TypeSynonymInstances
 
 executable Regression
-  build-depends:   
+  default-language: Haskell2010
+  build-depends:
+                   Regression,
+                   Math -any,
+                   Utils -any,
                    base -any,
                    random -any,
-                   accelerate -any,
-                   filepath -any
+                   filepath -any,
+                   vector -any,
+                   containers -any,
+                   statistics -any,
+                   hmatrix -any,
+                   mwc-random -any,
+                   cubicspline -any
   hs-source-dirs:  src
   ghc-options:     -O2 -fexcess-precision -threaded -fprof-auto "-with-rtsopts=-N -p -s -h -i0.1"
   main-is:         Main.hs
-  extensions:      
+  default-extensions:
                    ExistentialQuantification,
                    FlexibleInstances,
                    ScopedTypeVariables,
@@ -67,28 +74,37 @@ test-suite RegressionTests
   type:            exitcode-stdio-1.0
   main-is:         RegressionTests.hs
   ghc-options:     -Wall -rtsopts -threaded
-  build-depends:   
+  build-depends:
                    base >= 4,
-                   HTF > 0.9,
-                   filepath >=1.3.0 && <1.4
-  hs-source-dirs:  
-                   src,
-                   src/Regression,
+                   Regression,
+                   Math,
+                   Utils,
+                   tasty,
+                   tasty-hunit,
+                   filepath,
+                   vector,
+                   random,
+                   hmatrix,
+                   containers
+  hs-source-dirs:
                    tests
-  other-modules:   
+  other-modules:
                    Regression.RegressionTest,
                    Regression.PolynomTest,
-                   CUDALeastSquares,
+                   Regression.AnalyticDataTest,
+                   Regression.LeastSquaresTest,
                    Regression.DataTest,
                    Regression.BayesTest,
                    Regression.RBFTest
-  extensions:      
+  default-language: Haskell2010
+  default-extensions:
                    FlexibleInstances,
                    ScopedTypeVariables,
                    TypeSynonymInstances,
                    ExistentialQuantification
 
 executable GradientAscent
+  default-language: Haskell2010
   build-depends:   base >= 4,
                    system-fileio -any,
                    system-filepath -any,
@@ -97,6 +113,7 @@ executable GradientAscent
   hs-source-dirs:  src
   ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
   main-is:         Regression/GradientAscent.hs
-  extensions:      DoAndIfThenElse,      
+  default-extensions:
+                   DoAndIfThenElse,
                    ScopedTypeVariables
 

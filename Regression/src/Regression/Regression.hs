@@ -14,7 +14,6 @@ import Regression.AnalyticDataWrapper as ADW
 import Regression.Spline as S
 import Regression.Polynom as P
 import Regression.IOLeastSquares as LSQ
---import Regression.CUDALeastSquares as LSQ
 import Regression.Utils
 import Math.Expression
 import Math.Function as F

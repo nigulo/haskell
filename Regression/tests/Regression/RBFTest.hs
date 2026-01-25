@@ -1,21 +1,26 @@
-{-# OPTIONS_GHC -F -pgmF htfpp #-}
-
-module Regression.RBFTest where
+module Regression.RBFTest (tests) where
 
 import Regression.RBF as RBF
-import qualified Data.Eigen.Matrix as M
-import Test.Framework
+import Numeric.LinearAlgebra as M
+import Test.Tasty
+import Test.Tasty.HUnit
 import Utils.Test
 
+tests :: TestTree
+tests = testGroup "RBF"
+    [ testCase "values" test_values
+    ]
+
+test_values :: Assertion
 test_values = do
     let
-        x = 1.2040
+        xVal = 1.2040
         centres =
            [
              0,       0.1000,  0.2000,  0.3000,  0.4000,  0.5000,  0.6000,  0.7000,  0.8000,  0.9000,  1.0000,  1.1000,
              1.2000,  1.3000,  1.4000,  1.5000,  1.6000,  1.7000,  1.8000,  1.9000,  2.0000]
         lambdas = repeat 0.01
-        result = RBF.values (M.fromList [[x]]) (zipWith (\c l -> ((M.fromList [[c]]), l)) centres lambdas) 
+        result = RBF.values (M.fromLists [[xVal]]) (zipWith (\c l -> ((M.fromLists [[c]]), l)) centres lambdas)
         expectedResult = [
              1.106565261209755e-63,
              1.168136715717805e-53,
@@ -38,5 +43,5 @@ test_values = do
              3.742528632454229e-16,
              9.163901774155839e-22,
              3.036734024414009e-28
-            ]        
+            ]
     assertEqualDoubleList expectedResult result

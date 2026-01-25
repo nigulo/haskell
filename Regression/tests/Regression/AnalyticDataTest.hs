@@ -1,33 +1,39 @@
-{-# OPTIONS_GHC -F -pgmF htfpp #-}
-
-module Regression.AnalyticDataTest where
+module Regression.AnalyticDataTest (tests) where
 
 import Regression.AnalyticData as AD
 import Regression.AnalyticDataWrapper as ADW
 import Math.Function as F
 import Utils.Test
-import Test.Framework
+import Test.Tasty
+import Test.Tasty.HUnit
 import System.Random
 import qualified Data.Vector.Unboxed as V
 
+tests :: TestTree
+tests = testGroup "AnalyticData"
+    [ testCase "getExtrema" test_getExtrema
+    , testCase "getZeroCrossings" test_getZeroCrossings
+    ]
+
+test_getExtrema :: Assertion
 test_getExtrema = do
-    g <- getStdGen 
+    g <- getStdGen
     let
         func :: F.Function Double = F.function "cos(x)"
         ad = analyticDataWrapper $ AD.AnalyticData [([0], [100], func)]
         result = ADW.getExtrema 100000 (Just 6.28) g ad
         expectedResult = read "(fromList [(3.141999999999765,-0.9999999170344522),(9.424952380952114,-0.9999999847887999),(15.707904761904327,-0.9999999982885214),(21.99085714285708,-0.9999999575336159),(28.274809523809832,-0.999999886882583),(34.557761904762046,-0.999999970544648),(40.84071428571373,-0.9999999999520873),(47.123666666665414,-0.9999999751048992),(53.4066190476171,-0.9999998960030851),(59.690571428568774,-0.9999999516362775),(65.97352380952154,-0.9999999969514338),(72.25647619047535,-0.9999999880119637),(78.53942857142917,-0.9999999248178676),(84.82338095238299,-0.9999999280636854),(91.1063333333368,-0.9999999892865601),(97.38928571429062,-0.999999996254809)],fromList [(6.283476190476007,0.9999999576934542),(12.56642857142822,0.999999998320489),(18.849380952380706,0.9999999846928969),(25.132333333333456,0.9999999168106787),(31.416285714286207,0.9999999354954434),(37.69923809523789,0.999999992030196),(43.98219047618957,0.9999999943103217),(50.26514285714126,0.9999999423358202),(56.54909523809294,0.9999999086332148),(62.832047619044616,0.9999999810756841),(69.11499999999845,0.9999999992635271),(75.39795238095226,0.9999999631967437),(81.68190476190608,0.9999998771067643),(87.9648571428599,0.9999999654569508),(94.24780952381371,0.9999999995525128)])"
-    assertEqual expectedResult result
-    assertEqual 16 (V.length (fst expectedResult))
-    assertEqual 15 (V.length (snd expectedResult))
+    expectedResult @?= result
+    V.length (fst expectedResult) @?= 16
+    V.length (snd expectedResult) @?= 15
 
-    
+
+test_getZeroCrossings :: Assertion
 test_getZeroCrossings = do
-    g <- getStdGen 
+    g <- getStdGen
     let
         func :: F.Function Double = F.function "cos(x)"
         ad = analyticDataWrapper $ AD.AnalyticData [([-11], [11], func)]
         result = V.toList $ ADW.getZeroCrossings 100000 g ad
         expectedResult = [-10.9956, -7.854, -4.7124, -1.5708, 1.5708, 4.7124, 7.854, 10.9956]
     assertEqualDoubleList expectedResult result
-    

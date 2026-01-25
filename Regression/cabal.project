@@ -1,0 +1,11 @@
+packages:
+  .
+  ../Utils
+  ../Math
+
+-- Configure hmatrix to use openblas
+package hmatrix
+  flags: +openblas
+
+-- Machine-specific paths (extra-lib-dirs, extra-include-dirs) should be
+-- configured in cabal.project.local which is gitignored

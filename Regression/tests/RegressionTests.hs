@@ -1,15 +1,25 @@
-{-# OPTIONS_GHC -F -pgmF htfpp #-}
 module Main where
 
+import Test.Tasty
 
-import Test.Framework
-import Test.Framework.BlackBoxTest
-import {-@ HTF_TESTS @-} Regression.RegressionTest
-import {-@ HTF_TESTS @-} Regression.PolynomTest
-import {-@ HTF_TESTS @-} Regression.AnalyticDataTest
-import {-@ HTF_TESTS @-} Regression.LeastSquaresTest
-import {-@ HTF_TESTS @-} Regression.DataTest
-import {-@ HTF_TESTS @-} Regression.BayesTest
-import {-@ HTF_TESTS @-} Regression.RBFTest
+import qualified Regression.RegressionTest
+import qualified Regression.PolynomTest
+import qualified Regression.AnalyticDataTest
+import qualified Regression.LeastSquaresTest
+import qualified Regression.DataTest
+import qualified Regression.BayesTest
+import qualified Regression.RBFTest
 
-main = htfMain htf_importedTests
+main :: IO ()
+main = defaultMain tests
+
+tests :: TestTree
+tests = testGroup "Regression Tests"
+    [ Regression.RegressionTest.tests
+    , Regression.PolynomTest.tests
+    , Regression.AnalyticDataTest.tests
+    , Regression.LeastSquaresTest.tests
+    , Regression.DataTest.tests
+    , Regression.BayesTest.tests
+    , Regression.RBFTest.tests
+    ]

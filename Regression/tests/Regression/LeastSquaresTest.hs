@@ -1,18 +1,20 @@
-{-# OPTIONS_GHC -F -pgmF htfpp #-}
-
-module Regression.LeastSquaresTest where
+module Regression.LeastSquaresTest (tests) where
 
 import Regression.LeastSquares as LSQ
-import Regression.CUDALeastSquares as CLSQ
 import Math.Vector as V
 import Math.Matrix as M
-import Data.Array.Accelerate as A
-import Test.Framework
+import Test.Tasty
+import Test.Tasty.HUnit
 import Data.List
 
+tests :: TestTree
+tests = testGroup "LeastSquares"
+    [ testCase "LSQ" test_LSQ
+    ]
 
 --------------------------------------------------------------------------------
 -- Longley's test
+x :: [[Double]]
 x = [
     [1, 83.0, 234289, 2356, 1590, 107608, 1947],
     [1, 88.5, 259426, 2325, 1456, 108632, 1948],
@@ -31,6 +33,7 @@ x = [
     [1, 115.7, 518173, 4806, 2572, 127852, 1961],
     [1, 116.9, 554894, 4007, 2827, 130081, 1962]]
 
+y :: [Double]
 y = [
     60323,
     61122,
@@ -50,21 +53,8 @@ y = [
     70551]
 
 -- the result
-bExpected = [-3482258.6345964866, 
-            15.061872271428058, 
-            -3.581917929262539e-2,
-            -2.020229803817295, 
-            -1.0332268671735234, 
-            -5.1104105653362264e-2,
-            1829.1514646138853]
-bExpected1 = [-3482258.634595804, 
-            15.061872271372636, 
-            -3.581917929259047e-2,
-            -2.020229803816817, 
-            -1.0332268671735911, 
-            -5.110410565358403e-2,
-            1829.1514646135445]
-bExpected2 = [-3482258.6345964866,
+bExpected :: [Double]
+bExpected = [-3482258.6345964866,
             15.061872271428058,
             -3.581917929262539e-2,
             -2.020229803817295,
@@ -74,70 +64,16 @@ bExpected2 = [-3482258.6345964866,
 
 --------------------------------------------------------------------------------
 
-m = [[16.0,1626.9,6203175.0,51093.0,41707.0,1878784.0,31272.0],
-            [1626.9,167172.09,6.467006497e8,5289080.100000001,4293173.699999999,1.921396506e8,3180539.9000000004],
-            [6203175.0,6.467006497e8,2.553151559929e12,2.0650541815e10,1.6632945158e10,7.38680235369e11,1.2131170206e10],
-            [51093.0,5289080.100000001,2.0650541815e10,1.76254267e8,1.31452803e8,6.066485555e9,9.9905864e7],
-            [41707.0,4293173.699999999,1.6632945158e10,1.31452803e8,1.15981677e8,4.92386424e9,8.1537068e7],
-            [1878784.0,1.921396506e8,7.38680235369e11,6.066485555e9,4.92386424e9,2.2134014265e11,3.672577089e9],
-            [31272.0,3180539.9000000004,1.2131170206e10,9.9905864e7,8.1537068e7,3.672577089e9,6.1121464e7]]
-
-v = [1045072.0,
-            1.0681617720000002e8,
-            4.1032273457e11,
-            3.361978021e9,
-            2.740941335e9,
-            1.23068464014e11,
-            2.042836838e9]
-
-m1 :: M.Matrix Double
-m1 = addColumn v (M.matrix m)
-
-
 gentleman :: LSQ.LSQState
 gentleman =
-    let 
+    let
         xMatrix = M.matrix x
         yVect = V.vector y
-    in 
+    in
         foldl' (\state i -> LSQ.addMeasurement (V.vector (getRow i xMatrix)) (V.get i yVect) 1 state) (LSQ.initialize (getNumColumns xMatrix)) [0 .. length y - 1]
 
-cudaGentleman :: CLSQ.LSQState
-cudaGentleman =
-    let 
-        numColumns = length (head x)
-    in 
-        --for__ 0 (length y - 1) (CLSQ.initialize numColumns) (\i state -> CLSQ.addMeasurements (x Prelude.!! i) (y Prelude.!! i) 1 state)
-        --for__ 0 (length y - 1) (CLSQ.initialize numColumns) (\i state -> CLSQ.addMeasurements [(x Prelude.!! i)] [(y Prelude.!! i)] 1 state)
-        CLSQ.addMeasurements x y (repeat 1) $ CLSQ.initialize numColumns
-
---stirling :: LSQ.LSQState -> LSQ.LSQState
---stirling state = for_ 0 (getLength s - 1) state (\i state -> LSQ.addConstraint (V.vector (getRow i r)) (V.get i s) 0 state)
-
-
-
-
-        --putStr (show (solveGauss m1) ++ "\n")
-        --putStr (show (solveCramer m v) ++ "\n")
-        --putStr (show (LSQ.solve x y) ++ "\n")
-        --putStr (show (solve1 x y) ++ "\n")
-        --putStr (show ((transpose x) `mul` x) ++ "\n")
-
+test_LSQ :: Assertion
 test_LSQ = do
-    --putStrLn (show (calcForward 1 (calcForward 0 m)))
-    --putStrLn (show (calcBackward m))
-    
-    --print (LSQ.solve (stirling (invert gentleman)))
     let
-        result = (LSQ.solve (LSQ.invert gentleman))
-    assertEqual bExpected (values result)
-
-
-test_CLSQ = do
-    --putStrLn (show (calcForward 1 (calcForward 0 m)))
-    --putStrLn (show (calcBackward m))
-    
-    --print (LSQ.solve (stirling (invert gentleman)))
-    let
-        cudaResult = (CLSQ.solve (CLSQ.invert cudaGentleman))
-    assertEqual bExpected2 cudaResult
+        result = LSQ.solve (LSQ.invert gentleman)
+    values result @?= bExpected

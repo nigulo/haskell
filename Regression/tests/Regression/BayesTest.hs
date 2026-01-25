@@ -1,22 +1,27 @@
-{-# OPTIONS_GHC -F -pgmF htfpp #-}
-
-module Regression.BayesTest where
+module Regression.BayesTest (tests) where
 
 import Regression.RBF as RBF
 import Regression.Bayes
 import Regression.Data as D
 import Regression.AnalyticData as AD
-import qualified Data.Eigen.Matrix as M
+import Numeric.LinearAlgebra as M
 import qualified Data.Vector.Unboxed as V
-import Test.Framework
+import Test.Tasty
+import Test.Tasty.HUnit
 import Utils.Test
 import Data.List
 import Control.Monad
-import Debug.Trace
 
+tests :: TestTree
+tests = testGroup "Bayes"
+    [ testCase "rbfMLII" test_rbfMLII
+    , testCase "linRegWithMLII" test_linRegWithMLII
+    ]
+
+test_rbfMLII :: Assertion
 test_rbfMLII = do
     let
-    
+
         yTrain :: [Double] = [
             0.5804, -0.2090, -0.2874, -0.8108, -0.7795, 0.6245, -0.6563, 0.1730, -0.3846, -1.1996,
            -0.0588, 0.3149, 0.7521, 0.8589, 0.1093, -0.5251, 0.5377, 0.9668, -0.9194, -0.3436,
@@ -24,8 +29,8 @@ test_rbfMLII = do
            -0.0395, 0.7844, -0.5342, 0.5128, -1.1994, -1.5737, 0.8318, -0.1754, -0.1772, -0.7289,
            -1.1197, -0.6862, 0.5082, -0.8036, 0.0758, -0.7829, -0.1923, 0.9154, -0.8727, 0.0770
             ]
-    
-        sumPhi :: M.MatrixXd = M.fromList $ [    
+
+        sumPhi :: Matrix Double = M.fromLists [
             [8.861800985766141e+00, 1.041584957232027e+01, 8.144241915551671e+00, 4.394412437913028e+00, 1.711908447701046e+00, 5.015856555041788e-01, 1.130366246262387e-01,
              1.978828615019784e-02, 2.726829458177522e-03, 3.007599820220453e-04, 2.692962023770108e-05],
             [1.041584957232027e+01, 1.355922681964368e+01, 1.218061834902503e+01, 7.900113229057926e+00, 3.853737677552452e+00, 1.445907405494973e+00, 4.214186423270310e-01,
@@ -48,8 +53,8 @@ test_rbfMLII = do
              7.635032637741449e+00, 1.043465519923917e+01, 1.052129911483549e+01, 7.521388990417746e+00],
             [2.692962023770108e-05, 3.230891950177113e-04, 3.137839019931413e-03, 2.368328387723070e-02, 1.328779648402726e-01, 5.449999522898860e-01, 1.654467030035393e+00,
              3.764519770586256e+00, 6.319534763808286e+00, 7.521388990417746e+00, 6.090901536358487e+00]]
-        
-        sumyPhi :: M.MatrixXd = M.fromList $ map (\y -> [y]) [
+
+        sumyPhi :: Matrix Double = M.fromLists $ map (\y -> [y]) [
             1.926952010566491e+00,
             2.992502819453232e-01,
             -4.778635078091193e+00,
@@ -62,9 +67,9 @@ test_rbfMLII = do
             1.452061610541205e+00,
             8.463457845768559e-01]
 
-    (m, s, alpha, beta, margLik) <- rbfMLII (M.fromList (map (\y -> [y]) yTrain)) sumPhi sumyPhi (50, 0.001)
+    (m, s, alpha, beta, margLik) <- rbfMLII (M.fromLists (map (\y -> [y]) yTrain)) sumPhi sumyPhi (50, 0.001)
 
-    let    
+    let
         mExp :: [Double] = [
             -9.631235345721318,
             16.915351130261943,
@@ -105,53 +110,13 @@ test_rbfMLII = do
         betaExp :: Double = 24.287131711024514
         margLikExp :: Double = 8.836405741977161e7
 
-        {-
-        mExp :: [Double] = [
-            -9.630835099605974e+00,
-             1.691452431619830e+01,
-            -1.179694765746228e+01,
-            -4.742360841571092e-01,
-             7.723816637390071e+00,
-            -8.657370918035827e+00,
-             2.852791452729768e+00,
-             4.009093789027943e+00,
-            -9.338831797680854e+00,
-             1.080089922411304e+01,
-            -6.148352922768289e+00]
-        sExp :: [[Double]] = [
-            [2.567627784229887e+00, -5.586713527643323e+00, 6.776313531714349e+00, -5.579954172148382e+00, 3.023832537183668e+00, -5.797838428857576e-01,
-             -8.744557588013055e-01, 1.268203700551511e+00, -1.006579669939857e+00, 5.419431397378496e-01, -1.667397721929225e-01],
-            [-5.586713527643323e+00, 1.259830678608423e+01, -1.599024555572020e+01, 1.407245094792205e+01, -8.693656783466979e+00, 2.996872674965694e+00,
-             8.717442580070089e-01, -2.428018156388192e+00, 2.314876957756427e+00, -1.430290146310240e+00, 5.026416840541941e-01],
-            [6.776313531714349e+00, -1.599024555572020e+01, 2.162367090529908e+01, -2.092608911828551e+01, 1.523616174316306e+01, -7.914101937701099e+00,
-             1.849543023711361e+00, 1.657042275627383e+00, -2.730961668680710e+00, 2.133609931213345e+00, -8.809129078235243e-01],
-            [-5.579954172148382e+00, 1.407245094792205e+01, -2.092608911828551e+01, 2.323132426789907e+01, -2.062500581945034e+01, 1.466246974781835e+01,
-             -7.755485577304853e+00, 2.060459113617135e+00, 1.242758233029827e+00, -1.982142033624539e+00, 1.049035294636869e+00],
-            [3.023832537183668e+00, -8.693656783466979e+00, 1.523616174316306e+01, -2.062500581945034e+01, 2.290638825191797e+01, -2.089653949277371e+01,
-             1.528592586099944e+01, -8.374046166080673e+00, 2.686428227268085e+00, 2.444802358681697e-01, -6.227494681894821e-01],
-            [-5.797838428857576e-01, 2.996872674965694e+00, -7.914101937701099e+00, 1.466246974781835e+01, -2.089653949277371e+01, 2.365031941919220e+01,
-             -2.151308981832344e+01, 1.565222134502448e+01, -8.836538494850087e+00, 3.544956609559332e+00, -7.529894944481285e-01],
-            [-8.744557588013055e-01, 8.717442580070089e-01, 1.849543023711361e+00, -7.755485577304853e+00, 1.528592586099944e+01, -2.151308981832344e+01,
-             2.383758702943990e+01, -2.147871908539214e+01, 1.575926181771001e+01, -8.864753487068754e+00, 3.016379205822959e+00],
-            [1.268203700551511e+00, -2.428018156388192e+00, 1.657042275627383e+00, 2.060459113617135e+00, -8.374046166080673e+00, 1.565222134502448e+01,
-             -2.147871908539214e+01, 2.355932122444804e+01, -2.080197240503105e+01, 1.378981622819085e+01, -5.398586342503858e+00],
-            [-1.006579669939857e+00, 2.314876957756427e+00, -2.730961668680710e+00, 1.242758233029827e+00, 2.686428227268085e+00, -8.836538494850087e+00,
-             1.575926181771001e+01, -2.080197240503105e+01, 2.114421513172088e+01, -1.556231799233178e+01, 6.583520322013085e+00],
-            [5.419431397378496e-01, -1.430290146310240e+00, 2.133609931213345e+00, -1.982142033624539e+00, 2.444802358681697e-01, 3.544956609559332e+00,
-              -8.864753487068754e+00, 1.378981622819085e+01, -1.556231799233178e+01, 1.233420915959066e+01, -5.514931821203610e+00],
-            [-1.667397721929225e-01, 5.026416840541941e-01, -8.809129078235243e-01, 1.049035294636869e+00, -6.227494681894821e-01, -7.529894944481285e-01,
-             3.016379205822959e+00, -5.398586342503858e+00, 6.583520322013085e+00, -5.514931821203610e+00, 2.580695903146897e+00]]
-        alphaExp :: Double = 9.920860653153174e-03
-        betaExp :: Double = 2.428282065103534e+01
-        margLikExp :: Double = 8.831700932033677e+07
-        -}
-        
-    assertEqualDoubleList mExp (map (\[x] -> x) (M.toList m))
-    zipWithM_  (assertEqualDoubleList) sExp (M.toList s)
+    assertEqualDoubleList mExp (map (\[x] -> x) (M.toLists m))
+    zipWithM_ assertEqualDoubleList sExp (M.toLists s)
     assertEqualDouble alphaExp alpha
     assertEqualDouble betaExp beta
     assertEqualDouble margLikExp margLik
 
+test_linRegWithMLII :: Assertion
 test_linRegWithMLII = do
     let
         xTrain :: [Double] = [
@@ -169,16 +134,16 @@ test_linRegWithMLII = do
            -0.0395, 0.7844, -0.5342, 0.5128, -1.1994, -1.5737, 0.8318, -0.1754, -0.1772, -0.7289,
            -1.1197, -0.6862, 0.5082, -0.8036, 0.0758, -0.7829, -0.1923, 0.9154, -0.8727, 0.0770
             ]
-        
+
         rangeStart = -5
         rangeEnd = 5
         numBasisFunctions = 11
-                
+
         lambdaMin = 0.9090909090909091
         lambdaMax = 9.090909090909090
         numLambdas = 20
         lambdas :: [Double] = [lambdaMin, lambdaMin + (lambdaMax - lambdaMin) / (numLambdas - 1) .. lambdaMax]
-        
+
         dat = D.data1' $ V.fromList $ zip xTrain yTrain
     (AD.AnalyticData [([xLeft], [xRight], RBF rbf)], varFunc) <- linRegWithMLII dat (MethodRBF numBasisFunctions [(rangeStart, rangeEnd)] lambdas (50, 0.001))
     assertEqualDouble rangeStart xLeft
@@ -200,15 +165,15 @@ test_linRegWithMLII = do
             -6.148670506526571]
         expectedCentres :: [Double] = [-5, -5 + (rangeEnd - rangeStart) / (fromIntegral numBasisFunctions - 1) .. 5]
         expectedLambdas :: [Double] = repeat 3.923444976076555
-        expectedRBF = zip3 expectedWeights expectedCentres expectedLambdas 
-    
+        expectedRBF = zip3 expectedWeights expectedCentres expectedLambdas
+
     zipWithM_ (\(expectedWeight, expectedCentre, expectedLambda) (weight, centrevec, lambda) -> do
             assertEqualDouble expectedWeight weight
             let
-                [[centre]] = M.toList centrevec
+                [[centre]] = M.toLists centrevec
             assertEqualDouble expectedCentre centre
             assertEqualDouble expectedLambda lambda
-        ) expectedRBF rbf 
+        ) expectedRBF rbf
 
     let
         xTest :: [Double] = [
@@ -222,7 +187,7 @@ test_linRegWithMLII = do
              4.034019152878836e+00,
             -3.625252958537625e+00,
             -3.607236527492415e+00]
-    
+
         expectedVars :: [Double] = [
             5.0150133620189025e-2,
             4.663659620836762e-2,
@@ -236,4 +201,3 @@ test_linRegWithMLII = do
             4.658527528653199e-2]
 
     assertEqualDoubleList expectedVars (map (\x -> varFunc [x]) xTest)
-

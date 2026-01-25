@@ -28,13 +28,11 @@ import qualified Math.Expression as E
 import Data.List
 import qualified Data.Vector.Unboxed as V
 import System.Random
-import System.Random.MWC
+import System.Random.MWC hiding (uniform)
+import qualified System.Random.MWC as MWC
 import Utils.Misc
 import Debug.Trace
 import qualified Statistics.Sample as Sample
-
-import System.Random
-import System.Random.MWC
 
 dataToDataOp :: (RandomGen g) => F.Function Double -> Data -> Data -> Bool -> g -> Data
 dataToDataOp op d1 d2 yOrx g = 
@@ -214,7 +212,7 @@ reshuffleData dat =
                 if V.null vs 
                     then return V.empty
                     else do 
-                        r :: Int <- asGenIO (uniform) gen
+                        r :: Int <- asGenIO (MWC.uniform) gen
                         let 
                             r1 = r `mod` V.length vs
                         shuffledVals <- shuffleFunc (i + 1) ((V.take r1 vs) V.++ (V.drop (r1 + 1) vs))
@@ -234,7 +232,7 @@ bootstrapSample count dat =
         let
             vals = D.values1 dat
         vals1 <- V.generateM count (\_ -> do
-            r :: Int <- asGenIO (uniform) gen
+            r :: Int <- asGenIO (MWC.uniform) gen
             let 
                 r1 = r `mod` V.length vals
             return $ vals V.! r1

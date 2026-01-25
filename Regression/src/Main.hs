@@ -2,7 +2,6 @@
 module Main where
 
 import Regression.IOLeastSquares as LSQ
-import Regression.CUDALeastSquares as CLSQ
 import Math.LinearEquations
 import Math.Matrix as M
 import Math.IODoubleMatrix as IOM
@@ -157,14 +156,6 @@ gentleman x y w = do
             xVect <- IOV.vector (x !! i ++ [y !! i])
             LSQ.addMeasurement xVect (w !! i) state
         ) initialState [0 .. length y - 1]  
-
-cudaGentleman :: [[Double]] -> [Double] -> [Double] -> CLSQ.LSQState
-cudaGentleman x y w =
-    let 
-        numColumns = length (head x)
-    in 
-        --for__ 0 (length y - 1) (CLSQ.initialize numColumns) (\i state -> CLSQ.addMeasurements (x Prelude.!! i) (y Prelude.!! i) 1 state)
-        CLSQ.addMeasurements x y w $ CLSQ.initialize numColumns
 
 main :: IO ()
 main = do
