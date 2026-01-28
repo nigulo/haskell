@@ -154,7 +154,7 @@ main = do
                             in case riseSet of
                                 Just ((riseTime, riseAzi), (setTime, setAzi)) ->
                                     let
-                                        transit = calcPlanetTransit date planetElements earth2020 lat lon (riseTime, setTime)
+                                        transit = calcPlanetTransit date planetElements earth2020 lat lon
                                         YMD y m d = toYMD date
                                         riseHMS = toHMS (getHours riseTime)
                                         setHMS = toHMS (getHours setTime)

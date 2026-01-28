@@ -256,6 +256,29 @@ calcMagnitude r q f a =
     in
         5 * logBase 10 (rAU * qAU / (a * sqrt f)) - 26.7
 
+calcRADec ::
+    Date
+    -> OrbitalElements -- ^ planet
+    -> OrbitalElements -- ^ earth
+    -> Lat
+    -> Long
+    -> Bool
+    -> (RA, Dec)
+calcRADec date planet earth lat long geoParallax =
+    let
+        earthHelCoords = calcHelLongAndDist earth date
+        planetHelCoords = calcHelLongAndDist planet date
+        (planetLong, planetLat) = calcEclCoords planet earth planetHelCoords earthHelCoords date
+        tilt = calcObliquityOfEcliptic date
+        (planetRA, planetDec) = eclToEqu planetLong planetLat tilt
+    in
+        if geoParallax
+        then
+            let
+                planetDist = calcDistance planetHelCoords earthHelCoords
+            in
+                calcGeoParallax date planetRA planetDec (Left planetDist) lat long 0
+        else (planetRA, planetDec)
 
 calcPlanetRiseSet ::
     Date
@@ -266,11 +289,7 @@ calcPlanetRiseSet ::
     -> Maybe ((GMT, Angle), (GMT, Angle)) -- ^ (rise time and azimuth, set time and azimuth)
 calcPlanetRiseSet date planet earth lat long =
     let
-        earthHelCoords = calcHelLongAndDist earth date
-        planetHelCoords = calcHelLongAndDist planet date
-        (planetLong, planetLat) = calcEclCoords planet earth planetHelCoords earthHelCoords date
-        tilt = calcObliquityOfEcliptic date
-        (planetRA, planetDec) = eclToEqu planetLong planetLat tilt
+        (planetRA, planetDec) = calcRADec date planet earth lat long False
         maybeRiseSet = calcRiseSet planetRA planetDec lat False
     in
         case maybeRiseSet of
@@ -289,26 +308,12 @@ calcPlanetRiseSet date planet earth lat long =
                     Hrs gmtSetHrs = getHours gmtSet
                     gmtSet' = if not eastWest && gmtSetHrs < 12 then addDays 1 gmtSet else gmtSet
 
-                    earthHelCoords1 = calcHelLongAndDist earth gmtRise'
-                    planetHelCoords1 = calcHelLongAndDist planet gmtRise'
-                    (planetLong1, planetLat1) = calcEclCoords planet earth planetHelCoords1 earthHelCoords1 gmtRise'
-                    tilt1 = calcObliquityOfEcliptic gmtRise'
-                    (planetRA1, planetDec1) = eclToEqu planetLong1 planetLat1 tilt1
-                    planetDist1 = calcDistance planetHelCoords1 earthHelCoords1
-                    (planetRA1', planetDec1') = calcGeoParallax gmtRise' planetRA1 planetDec1 (Left planetDist1) lat long 0
-
-                    earthHelCoords2 = calcHelLongAndDist earth gmtSet'
-                    planetHelCoords2 = calcHelLongAndDist planet gmtSet'
-                    (planetLong2, planetLat2) = calcEclCoords planet earth planetHelCoords2 earthHelCoords2 gmtSet'
-                    tilt2 = calcObliquityOfEcliptic gmtSet'
-                    (planetRA2, planetDec2) = eclToEqu planetLong2 planetLat2 tilt2
-                    planetDist2 = calcDistance planetHelCoords2 earthHelCoords2
-                    (planetRA2', planetDec2') = calcGeoParallax gmtSet' planetRA2 planetDec2 (Left planetDist2) lat long 0
-
+                    (planetRA1, planetDec1) = calcRADec gmtRise' planet earth lat long True
+                    (planetRA2, planetDec2) = calcRADec gmtSet' planet earth lat long True
                 in
-                    case calcRiseSet planetRA1' planetDec1' lat True of
+                    case calcRiseSet planetRA1 planetDec1 lat True of
                         Just ((lstRise1, riseAzi1), _) ->
-                            case calcRiseSet planetRA2' planetDec2' lat True of
+                            case calcRiseSet planetRA2 planetDec2 lat True of
                                 Just (_, (lstSet1, setAzi1)) ->
                                     let
                                         gstRise1 = lstToGST lstRise1 long
@@ -334,38 +339,29 @@ calcPlanetTransit ::
     -> OrbitalElements -- ^ earth
     -> Lat
     -> Long
-    -> (GMT, GMT) -- ^ rise and set times
     -> Maybe (GMT, Alt) -- ^ (transit time, altitude)
-calcPlanetTransit date planet earth lat long (gmtRise, gmtSet) =
+calcPlanetTransit date planet earth lat long =
     let
-        -- Calculate transit time as midpoint between rise and set
-        Hrs riseHrs = getHours gmtRise
-        Hrs setHrs = getHours gmtSet
+        (planetRA, _) = calcRADec date planet earth lat long False
+        gst = lstToGST planetRA long
+        gmt = gstToGMT gst date
 
-        -- Handle case where set is before rise (crosses midnight)
-        (riseHrs', setHrs') = if setHrs < riseHrs
-            then (riseHrs, setHrs + 24)
-            else (riseHrs, setHrs)
+        (planetRA', planetDec') = calcRADec gmt planet earth lat long True
+        gst' = lstToGST planetRA' long
+        gmtTransit = gstToGMT gst' date
 
-        transitHrs = (riseHrs' + setHrs') / 2
-        transitHrsClipped = if transitHrs >= 24 then transitHrs - 24 else transitHrs
-
-        -- Get the base date from gmtRise and add the time difference
-        gmtTransit = fromDateAndHours (getDay gmtRise) (Hrs transitHrsClipped)
+        eastWest = case long of
+            Long _ E -> True
+            _ -> False
+        --transitHrs = getHours gmtTransit
+        --gmtTransit' = if eastWest && gmtRiseHrs > 12 then addDays (-1) gmtRise else gmtRise
+        --Hrs gmtSetHrs = getHours gmtSet
+        --gmtSet' = if not eastWest && gmtSetHrs < 12 then addDays 1 gmtSet else gmtSet
 
         -- Adjust day if transit crosses midnight
-        gmtTransit' = if transitHrs >= 24
-            then addDays 1 gmtTransit
-            else gmtTransit
-
-        -- Calculate planet position at transit time
-        earthHelCoords = calcHelLongAndDist earth gmtTransit'
-        planetHelCoords = calcHelLongAndDist planet gmtTransit'
-        (planetLong, planetLat) = calcEclCoords planet earth planetHelCoords earthHelCoords gmtTransit'
-        tilt = calcObliquityOfEcliptic gmtTransit'
-        (planetRA, planetDec) = eclToEqu planetLong planetLat tilt
-        planetDist = calcDistance planetHelCoords earthHelCoords
-        (planetRA', planetDec') = calcGeoParallax gmtTransit' planetRA planetDec (Left planetDist) lat long 0
+        --gmtTransit' = if transitHrs >= 24
+        --    then addDays 1 gmtTransit
+        --    else gmtTransit
 
         -- At transit, LHA = 0 (object on meridian)
         -- Calculate altitude using equToHor with LHA = 0
@@ -375,5 +371,5 @@ calcPlanetTransit date planet earth lat long (gmtRise, gmtSet) =
             Deg altDeg = toDeg alt
         in
             if altDeg > 0
-            then Just (gmtTransit', alt)
+            then Just (gmtTransit, alt)
             else Nothing
