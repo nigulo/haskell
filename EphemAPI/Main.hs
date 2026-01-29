@@ -22,7 +22,9 @@ import Ephem.Moon (calcMoon, calcMoonPhase, calcMoonElongation, getMoonPhaseName
 import Ephem.CelestialBody
 import Ephem.Types hiding (addDays)
 import Ephem.OrbitalElements
-import Data.Char (toLower)
+import Ephem.Coords (raToLHA, equToHor)
+import Ephem.Time (gmtToGST, gstToLST, calcSpringEquinox, calcAutumnEquinox, calcSummerSolstice, calcWinterSolstice)
+import Data.Char (toLower, isDigit)
 
 main :: IO ()
 main = do
@@ -34,7 +36,7 @@ main = do
 
         -- Health check endpoint
         get (literal "/") $ do
-            text $ TL.pack "Ephem API is running. Endpoints: /api/sunrise-sunset, /api/planet-rise-set-transit, /api/moon-phase"
+            text $ TL.pack "Ephem API is running. Endpoints: /api/sunrise-sunset, /api/planet-rise-set-transit, /api/celestial-position, /api/moon-phase, /api/equinoxes"
 
         ----------------------------------------------------------------------------------------------------------------
         -- Sun rise and set
@@ -190,6 +192,74 @@ main = do
                     json results
 
         ----------------------------------------------------------------------------------------------------------------
+        -- Celestial position (RA, Dec, Alt, Azi) for a given datetime
+        ----------------------------------------------------------------------------------------------------------------
+        get (literal "/api/celestial-position") $ do
+            -- Get query parameters from request
+            req <- request
+            let queryParams = Wai.queryString req
+                lookupDouble name def = case lookup name queryParams of
+                    Just (Just val) -> case TR.double (TE.decodeUtf8 val) of
+                        Right (d, _) -> d
+                        Left _ -> def
+                    _ -> def
+                lookupString name def = case lookup name queryParams of
+                    Just (Just val) -> T.unpack $ TE.decodeUtf8 val
+                    _ -> def
+
+            let latParam = lookupDouble "lat" 0
+                lonParam = lookupDouble "lon" 0
+                planetParam = lookupString "planet" ""
+                datetimeParam = lookupString "datetime" ""
+
+            case getPlanetElements planetParam of
+                Nothing -> do
+                    json $ object [
+                        Key.fromString "error" .= ("Invalid planet name. Valid planets: " ++ show validPlanets :: String)
+                        ]
+                Just planetElements -> do
+                    -- Parse datetime (format: "yyyy-mm-dd hh:mm")
+                    case parseDatetime datetimeParam of
+                        Nothing -> do
+                            json $ object [
+                                Key.fromString "error" .= ("Invalid datetime format. Expected: yyyy-mm-dd hh:mm" :: String)
+                                ]
+                        Just date -> do
+                            -- Calculate latitude and longitude
+                            let lat = toLatitude (Deg latParam)
+                                lon = toLongitude (Deg lonParam)
+
+                            -- Calculate RA and Dec
+                            let (ra, dec) = calcRADec date planetElements earth2020 lat lon True
+
+                            -- Calculate LST from GMT
+                            let gst = gmtToGST date
+                                lst = gstToLST gst lon
+
+                            -- Calculate LHA from RA and LST
+                            let lha = raToLHA ra lst
+
+                            -- Calculate Alt and Azi from LHA, Dec, and Lat
+                            let (alt, azi) = equToHor lha dec lat
+
+                            -- Format output
+                            let HMS raH raM raS = toHMS ra
+                                Deg decDeg = toDeg dec
+                                Deg altDeg = toDeg alt
+                                Deg aziDeg = toDeg azi
+
+                            json $ object [
+                                Key.fromString "datetime" .= datetimeParam,
+                                Key.fromString "planet" .= planetParam,
+                                Key.fromString "rightAscension" .= formatRA (HMS raH raM raS),
+                                Key.fromString "rightAscensionHours" .= (fromIntegral raH + fromIntegral raM / 60 + raS / 3600 :: Double),
+                                Key.fromString "declination" .= formatDec dec,
+                                Key.fromString "declinationDegrees" .= decDeg,
+                                Key.fromString "altitude" .= altDeg,
+                                Key.fromString "azimuth" .= aziDeg
+                                ]
+
+        ----------------------------------------------------------------------------------------------------------------
         -- Moon phase
         ----------------------------------------------------------------------------------------------------------------
         get (literal "/api/moon-phase") $ do
@@ -282,7 +352,61 @@ main = do
             -- Return JSON response
             json results
 
+        ----------------------------------------------------------------------------------------------------------------
+        -- Equinoxes and Solstices
+        ----------------------------------------------------------------------------------------------------------------
+        get (literal "/api/equinoxes") $ do
+            -- Get query parameters from request
+            req <- request
+            let queryParams = Wai.queryString req
+                lookupInt name def = case lookup name queryParams of
+                    Just (Just val) -> case reads (T.unpack $ TE.decodeUtf8 val) of
+                        [(i, "")] -> i
+                        _ -> def
+                    _ -> def
+
+            let yearParam = lookupInt "year" 2025
+
+            -- Calculate equinoxes and solstices for the given year
+            let springEquinox = calcSpringEquinox yearParam
+                summerSolstice = calcSummerSolstice yearParam
+                autumnEquinox = calcAutumnEquinox yearParam
+                winterSolstice = calcWinterSolstice yearParam
+
+                -- Convert JD to YMD for JSON output
+                formatJD jd =
+                    let YMD y m d = toYMD jd
+                        dayInt = floor d
+                        fracDay = d - fromIntegral dayInt
+                        hours = fracDay * 24
+                        HMS h mi s = toHMS (Hrs hours)
+                    in object [
+                        Key.fromString "date" .= formatDate dayInt m y,
+                        Key.fromString "time" .= formatTime (HMS h mi s),
+                        Key.fromString "jd" .= (case toJD jd of JD j -> j),
+                        Key.fromString "dayOfYear" .= dayOfYear y m dayInt
+                        ]
+
+            json $ object [
+                Key.fromString "year" .= yearParam,
+                Key.fromString "springEquinox" .= formatJD springEquinox,
+                Key.fromString "summerSolstice" .= formatJD summerSolstice,
+                Key.fromString "autumnEquinox" .= formatJD autumnEquinox,
+                Key.fromString "winterSolstice" .= formatJD winterSolstice
+                ]
+
 -- Helper functions
+
+-- | Calculate day of year (1-366)
+dayOfYear :: Integer -> Int -> Int -> Int
+dayOfYear year month day =
+    let daysInMonth = [31, if isLeapYear' year then 29 else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    in sum (take (month - 1) daysInMonth) + day
+
+-- | Check if year is a leap year
+isLeapYear' :: Integer -> Bool
+isLeapYear' y = (y `mod` 4 == 0) && (y `mod` 100 /= 0 || y `mod` 400 == 0)
+
 formatTime :: Hours -> String
 formatTime (HMS h m s) =
     pad2 h ++ ":" ++ pad2 m ++ ":" ++ pad2 (round s :: Int)
@@ -352,3 +476,52 @@ moonPhaseToString FullMoon       = "Full Moon"
 moonPhaseToString WaningGibbous  = "Waning Gibbous"
 moonPhaseToString LastQuarter    = "Last Quarter"
 moonPhaseToString WaningCrescent = "Waning Crescent"
+
+-- Parse datetime string "yyyy-mm-dd hh:mm" into a Date with fractional day
+parseDatetime :: String -> Maybe Date
+parseDatetime str =
+    case break (== ' ') str of
+        (dateStr, ' ':timeStr) ->
+            case parseDatePart dateStr of
+                Just (y, m, d) ->
+                    case parseTimePart timeStr of
+                        Just (h, mins) ->
+                            let fractionalDay = fromIntegral d + (fromIntegral h + fromIntegral mins / 60) / 24
+                            in Just $ YMD y m fractionalDay
+                        Nothing -> Nothing
+                Nothing -> Nothing
+        _ -> Nothing
+  where
+    parseDatePart :: String -> Maybe (Integer, Int, Int)
+    parseDatePart s =
+        case break (== '-') s of
+            (yStr, '-':rest1) ->
+                case break (== '-') rest1 of
+                    (mStr, '-':dStr) ->
+                        case (reads yStr, reads mStr, reads dStr) of
+                            ([(y, "")], [(m, "")], [(d, "")]) -> Just (y, m, d)
+                            _ -> Nothing
+                    _ -> Nothing
+            _ -> Nothing
+
+    parseTimePart :: String -> Maybe (Int, Int)
+    parseTimePart s =
+        case break (== ':') s of
+            (hStr, ':':mStr) ->
+                case (reads hStr, reads (takeWhile isDigit mStr)) of
+                    ([(h, "")], [(m, "")]) -> Just (h, m)
+                    _ -> Nothing
+            _ -> Nothing
+
+-- Format RA as "XXh XXm XX.Xs"
+formatRA :: Hours -> String
+formatRA (HMS h m s) = show h ++ "h " ++ pad2 m ++ "m " ++ show (round s :: Int) ++ "s"
+formatRA hrs = formatRA $ toHMS hrs
+
+-- Format Dec as "+/-XX° XX' XX\""
+formatDec :: Angle -> String
+formatDec angle =
+    let Deg d = toDeg angle
+        sign = if d >= 0 then "+" else "-"
+        DMS deg mins secs = toDMS (Deg (abs d))
+    in sign ++ show deg ++ "° " ++ pad2 mins ++ "' " ++ show (round secs :: Int) ++ "\""

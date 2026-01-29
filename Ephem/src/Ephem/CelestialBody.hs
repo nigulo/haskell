@@ -11,7 +11,8 @@ module Ephem.CelestialBody (
     calcTrueAnomaly,
     calcLongitude,
     calcPlanetRiseSet,
-    calcPlanetTransit
+    calcPlanetTransit,
+    calcRADec
     ) where
 
 

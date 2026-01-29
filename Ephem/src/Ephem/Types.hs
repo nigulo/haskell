@@ -11,6 +11,8 @@ module Ephem.Types (
     toHMS,
     toHrs,
     toDMS,
+    degToRad,
+    radToDeg,
     toDeg,
     toRad,
     toSec,
@@ -178,17 +180,24 @@ toDMS (Deg x) = DMS d m s where
 toDMS angle@(Rad _) = toDMS (toDeg angle)
 toDMS angle@(Sec _) = toDMS $ toDeg angle
 
+radToDeg :: Double -> Double
+radToDeg rad = rad * 180 / pi
+
+-- | Convert degrees to radians
+degToRad :: Double -> Double
+degToRad deg = deg * pi / 180
+
 toDeg :: Angle -> Angle
 toDeg (DMS d m s) =
     if d < 0 || m < 0 || s < 0 then Deg (-deg) else Deg deg where
         deg = fromIntegral (abs d) + (fromIntegral (abs m) + (abs s) / 60) / 60
 toDeg angle@(Deg _) = angle
-toDeg (Rad x) = Deg $ x * 180 / pi
+toDeg (Rad x) = Deg $ radToDeg x
 toDeg (Sec x) = Deg (x / 3600)
 
 toRad :: Angle -> Angle
 toRad angle@(DMS _ _ _) = toRad $ toDeg angle
-toRad (Deg x) = Rad $ x * pi / 180
+toRad (Deg x) = Rad $ degToRad x
 toRad angle@(Rad _) = angle
 toRad angle@(Sec _) = toRad $ toDeg angle
 
