@@ -7,7 +7,8 @@ import qualified Data.Text.Read as TR
 import qualified Data.Text.Encoding as TE
 import qualified Data.ByteString as BS
 import Control.Monad.IO.Class (liftIO)
-import Data.Aeson (object, KeyValue(..))
+import Data.Aeson (object, KeyValue(..), FromJSON(..), withObject, (.:))
+import Data.Maybe (mapMaybe)
 import qualified Data.Aeson.Key as Key
 import Data.Time.Clock
 import Data.Time.Calendar hiding (diffDays)
@@ -36,7 +37,7 @@ main = do
 
         -- Health check endpoint
         get (literal "/") $ do
-            text $ TL.pack "Ephem API is running. Endpoints: /api/sunrise-sunset, /api/planet-rise-set-transit, /api/celestial-position, /api/moon-phase, /api/equinoxes"
+            text $ TL.pack "Ephem API is running. Endpoints: /api/sunrise-sunset, /api/planet-rise-set-transit, /api/celestial-position, /api/celestial-positions (batch), /api/moon-phase, /api/equinoxes"
 
         ----------------------------------------------------------------------------------------------------------------
         -- Sun rise and set
@@ -258,6 +259,39 @@ main = do
                                 Key.fromString "altitude" .= altDeg,
                                 Key.fromString "azimuth" .= aziDeg
                                 ]
+
+        ----------------------------------------------------------------------------------------------------------------
+        -- Batch celestial positions (multiple datetimes)
+        ----------------------------------------------------------------------------------------------------------------
+        post (literal "/api/celestial-positions") $ do
+            reqBody <- jsonData :: ActionM PositionBatchRequest
+            let lat = toLatitude (Deg $ pbrLat reqBody)
+                lon = toLongitude (Deg $ pbrLon reqBody)
+                requests = pbrRequests reqBody
+
+            let results = mapMaybe (\req ->
+                    case getPlanetElements (prPlanet req) of
+                        Nothing -> Nothing
+                        Just planetElements ->
+                            case parseDatetime (prDatetime req) of
+                                Nothing -> Nothing
+                                Just date ->
+                                    let (ra, dec) = calcRADec date planetElements earth2020 lat lon True
+                                        gst = gmtToGST date
+                                        lst = gstToLST gst lon
+                                        lha = raToLHA ra lst
+                                        (alt, azi) = equToHor lha dec lat
+                                        Deg altDeg = toDeg alt
+                                        Deg aziDeg = toDeg azi
+                                    in Just $ object [
+                                        Key.fromString "datetime" .= prDatetime req,
+                                        Key.fromString "planet" .= prPlanet req,
+                                        Key.fromString "altitude" .= altDeg,
+                                        Key.fromString "azimuth" .= aziDeg
+                                        ]
+                    ) requests
+
+            json results
 
         ----------------------------------------------------------------------------------------------------------------
         -- Moon phase
@@ -525,3 +559,26 @@ formatDec angle =
         sign = if d >= 0 then "+" else "-"
         DMS deg mins secs = toDMS (Deg (abs d))
     in sign ++ show deg ++ "° " ++ pad2 mins ++ "' " ++ show (round secs :: Int) ++ "\""
+
+-- | Batch request for celestial positions
+data PositionBatchRequest = PositionBatchRequest
+    { pbrLat :: Double
+    , pbrLon :: Double
+    , pbrRequests :: [PositionRequest]
+    } deriving (Show)
+
+data PositionRequest = PositionRequest
+    { prPlanet :: String
+    , prDatetime :: String
+    } deriving (Show)
+
+instance FromJSON PositionBatchRequest where
+    parseJSON = withObject "PositionBatchRequest" $ \v -> PositionBatchRequest
+        <$> v .: "lat"
+        <*> v .: "lon"
+        <*> v .: "requests"
+
+instance FromJSON PositionRequest where
+    parseJSON = withObject "PositionRequest" $ \v -> PositionRequest
+        <$> v .: "planet"
+        <*> v .: "datetime"
