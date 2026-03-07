@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLabels #-}
 
 module TSA.GUI.Dialog (
     FitWidgets(..),
@@ -8,167 +10,227 @@ module TSA.GUI.Dialog (
     addFitWidgets,
     getFitParams,
     dialogWithTitle,
+    runDialog,
+    createComboBox,
+    comboBoxGetActive,
+    comboBoxSetActive,
+    spinButtonGetValueAsInt,
+    spinButtonGetValue,
+    entryGetString,
+    entrySetText,
 ) where
 
-import Graphics.UI.Gtk hiding (addWidget)
-import Graphics.UI.Gtk.Layout.VBox
+import qualified GI.Gtk as Gtk
+import qualified GI.Gio as Gio
+import Data.GI.Base
+import Data.Text (Text)
+import qualified Data.Text as T
+import Data.Int (Int32)
+import Data.Word (Word32)
+import Control.Monad (when)
+import Control.Monad.IO.Class
 
 import TSA.GUI.State
 import TSA.CommonParams
 import TSA.RegressionParams
 import TSA.Params
 import Control.Concurrent.MVar
-import Control.Applicative
 import GUI.Widget
 
-dialogWithTitle :: State -> String -> IO (Dialog)
-dialogWithTitle state name =
-    do
-        let
-            win = getWindow state
-        dialog <- dialogNew
-        icon <- windowGetIcon win
-        dialog `set` [windowTitle := name, windowIcon := icon]
-        return dialog
-        
-        
-addWidget :: (WidgetClass w, DialogClass d) => Maybe String -> w -> d -> IO (Maybe Label, HBox)
-addWidget maybeName w dialog = do
-    contentBox <- castToBox <$> dialogGetContentArea dialog
-    
-    hBox <- hBoxNew True 0
-    maybeLabel <-
-        case maybeName of 
-            Just name ->
-                do
-                    label <- labelNew maybeName
-                    boxPackStart hBox label PackNatural 2
-                    return $ Just label
-            Nothing -> return Nothing
-    boxPackEnd hBox w PackGrow 2
-    boxPackStart contentBox hBox PackNatural 2
-    return (maybeLabel, hBox)
+-- | Create a dialog window with title
+dialogWithTitle :: State -> String -> IO Gtk.Window
+dialogWithTitle state name = do
+    let win = getWindow state
+    dialog <- Gtk.windowNew
+    Gtk.windowSetTitle dialog (T.pack name)
+    Gtk.windowSetModal dialog True
+    Gtk.windowSetTransientFor dialog (Just win)
+    Gtk.windowSetDestroyWithParent dialog True
+    return dialog
 
-addLabel :: DialogClass d => String -> d -> IO (Label, HBox)
-addLabel text dialog = do
-    contentBox <- castToBox <$> dialogGetContentArea dialog
-    vBox <- vBoxNew False 2
-    boxPackStart contentBox vBox PackGrow 2
-    
-    hBox <- hBoxNew True 0
-    label <- labelNew (Just text)
-    boxPackStart hBox label PackGrow 2
-    boxPackStart vBox hBox PackNatural 2
-    return (label, hBox)
+-- | Run a dialog and return True if OK was clicked
+runDialog :: Gtk.Window -> IO () -> IO () -> IO ()
+runDialog dialog okAction cancelAction = do
+    -- Create content area
+    vBox <- Gtk.boxNew Gtk.OrientationVertical 4
+    Gtk.widgetSetMarginTop vBox 8
+    Gtk.widgetSetMarginBottom vBox 8
+    Gtk.widgetSetMarginStart vBox 8
+    Gtk.widgetSetMarginEnd vBox 8
 
-addSeparator :: DialogClass d => d -> IO ()
-addSeparator dialog = do
-    contentBox <- castToBox <$> dialogGetContentArea dialog
-    vBox <- vBoxNew False 2
-    boxPackStart contentBox vBox PackGrow 2
-    
-    hBox <- hBoxNew True 0
-    sep <- hSeparatorNew
-    boxPackStart hBox sep PackGrow 2
-    boxPackStart vBox hBox PackNatural 2
+    -- Button box
+    buttonBox <- Gtk.boxNew Gtk.OrientationHorizontal 4
+    Gtk.widgetSetHalign buttonBox Gtk.AlignEnd
 
-addWidgetToBox :: (WidgetClass w, BoxClass b) => Maybe String -> w -> Packing -> b -> IO ()
-addWidgetToBox maybeName w packing box = do
-    
-    hBox <- hBoxNew True 0
-    case maybeName of 
-        Just name ->
-            do
-                label <- labelNew maybeName
-                boxPackStart hBox label PackNatural 2
+    cancelButton <- Gtk.buttonNewWithLabel "Cancel"
+    okButton <- Gtk.buttonNewWithLabel "OK"
+
+    Gtk.boxAppend buttonBox cancelButton
+    Gtk.boxAppend buttonBox okButton
+
+    _ <- Gtk.onButtonClicked cancelButton $ do
+        cancelAction
+        Gtk.windowDestroy dialog
+
+    _ <- Gtk.onButtonClicked okButton $ do
+        okAction
+        Gtk.windowDestroy dialog
+
+    Gtk.boxAppend vBox buttonBox
+    Gtk.windowSetChild dialog (Just vBox)
+    Gtk.windowPresent dialog
+
+-- | Add a widget with optional label to a box
+addWidget :: Gtk.IsWidget w => Maybe String -> w -> Gtk.Box -> IO Gtk.Box
+addWidget maybeName w box = do
+    hBox <- Gtk.boxNew Gtk.OrientationHorizontal 4
+    case maybeName of
+        Just name -> do
+            label <- Gtk.labelNew (Just $ T.pack name)
+            Gtk.widgetSetHalign label Gtk.AlignStart
+            Gtk.boxAppend hBox label
         Nothing -> return ()
-    boxPackEnd hBox w PackGrow 2
-    boxPackStart box hBox packing 2
+    widget <- Gtk.toWidget w
+    Gtk.widgetSetHexpand widget True
+    Gtk.boxAppend hBox widget
+    Gtk.boxAppend box hBox
+    return hBox
+
+-- | Add a widget to a box with optional label
+addWidgetToBox :: Gtk.IsWidget w => Maybe String -> w -> Gtk.Box -> IO ()
+addWidgetToBox maybeName w box = do
+    _ <- addWidget maybeName w box
+    return ()
+
+-- | Add a label to a box
+addLabel :: String -> Gtk.Box -> IO Gtk.Label
+addLabel text box = do
+    label <- Gtk.labelNew (Just $ T.pack text)
+    Gtk.boxAppend box label
+    return label
+
+-- | Add a separator to a box
+addSeparator :: Gtk.Box -> IO ()
+addSeparator box = do
+    sep <- Gtk.separatorNew Gtk.OrientationHorizontal
+    Gtk.boxAppend box sep
+
+-- | Create a combo box (dropdown) with string options
+createComboBox :: [String] -> IO Gtk.DropDown
+createComboBox options = do
+    Gtk.dropDownNewFromStrings (map T.pack options)
+
+-- | Get active index from dropdown
+comboBoxGetActive :: Gtk.DropDown -> IO Int
+comboBoxGetActive dropdown = do
+    idx <- Gtk.dropDownGetSelected dropdown
+    return $ fromIntegral idx
+
+-- | Set active index on dropdown
+comboBoxSetActive :: Gtk.DropDown -> Int -> IO ()
+comboBoxSetActive dropdown idx =
+    Gtk.dropDownSetSelected dropdown (fromIntegral idx)
+
+-- | Get value as Int from SpinButton
+spinButtonGetValueAsInt :: Gtk.SpinButton -> IO Int
+spinButtonGetValueAsInt spin = do
+    val <- Gtk.spinButtonGetValueAsInt spin
+    return $ fromIntegral val
+
+-- | Get value as Double from SpinButton
+spinButtonGetValue :: Gtk.SpinButton -> IO Double
+spinButtonGetValue = Gtk.spinButtonGetValue
+
+-- | Get text from Entry
+entryGetString :: Gtk.Entry -> IO String
+entryGetString entry = do
+    text <- GUI.Widget.entryGetString entry
+    return $ T.unpack text
+
+-- | Set text on Entry
+entrySetText :: Gtk.Entry -> String -> IO ()
+entrySetText entry text = do
+    buffer <- Gtk.entryGetBuffer entry
+    Gtk.entryBufferSetText buffer (T.pack text) (-1)
 
 data FitWidgets = FitWidgets {
-    fitNameEntry :: Entry, 
-    fitNumKnotsSpin :: SpinButton, 
-    fitPeriodSpin :: SpinButton, 
-    fitHarmonicsSpin :: SpinButton,
-    fitTypeCombo :: ComboBox,
-    fitNumNodesSpin :: SpinButton, 
-    fitSlowHarmonicPeriodSpin :: SpinButton,
-    fitSlowHarmonicsSpin :: SpinButton
+    fitNameEntry :: Gtk.Entry,
+    fitNumKnotsSpin :: Gtk.SpinButton,
+    fitPeriodSpin :: Gtk.SpinButton,
+    fitHarmonicsSpin :: Gtk.SpinButton,
+    fitTypeCombo :: Gtk.DropDown,
+    fitNumNodesSpin :: Gtk.SpinButton,
+    fitSlowHarmonicPeriodSpin :: Gtk.SpinButton,
+    fitSlowHarmonicsSpin :: Gtk.SpinButton
 }
 
-addFitWidgets :: FitParams -> State -> Dialog -> 
-    IO FitWidgets
-addFitWidgets fitParams state dialog = do
-    nameEntry <- entryNew
-    nameEntry `entrySetText` (((commonName . fitCommonParams) fitParams) ++ (show ((commonNo . fitCommonParams) fitParams)))
-    rankAdjustment <- adjustmentNew (fromIntegral (fitPolynomRank fitParams)) 1 10000 1 1 1
-    harmonicsAdjustment <- adjustmentNew (fromIntegral (fitNumHarmonics fitParams)) 0 10000 1 1 1
-    periodAdjustment <- adjustmentNew (fitPeriod fitParams) 0 1000000000000 1 1 1
-    rankSpin <- spinButtonNew rankAdjustment  1 0
-    periodSpin <- spinButtonNew periodAdjustment 1 10
-    harmonicsSpin <- spinButtonNew harmonicsAdjustment 1 0
+addFitWidgets :: FitParams -> State -> Gtk.Box -> IO FitWidgets
+addFitWidgets fitParams state box = do
+    nameEntry <- Gtk.entryNew
+    entrySetText nameEntry (((commonName . fitCommonParams) fitParams) ++ (show ((commonNo . fitCommonParams) fitParams)))
 
-    TSA.GUI.Dialog.addWidget (Just "Name: ") nameEntry dialog
-    TSA.GUI.Dialog.addWidget (Just "Polynom degree: ") rankSpin dialog
-    TSA.GUI.Dialog.addWidget (Just "Period: ") periodSpin dialog
-    TSA.GUI.Dialog.addWidget (Just "Num harmonics: ") harmonicsSpin dialog
+    rankAdjustment <- Gtk.adjustmentNew (fromIntegral (fitPolynomRank fitParams)) 1 10000 1 1 1
+    harmonicsAdjustment <- Gtk.adjustmentNew (fromIntegral (fitNumHarmonics fitParams)) 0 10000 1 1 1
+    periodAdjustment <- Gtk.adjustmentNew (fitPeriod fitParams) 0 1000000000000 1 1 1
 
-    typeCombo <- createComboBox [
-        "Spline", 
-        "Harmonic" 
-        ]
-    addWidget (Just "Type: ") typeCombo dialog
+    rankSpin <- Gtk.spinButtonNew (Just rankAdjustment) 1 0
+    periodSpin <- Gtk.spinButtonNew (Just periodAdjustment) 1 10
+    harmonicsSpin <- Gtk.spinButtonNew (Just harmonicsAdjustment) 1 0
 
-    numNodesAdjustment <- adjustmentNew (fromIntegral (splineNumNodes (fitSplineParams fitParams))) 1 10000 1 1 1
-    numNodesSpin <- spinButtonNew numNodesAdjustment 1 0
-    (_, numNodesBox) <- addWidget (Just "Num nodes: ") numNodesSpin dialog
-    
-    slowHarmonicCoverageFactorAdjustment <- adjustmentNew (harmonicCoverageFactor (fitHarmonicParams fitParams)) 0 100000 1 1 1
-    slowHarmonicCoverageFactorSpin <- spinButtonNew slowHarmonicCoverageFactorAdjustment 1 10
-    (_, slowHarmonicCoverageFactorBox) <- addWidget (Just "Coverage factor: ") slowHarmonicCoverageFactorSpin dialog
+    _ <- addWidget (Just "Name: ") nameEntry box
+    _ <- addWidget (Just "Polynom degree: ") rankSpin box
+    _ <- addWidget (Just "Period: ") periodSpin box
+    _ <- addWidget (Just "Num harmonics: ") harmonicsSpin box
 
-    slowHarmonicsAdjustment <- adjustmentNew (fromIntegral (harmonicCount (fitHarmonicParams fitParams))) 0 10000 1 1 1
-    slowHarmonicsSpin <- spinButtonNew slowHarmonicsAdjustment 1 0
-    (_, slowHarmonicsBox) <- addWidget (Just "Num modulators: ") slowHarmonicsSpin dialog
+    typeCombo <- createComboBox ["Spline", "Harmonic"]
+    _ <- addWidget (Just "Type: ") typeCombo box
+
+    numNodesAdjustment <- Gtk.adjustmentNew (fromIntegral (splineNumNodes (fitSplineParams fitParams))) 1 10000 1 1 1
+    numNodesSpin <- Gtk.spinButtonNew (Just numNodesAdjustment) 1 0
+    numNodesBox <- addWidget (Just "Num nodes: ") numNodesSpin box
+
+    slowHarmonicCoverageFactorAdjustment <- Gtk.adjustmentNew (harmonicCoverageFactor (fitHarmonicParams fitParams)) 0 100000 1 1 1
+    slowHarmonicCoverageFactorSpin <- Gtk.spinButtonNew (Just slowHarmonicCoverageFactorAdjustment) 1 10
+    slowHarmonicCoverageFactorBox <- addWidget (Just "Coverage factor: ") slowHarmonicCoverageFactorSpin box
+
+    slowHarmonicsAdjustment <- Gtk.adjustmentNew (fromIntegral (harmonicCount (fitHarmonicParams fitParams))) 0 10000 1 1 1
+    slowHarmonicsSpin <- Gtk.spinButtonNew (Just slowHarmonicsAdjustment) 1 0
+    slowHarmonicsBox <- addWidget (Just "Num modulators: ") slowHarmonicsSpin box
 
     case fitType fitParams of
         FitTypeSpline -> do
             comboBoxSetActive typeCombo 0
-            numNodesBox `set`  [widgetVisible := True]
-            slowHarmonicCoverageFactorBox `set` [widgetVisible := False]
+            Gtk.widgetSetVisible numNodesBox True
+            Gtk.widgetSetVisible slowHarmonicCoverageFactorBox False
+            Gtk.widgetSetVisible slowHarmonicsBox False
         FitTypeHarmonic -> do
             comboBoxSetActive typeCombo 1
-            slowHarmonicCoverageFactorBox `set`  [widgetVisible := True]
-            numNodesBox `set` [widgetVisible := False]
+            Gtk.widgetSetVisible slowHarmonicCoverageFactorBox True
+            Gtk.widgetSetVisible slowHarmonicsBox True
+            Gtk.widgetSetVisible numNodesBox False
 
-    let
-        showFitTypeCombos =
-            do
-                fitType <- comboBoxGetActive typeCombo
-                if fitType == 0 
-                    then
-                    do
-                            numNodesBox `set`  [widgetVisible := True]
-                            slowHarmonicCoverageFactorBox `set`  [widgetVisible := False]
-                            slowHarmonicsBox `set`  [widgetVisible := False]
-                    else   
-                    do              
-                            numNodesBox `set`  [widgetVisible := False]
-                            slowHarmonicCoverageFactorBox `set`  [widgetVisible := True]
-                            slowHarmonicsBox `set`  [widgetVisible := True]
-
-    after dialog realize showFitTypeCombos
-    on typeCombo changed showFitTypeCombos
+    -- Connect to dropdown selection change
+    _ <- Gtk.onDropDownNotifySelected typeCombo $ \_ -> do
+        fitTypeIdx <- comboBoxGetActive typeCombo
+        if fitTypeIdx == 0
+            then do
+                Gtk.widgetSetVisible numNodesBox True
+                Gtk.widgetSetVisible slowHarmonicCoverageFactorBox False
+                Gtk.widgetSetVisible slowHarmonicsBox False
+            else do
+                Gtk.widgetSetVisible numNodesBox False
+                Gtk.widgetSetVisible slowHarmonicCoverageFactorBox True
+                Gtk.widgetSetVisible slowHarmonicsBox True
 
     return $ FitWidgets nameEntry rankSpin periodSpin harmonicsSpin typeCombo numNodesSpin slowHarmonicCoverageFactorSpin slowHarmonicsSpin
 
-getFitParams :: FitWidgets -> FitParams -> IO (FitParams)
+getFitParams :: FitWidgets -> FitParams -> IO FitParams
 getFitParams (FitWidgets nameEntry rankSpin periodSpin harmonicsSpin typeCombo numNodesSpin slowHarmonicCoverageFactorSpin slowHarmonicsSpin) fitParams = do
     name <- entryGetString nameEntry
     rank <- spinButtonGetValueAsInt rankSpin
     period <- spinButtonGetValue periodSpin
     harmonics <- spinButtonGetValueAsInt harmonicsSpin
-    fitType <- comboBoxGetActive typeCombo
+    fitTypeIdx <- comboBoxGetActive typeCombo
     numNodes <- spinButtonGetValueAsInt numNodesSpin
     slowHarmonicCoverageFactor <- spinButtonGetValue slowHarmonicCoverageFactorSpin
     slowHarmonics <- spinButtonGetValueAsInt slowHarmonicsSpin
@@ -177,8 +239,7 @@ getFitParams (FitWidgets nameEntry rankSpin periodSpin harmonicsSpin typeCombo n
         fitPeriod = period,
         fitNumHarmonics = harmonics,
         fitCommonParams = updateCommonParams name (fitCommonParams fitParams),
-        fitType = if fitType == 0 then FitTypeSpline else FitTypeHarmonic,
-        fitSplineParams = SplineParams numNodes, 
+        fitType = if fitTypeIdx == 0 then FitTypeSpline else FitTypeHarmonic,
+        fitSplineParams = SplineParams numNodes,
         fitHarmonicParams = HarmonicParams slowHarmonicCoverageFactor slowHarmonics
     }
-

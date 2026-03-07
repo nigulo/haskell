@@ -1,7 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLabels #-}
 
 module TSA.GUI.Interpolate (paramsDialog) where
 
-import Graphics.UI.Gtk hiding (addWidget, Plus)
+import qualified GI.Gtk as Gtk
+import Data.GI.Base
+import qualified Data.Text as T
+
 import Debug.Trace
 
 import Regression.Polynom as P
@@ -34,77 +39,62 @@ paramsDialog stateRef = do
     let
         intParams = interpolateParams (params state)
         commonParams = interpolateCommonParams intParams
-    
-    g <- getStdGen 
+
+    g <- getStdGen
     (currentGraphTab, _) <- getCurrentGraphTab state
 
-    dialog <- dialogWithTitle state "Interpolate"
-    
-    dialogAddButton dialog "Cancel" ResponseCancel
-    fitButton <- dialogAddButton dialog "Ok" ResponseOk
+    win <- dialogWithTitle state "Interpolate"
 
-    nameEntry <- entryNew
-    nameEntry `entrySetText` (getNameWithNo commonParams)
-    addWidget (Just "Name: ") nameEntry dialog
+    contentBox <- Gtk.boxNew Gtk.OrientationVertical 4
+    Gtk.widgetSetMarginTop contentBox 8
+    Gtk.widgetSetMarginBottom contentBox 8
+    Gtk.widgetSetMarginStart contentBox 8
+    Gtk.widgetSetMarginEnd contentBox 8
+
+    nameEntry <- Gtk.entryNew
+    entrySetText nameEntry (getNameWithNo commonParams)
+    addWidgetToBox (Just "Name: ") nameEntry contentBox
 
     methodCombo <- createComboBox ["Linear", "Polynomial"]
-    addWidget (Just "Method: ") methodCombo dialog
+    addWidgetToBox (Just "Method: ") methodCombo contentBox
 
     dataSetCombo <- dataSetComboNew onlyData state
-    addWidget (Just "Data set: ") (getComboBox dataSetCombo) dialog
-    
-    let 
-        toggleFitButton :: IO ()
-        toggleFitButton = 
-            do
-                selectedData <- getSelectedData dataSetCombo
-                fitName <- entryGetString nameEntry
-                sensitivity <-
-                    case selectedData of 
-                        Just _ -> if length fitName <= 0 then return False 
-                                                    else return True
-                        Nothing -> return False
-                fitButton `widgetSetSensitivity` sensitivity
-                        
-    on (getComboBox dataSetCombo) changed toggleFitButton
-    --nameEntry `onButtonRelease` (\e -> toggleFitButton >> return False)
-    --nameEntry `onKeyRelease` (\e -> toggleFitButton >> return False)
-    on (castToEditable nameEntry) editableChanged toggleFitButton
---    nameEntry `afterInsertAtCursor` (\s -> toggleFitButton)
---    nameEntry `afterPasteClipboard` (toggleFitButton)
---    nameEntry `afterCutClipboard` (toggleFitButton)
-    
-    
-    widgetShowAll dialog
-    response <- dialogRun dialog
-    
-    if response == ResponseOk 
-        then
-            do
-                name <- entryGetString nameEntry
-                Just method <- comboBoxGetActiveString methodCombo
-                methodNo <- comboBoxGetActive methodCombo
-                Just selectedData <- getSelectedData dataSetCombo
-                widgetDestroy dialog
-                
-                modifyStateParams stateRef $ \params -> params {interpolateParams = InterpolateParams {
-                        interpolateCommonParams = updateCommonParams name commonParams
-                    }}
+    addWidgetToBox (Just "Data set: ") (getComboBox dataSetCombo) contentBox
 
-                runTask stateRef "Interpolate" $ interpolate stateRef methodNo name selectedData
-                return ()
-        else
-            do
-                widgetDestroy dialog
+    -- Button box
+    buttonBox <- Gtk.boxNew Gtk.OrientationHorizontal 4
+    Gtk.widgetSetHalign buttonBox Gtk.AlignEnd
+    cancelButton <- Gtk.buttonNewWithLabel "Cancel"
+    okButton <- Gtk.buttonNewWithLabel "Ok"
+    Gtk.boxAppend buttonBox cancelButton
+    Gtk.boxAppend buttonBox okButton
+    Gtk.boxAppend contentBox buttonBox
+
+    _ <- Gtk.onButtonClicked cancelButton $ Gtk.windowDestroy win
+
+    _ <- Gtk.onButtonClicked okButton $ do
+        name <- entryGetString nameEntry
+        methodNo <- comboBoxGetActive methodCombo
+        Just selectedData <- getSelectedData dataSetCombo
+        Gtk.windowDestroy win
+
+        modifyStateParams stateRef $ \params -> params {interpolateParams = InterpolateParams {
+                interpolateCommonParams = updateCommonParams name commonParams
+            }}
+
+        runTask stateRef "Interpolate" $ interpolate stateRef methodNo name selectedData
+        return ()
+
+    Gtk.windowSetChild win (Just contentBox)
+    Gtk.windowPresent win
 
 interpolate :: StateRef -> Int -> String -> DataParams -> IO ()
 interpolate stateRef method fitName dat = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
     tEnv <- taskEnv stateRef
-    let 
+    let
         graphTabParms = (graphTabs state) !! currentGraphTab
         selectedGraph = graphTabSelection graphTabParms
     result <- I.interpolate method fitName dat tEnv
     modifyState stateRef $ addDataParams result (Just (currentGraphTab, selectedGraph))
-

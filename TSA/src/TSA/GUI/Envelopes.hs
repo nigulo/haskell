@@ -1,8 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLabels #-}
 
 module TSA.GUI.Envelopes where
 
-import Graphics.UI.Gtk hiding (addWidget)
-import Graphics.UI.Gtk.Layout.VBox
+import qualified GI.Gtk as Gtk
+import Data.GI.Base
+import qualified Data.Text as T
 
 import Regression.Polynom as P
 import Regression.Spline as S
@@ -40,106 +43,88 @@ paramsDialog stateRef = do
         upperParams = envUpperParams parms
         lowerParams = envLowerParams parms
         meanParams = envMeanParams parms
-        
-    dialog <- dialogWithTitle state "Envelopes"
-    
-    dialogAddButton dialog "Cancel" ResponseCancel
-    fitButton <- dialogAddButton dialog "Ok" ResponseOk
 
-    contentBox <- castToBox <$> dialogGetContentArea dialog
-    vBox <- vBoxNew False 2
-    boxPackStart contentBox vBox PackGrow 2
-    
-    upperNameEntry <- entryNew
+    win <- dialogWithTitle state "Envelopes"
+
+    contentBox <- Gtk.boxNew Gtk.OrientationVertical 4
+    Gtk.widgetSetMarginStart contentBox 8
+    Gtk.widgetSetMarginEnd contentBox 8
+    Gtk.widgetSetMarginTop contentBox 8
+    Gtk.widgetSetMarginBottom contentBox 8
+
+    upperNameEntry <- Gtk.entryNew
     upperNameEntry `entrySetText` (getNameWithNo upperParams)
-    addWidget (Just "Upper envelope name: ") upperNameEntry dialog
+    addWidgetToBox (Just "Upper envelope name: ") upperNameEntry contentBox
 
-    lowerNameEntry <- entryNew
+    lowerNameEntry <- Gtk.entryNew
     lowerNameEntry `entrySetText` (getNameWithNo lowerParams)
-    addWidget (Just "Lower envelope name: ") lowerNameEntry dialog
+    addWidgetToBox (Just "Lower envelope name: ") lowerNameEntry contentBox
 
-    meanNameEntry <- entryNew
+    meanNameEntry <- Gtk.entryNew
     meanNameEntry `entrySetText` (getNameWithNo meanParams)
-    addWidget (Just "Mean envelope name: ") meanNameEntry dialog
+    addWidgetToBox (Just "Mean envelope name: ") meanNameEntry contentBox
 
-    sep <- hSeparatorNew
-    addWidget Nothing sep dialog
+    sep <- Gtk.separatorNew Gtk.OrientationHorizontal
+    addWidgetToBox Nothing sep contentBox
 
     methodCombo <- createComboBox ["Least squares fit", "Interpolate"]
     case envMethod parms of
-        False -> comboBoxSetActive methodCombo 0 
+        False -> comboBoxSetActive methodCombo 0
         True -> comboBoxSetActive methodCombo 1
-    addWidget (Just "Method: ") methodCombo dialog
+    addWidgetToBox (Just "Method: ") methodCombo contentBox
 
-    startExtremaAdjustment <- adjustmentNew (fromIntegral (envStartExtrema parms)) 1 100 1 1 1
-    startExtremaSpin <- spinButtonNew startExtremaAdjustment 1 0
-    addWidget (Just "Start from extrema: ") startExtremaSpin dialog
-    
+    startExtremaAdjustment <- Gtk.adjustmentNew (fromIntegral (envStartExtrema parms)) 1 100 1 1 1
+    startExtremaSpin <- Gtk.spinButtonNew (Just startExtremaAdjustment) 1 0
+    addWidgetToBox (Just "Start from extrema: ") startExtremaSpin contentBox
+
     dataSetCombo <- dataSetComboNew dataAndSpectrum state
-    addWidget (Just "Data set: ") (getComboBox dataSetCombo) dialog
+    addWidgetToBox (Just "Data set: ") (getComboBox dataSetCombo) contentBox
 
-    let 
-        toggleFitButton :: IO ()
-        toggleFitButton = 
-            do
-                selectedData <- getSelectedData dataSetCombo
-                upperName <- entryGetString upperNameEntry
-                lowerName <- entryGetString lowerNameEntry
-                meanName <- entryGetString meanNameEntry
-                sensitivity <-
-                    case selectedData of 
-                        Just _ -> if length upperName <= 0 
-                                      || length lowerName <= 0
-                                      || length meanName <= 0
-                                    then return False 
-                                    else return True
-                        Nothing -> return False
-                fitButton `widgetSetSensitivity` sensitivity
-                        
-    on (getComboBox dataSetCombo) changed toggleFitButton
-    on (castToEditable upperNameEntry) editableChanged toggleFitButton
-    on (castToEditable lowerNameEntry) editableChanged toggleFitButton
-    on (castToEditable meanNameEntry) editableChanged toggleFitButton
-    
-    
-    widgetShowAll dialog
-    response <- dialogRun dialog
-    
-    if response == ResponseOk 
-        then
-            do
-                upperName <- entryGetString upperNameEntry
-                lowerName <- entryGetString lowerNameEntry
-                meanName <- entryGetString meanNameEntry
+    -- Button box
+    buttonBox <- Gtk.boxNew Gtk.OrientationHorizontal 4
+    Gtk.widgetSetHalign buttonBox Gtk.AlignEnd
+    cancelButton <- Gtk.buttonNewWithLabel "Cancel"
+    okButton <- Gtk.buttonNewWithLabel "Ok"
+    Gtk.boxAppend buttonBox cancelButton
+    Gtk.boxAppend buttonBox okButton
+    Gtk.boxAppend contentBox buttonBox
 
-                method <- comboBoxGetActive methodCombo
-                startExtrema <- spinButtonGetValue startExtremaSpin
-                
-                Just selectedData <- getSelectedData dataSetCombo
-                widgetDestroy dialog
+    Gtk.onButtonClicked cancelButton $ do
+        Gtk.windowDestroy win
 
-                let
-                    newEnvParams = EnvParams {
-                            envUpperParams = updateCommonParams upperName upperParams,
-                            envLowerParams = updateCommonParams lowerName lowerParams,
-                            envMeanParams = updateCommonParams meanName meanParams,
-                            envStartExtrema = round startExtrema,
-                            envMethod = (if method == 0 then False else True),
-                            envData = Just selectedData
-                        } 
+    Gtk.onButtonClicked okButton $ do
+        upperName <- entryGetString upperNameEntry
+        lowerName <- entryGetString lowerNameEntry
+        meanName <- entryGetString meanNameEntry
 
-                modifyStateParams stateRef $ \params -> params {envParams = newEnvParams}
-                runTask stateRef "Find envelopes" $ (envelopes stateRef (upperName, lowerName, meanName))
-                return ()
-        else
-            do
-                widgetDestroy dialog
+        method <- comboBoxGetActive methodCombo
+        startExtrema <- spinButtonGetValue startExtremaSpin
+
+        Just selectedData <- getSelectedData dataSetCombo
+        Gtk.windowDestroy win
+
+        let
+            newEnvParams = EnvParams {
+                    envUpperParams = updateCommonParams upperName upperParams,
+                    envLowerParams = updateCommonParams lowerName lowerParams,
+                    envMeanParams = updateCommonParams meanName meanParams,
+                    envStartExtrema = round startExtrema,
+                    envMethod = (if method == 0 then False else True),
+                    envData = Just selectedData
+                }
+
+        modifyStateParams stateRef $ \params -> params {envParams = newEnvParams}
+        runTask stateRef "Find envelopes" $ (envelopes stateRef (upperName, lowerName, meanName))
+        return ()
+
+    Gtk.windowSetChild win (Just contentBox)
+    Gtk.windowPresent win
 
 envelopes :: StateRef -> (String, String, String) -> IO ()
 envelopes stateRef (upperName, lowerName, meanName) =
     do
         state <- readMVar stateRef
-        g <- getStdGen 
+        g <- getStdGen
         (currentGraphTab, _) <- getCurrentGraphTab state
         let
             graphTabParms = (graphTabs state) !! currentGraphTab
@@ -147,6 +132,6 @@ envelopes stateRef (upperName, lowerName, meanName) =
 
             parms = envParams (params state)
         tEnv <- taskEnv stateRef
-        
+
         E.envelopes parms (upperName, lowerName, meanName) tEnv (DataUpdateFunc (\dat name update -> modifyState stateRef $ addOrUpdateData dat name (Just (currentGraphTab, selectedGraph)) update))
         return ()

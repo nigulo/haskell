@@ -27,7 +27,11 @@ module TSA.GUI.State  (
     ) where
 
 import TSA.Params
-import Graphics.UI.Gtk hiding (addWidget, Plus, Cross, Circle)
+import qualified GI.Gtk as Gtk
+import qualified GI.GLib as GLib
+import Data.GI.Base
+import Data.Text (Text)
+import qualified Data.Text as T
 import Control.Concurrent.MVar
 import Data.List
 import Data.Word
@@ -439,12 +443,12 @@ instance Xml.XmlElement SettingsParams where
 
 
 data GuiParams = GuiParams {
-    guiWindow :: Window, 
-    guiGraphTabs :: Notebook,
-    guiProgressBar :: (ProgressBar, Double {- percent -}),
-    guiStatusBar :: (Statusbar, String, ContextId, MessageId),
+    guiWindow :: Gtk.ApplicationWindow,
+    guiGraphTabs :: Gtk.Notebook,
+    guiProgressBar :: (Gtk.ProgressBar, Double {- percent -}),
+    guiStatusBar :: Gtk.Label,
     guiMousePos :: Maybe (Double, Double),
-    guiLog :: Maybe TextView,
+    guiLog :: Maybe Gtk.TextView,
     guiChanged :: Bool,
     guiFileName :: String
 }
@@ -579,26 +583,26 @@ readState stateRef s =
 
 type StateRef = MVar State
 
-getWindow :: State -> Window
+getWindow :: State -> Gtk.ApplicationWindow
 getWindow state = guiWindow $ fromJust $ guiParams state
 
-getCurrentGraphTab :: State -> IO (Int, DrawingArea)
-getCurrentGraphTab state = 
-    do
-        let 
-            graphTabs = guiGraphTabs $ fromJust $ guiParams state
-        i <- notebookGetCurrentPage graphTabs
-        Just page <- notebookGetNthPage graphTabs i
-        return (i, castToDrawingArea page)
+getCurrentGraphTab :: State -> IO (Int, Gtk.DrawingArea)
+getCurrentGraphTab state = do
+    let tabs = guiGraphTabs $ fromJust $ guiParams state
+    i <- Gtk.notebookGetCurrentPage tabs
+    maybePage <- Gtk.notebookGetNthPage tabs i
+    case maybePage of
+        Just page -> do
+            drawingArea <- unsafeCastTo Gtk.DrawingArea page
+            return (fromIntegral i, drawingArea)
+        Nothing -> error "No page found"
 
-getGraphTabs :: State -> Notebook
-getGraphTabs state = 
-    let
-        Just guiParms = guiParams state 
-    in
-        guiGraphTabs guiParms 
+getGraphTabs :: State -> Gtk.Notebook
+getGraphTabs state =
+    let Just guiParms = guiParams state
+    in guiGraphTabs guiParms
 
-getProgressBar :: State -> (ProgressBar, Double)
+getProgressBar :: State -> (Gtk.ProgressBar, Double)
 getProgressBar state = guiProgressBar $ fromJust $ guiParams state
 
 setProgressBarPercent :: Double -> State -> State
@@ -609,16 +613,11 @@ setProgressBarPercent percent state =
     in
         state {guiParams = Just (guiParms {guiProgressBar = (progressBar, percent)})}
 
-getStatusBar :: State -> (Statusbar, String, ContextId, MessageId)
+getStatusBar :: State -> Gtk.Label
 getStatusBar state = guiStatusBar $ fromJust $ guiParams state
 
 setStatusBarText :: String -> State -> State
-setStatusBarText text state =
-    let
-        guiParms = fromJust $ guiParams state
-        (statusBar, _, contextId, messageId) = guiStatusBar guiParms
-    in
-        state {guiParams = Just (guiParms {guiStatusBar = (statusBar, text, contextId, messageId)})}
+setStatusBarText text state = state  -- Status bar text now set directly via Gtk.labelSetText
 
 
 
@@ -803,22 +802,24 @@ getNormalizedScreenArea graphTab selectedGraph =
 appendLog :: StateRef -> String -> IO ()
 appendLog stateRef text = do
     state <- readMVar stateRef
-    let 
-        newText = TSA.GUI.State.log state ++ text ++ "\n"
+    let newText = TSA.GUI.State.log state ++ text ++ "\n"
     modifyMVar_ stateRef $ \state -> return $ state {
         TSA.GUI.State.log = newText
         }
     refreshLog stateRef
 
 refreshLog :: StateRef -> IO ()
-refreshLog stateRef = postGUIAsync $ do
-    state <- readMVar stateRef
-    case guiLog (fromJust (guiParams state)) of
-        Just textView -> do
-            textBuffer <- textViewGetBuffer textView
-            textBufferSetText textBuffer (TSA.GUI.State.log state)
-            textMark <- textMarkNew Nothing True 
-            textIter <- textBufferGetEndIter textBuffer
-            textBufferAddMark textBuffer textMark textIter
-            textViewScrollToMark textView textMark 0 Nothing 
-        otherwise -> return ()
+refreshLog stateRef = do
+    _ <- GLib.idleAdd GLib.PRIORITY_DEFAULT $ do
+        state <- readMVar stateRef
+        case guiLog (fromJust (guiParams state)) of
+            Just textView -> do
+                textBuffer <- Gtk.textViewGetBuffer textView
+                Gtk.textBufferSetText textBuffer (T.pack $ TSA.GUI.State.log state) (-1)
+                textMark <- Gtk.textMarkNew Nothing True
+                textIter <- Gtk.textBufferGetEndIter textBuffer
+                Gtk.textBufferAddMark textBuffer textMark textIter
+                Gtk.textViewScrollToMark textView textMark 0 False 0 0
+            Nothing -> return ()
+        return False
+    return ()

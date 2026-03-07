@@ -1,6 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLabels #-}
+
 module TSA.GUI.SpecificPoints (findSpecificPointsDialog) where
 
-import Graphics.UI.Gtk hiding (addWidget)
+import qualified GI.Gtk as Gtk
+import Data.GI.Base
+import qualified Data.Text as T
+
 import Debug.Trace
 
 import Regression.Polynom as P
@@ -38,61 +44,70 @@ import Statistics.Sample
 findSpecificPointsDialog :: StateRef -> IO ()
 findSpecificPointsDialog stateRef = do
     state <- readMVar stateRef
-    let 
+    let
         parms = specificPointsParams (params state)
         commonParams = specificPointsCommonParams parms
 
-    dialog <- dialogWithTitle state "Find specific points"
-    
-    dialogAddButton dialog "Cancel" ResponseCancel
-    okButton <- dialogAddButton dialog "Ok" ResponseOk
+    win <- dialogWithTitle state "Find specific points"
 
-    nameEntry <- entryNew
-    nameEntry `entrySetText` (getNameWithNo commonParams)
-    addWidget (Just "Name: ") nameEntry dialog
+    contentBox <- Gtk.boxNew Gtk.OrientationVertical 4
+    Gtk.widgetSetMarginTop contentBox 8
+    Gtk.widgetSetMarginBottom contentBox 8
+    Gtk.widgetSetMarginStart contentBox 8
+    Gtk.widgetSetMarginEnd contentBox 8
+
+    nameEntry <- Gtk.entryNew
+    entrySetText nameEntry (getNameWithNo commonParams)
+    addWidgetToBox (Just "Name: ") nameEntry contentBox
 
     typeCombo <- createComboBox ["Local extrema", "Global extrema", "Zero-crossings"]
-    typeCombo `comboBoxSetActive` (specificPointsType parms)
-    addWidget (Just "Type: ") typeCombo dialog
-    
+    comboBoxSetActive typeCombo (specificPointsType parms)
+    addWidgetToBox (Just "Type: ") typeCombo contentBox
+
     dataSetCombo <- dataSetComboNew (\_ -> True) state
-    addWidget (Just "Data set: ") (getComboBox dataSetCombo) dialog
+    addWidgetToBox (Just "Data set: ") (getComboBox dataSetCombo) contentBox
 
-    precisionAdjustment <- adjustmentNew (fromIntegral (specificPointsPrecision parms)) 1 (2**52) 1 1 1
-    precisionSpin <- spinButtonNew precisionAdjustment 1 0
-    addWidget (Just "Precision: ") precisionSpin dialog
+    precisionAdjustment <- Gtk.adjustmentNew (fromIntegral (specificPointsPrecision parms)) 1 (2**52) 1 1 1
+    precisionSpin <- Gtk.spinButtonNew (Just precisionAdjustment) 1 0
+    addWidgetToBox (Just "Precision: ") precisionSpin contentBox
 
-    widgetShowAll dialog
-    response <- dialogRun dialog
-    
-    if response == ResponseOk 
-        then
-            do
-                name <- entryGetString nameEntry
-                spType <- comboBoxGetActive typeCombo
-                precision <- spinButtonGetValue precisionSpin
-                Just selectedData <- getSelectedData dataSetCombo
-                widgetDestroy dialog
-                
-                modifyStateParams stateRef $ \params -> params {specificPointsParams = SpecificPointsParams {
-                        specificPointsData = Just selectedData,
-                        specificPointsType = spType,
-                        specificPointsPrecision = round precision,
-                        specificPointsCommonParams = updateCommonParams name commonParams
-                    }}
-                
-                
-                runTask stateRef "Find specific points" $ findSpecificPoints stateRef selectedData (round precision) name spType
-                return ()
-        else
-            do
-                widgetDestroy dialog
+    -- Button box
+    buttonBox <- Gtk.boxNew Gtk.OrientationHorizontal 4
+    Gtk.widgetSetHalign buttonBox Gtk.AlignEnd
+    cancelButton <- Gtk.buttonNewWithLabel "Cancel"
+    okButton <- Gtk.buttonNewWithLabel "Ok"
+    Gtk.boxAppend buttonBox cancelButton
+    Gtk.boxAppend buttonBox okButton
+    Gtk.boxAppend contentBox buttonBox
+
+    _ <- Gtk.onButtonClicked cancelButton $ Gtk.windowDestroy win
+
+    _ <- Gtk.onButtonClicked okButton $ do
+        name <- entryGetString nameEntry
+        spType <- comboBoxGetActive typeCombo
+        precision <- spinButtonGetValue precisionSpin
+        Just selectedData <- getSelectedData dataSetCombo
+        Gtk.windowDestroy win
+
+        modifyStateParams stateRef $ \params -> params {specificPointsParams = SpecificPointsParams {
+                specificPointsData = Just selectedData,
+                specificPointsType = spType,
+                specificPointsPrecision = round precision,
+                specificPointsCommonParams = updateCommonParams name commonParams
+            }}
+
+
+        runTask stateRef "Find specific points" $ findSpecificPoints stateRef selectedData (round precision) name spType
+        return ()
+
+    Gtk.windowSetChild win (Just contentBox)
+    Gtk.windowPresent win
 
 findSpecificPoints :: StateRef -> DataParams -> Int -> String -> Int -> IO ()
 findSpecificPoints stateRef dataParams precision name spType = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
-    let 
+    let
         graphTabParms = (graphTabs state) !! currentGraphTab
         selectedGraph = graphTabSelection graphTabParms
     tEnv <- taskEnv stateRef
@@ -109,4 +124,3 @@ findSpecificPoints stateRef dataParams precision name spType = do
                 return [zc]
     mapM_ (\dp -> modifyState stateRef $ addDataParams dp (Just (currentGraphTab, selectedGraph))) results
     (progressUpdateFunc tEnv) 1
-

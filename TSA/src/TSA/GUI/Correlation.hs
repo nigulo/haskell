@@ -1,6 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLabels #-}
+
 module TSA.GUI.Correlation (correlationDialog) where
 
-import Graphics.UI.Gtk hiding (addWidget)
+import qualified GI.Gtk as Gtk
+import Data.GI.Base
+import qualified Data.Text as T
 
 import Regression.Data as D
 import Regression.Utils as U
@@ -36,76 +41,81 @@ import System.Random.MWC
 correlationDialog :: StateRef -> IO ()
 correlationDialog stateRef = do
     state <- readMVar stateRef
-    
+
     let
         parms = correlationParams (params state)
         commonParams = correlationCommonParams parms
-    
-    g <- getStdGen 
+
+    g <- getStdGen
     (currentGraphTab, _) <- getCurrentGraphTab state
 
-    dialog <- dialogWithTitle state "Find correlation"
-    
-    dialogAddButton dialog "Cancel" ResponseCancel
-    fitButton <- dialogAddButton dialog "Ok" ResponseOk
+    win <- dialogWithTitle state "Find correlation"
 
-    contentBox <- castToBox <$> dialogGetContentArea dialog
-    vBox <- vBoxNew False 2
-    boxPackStart contentBox vBox PackGrow 2
-    
-    nameEntry <- entryNew
-    nameEntry `entrySetText` (getNameWithNo commonParams)
-    addWidget (Just "Name: ") nameEntry dialog
-    
+    contentBox <- Gtk.boxNew Gtk.OrientationVertical 4
+    Gtk.widgetSetMarginTop contentBox 8
+    Gtk.widgetSetMarginBottom contentBox 8
+    Gtk.widgetSetMarginStart contentBox 8
+    Gtk.widgetSetMarginEnd contentBox 8
+
+    nameEntry <- Gtk.entryNew
+    entrySetText nameEntry (getNameWithNo commonParams)
+    addWidgetToBox (Just "Name: ") nameEntry contentBox
+
     dataSetCombo1 <- dataSetComboNew only2d state
-    addWidget (Just "Data set 1: ") (getComboBox dataSetCombo1) dialog
+    addWidgetToBox (Just "Data set 1: ") (getComboBox dataSetCombo1) contentBox
 
     dataSetCombo2 <- dataSetComboNew only2d state
-    addWidget (Just "Data set 2: ") (getComboBox dataSetCombo2) dialog
+    addWidgetToBox (Just "Data set 2: ") (getComboBox dataSetCombo2) contentBox
 
-    precisionAdjustment <- adjustmentNew (fromIntegral (correlationPrecision parms)) 1 100000000 1 1 1
-    precisionSpin <- spinButtonNew precisionAdjustment 1 0
-    addWidget (Just "Precision: ") precisionSpin dialog
+    precisionAdjustment <- Gtk.adjustmentNew (fromIntegral (correlationPrecision parms)) 1 100000000 1 1 1
+    precisionSpin <- Gtk.spinButtonNew (Just precisionAdjustment) 1 0
+    addWidgetToBox (Just "Precision: ") precisionSpin contentBox
 
-    shiftAdjustment <- adjustmentNew 0 0 (2**52) 1 1 1
-    shiftSpin <- spinButtonNew shiftAdjustment 1 10
-    addWidget (Just "Shift: ") shiftSpin dialog
+    shiftAdjustment <- Gtk.adjustmentNew 0 0 (2**52) 1 1 1
+    shiftSpin <- Gtk.spinButtonNew (Just shiftAdjustment) 1 10
+    addWidgetToBox (Just "Shift: ") shiftSpin contentBox
 
-    widgetShowAll dialog
-    response <- dialogRun dialog
-    
-    if response == ResponseOk 
-        then
-            do
-                name <- entryGetString nameEntry
-                precision <- spinButtonGetValue precisionSpin
-                shift <- spinButtonGetValue shiftSpin >>= \shift -> return $ abs shift
-                
-                Just selectedData1 <- getSelectedData dataSetCombo1
-                Just selectedData2 <- getSelectedData dataSetCombo2
-                widgetDestroy dialog
+    -- Button box
+    buttonBox <- Gtk.boxNew Gtk.OrientationHorizontal 4
+    Gtk.widgetSetHalign buttonBox Gtk.AlignEnd
+    cancelButton <- Gtk.buttonNewWithLabel "Cancel"
+    okButton <- Gtk.buttonNewWithLabel "Ok"
+    Gtk.boxAppend buttonBox cancelButton
+    Gtk.boxAppend buttonBox okButton
+    Gtk.boxAppend contentBox buttonBox
 
-                let
-                    SD1 d1 = subData $ head $ dataSet selectedData1
-                    SD1 d2 = subData $ head $ dataSet selectedData2
-                    graphTabParms = (graphTabs state) !! currentGraphTab
-                    selectedGraph = graphTabSelection graphTabParms
-                    shifts = if shift == 0 then [shift] else [-shift, -shift + 2 * shift / 100 .. shift]
+    _ <- Gtk.onButtonClicked cancelButton $ Gtk.windowDestroy win
 
-                modifyStateParams stateRef $ \params -> params {correlationParams = CorrelationParams {
-                        correlationPrecision = round precision,
-                        correlationCommonParams = updateCommonParams name commonParams
-                    }}
-                tEnv <- taskEnv stateRef
-                runTask stateRef "Find correlation" $ do
-                    correlations <- findCorrelation tEnv selectedData1 selectedData2 precision shifts name
-                    case correlations of
-                        [corr] -> modifyState stateRef $ addData (SD1 corr) name (Just (currentGraphTab, selectedGraph))
-                        otherwise -> return () 
-                return ()
-        else
-            do
-                widgetDestroy dialog
+    _ <- Gtk.onButtonClicked okButton $ do
+        name <- entryGetString nameEntry
+        precision <- spinButtonGetValue precisionSpin
+        shift <- spinButtonGetValue shiftSpin >>= \shift -> return $ abs shift
+
+        Just selectedData1 <- getSelectedData dataSetCombo1
+        Just selectedData2 <- getSelectedData dataSetCombo2
+        Gtk.windowDestroy win
+
+        let
+            SD1 d1 = subData $ head $ dataSet selectedData1
+            SD1 d2 = subData $ head $ dataSet selectedData2
+            graphTabParms = (graphTabs state) !! currentGraphTab
+            selectedGraph = graphTabSelection graphTabParms
+            shifts = if shift == 0 then [shift] else [-shift, -shift + 2 * shift / 100 .. shift]
+
+        modifyStateParams stateRef $ \params -> params {correlationParams = CorrelationParams {
+                correlationPrecision = round precision,
+                correlationCommonParams = updateCommonParams name commonParams
+            }}
+        tEnv <- taskEnv stateRef
+        runTask stateRef "Find correlation" $ do
+            correlations <- findCorrelation tEnv selectedData1 selectedData2 precision shifts name
+            case correlations of
+                [corr] -> modifyState stateRef $ addData (SD1 corr) name (Just (currentGraphTab, selectedGraph))
+                otherwise -> return ()
+        return ()
+
+    Gtk.windowSetChild win (Just contentBox)
+    Gtk.windowPresent win
 
 {-
 findCorrelation :: StateRef -> DataParams -> DataParams -> Double -> [Double] -> String -> IO ()
@@ -113,41 +123,41 @@ findCorrelation stateRef dataParams1 dataParams2' precision shifts name = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
     tEnv <- taskEnv stateRef
-    let 
+    let
         graphTabParms = (graphTabs state) !! currentGraphTab
         selectedGraph = graphTabSelection graphTabParms
 
         getRange dataParams =
             case subData $ head $ dataSet dataParams of
-                Left dat -> (D.xMin1 dat, D.xMax1 dat) 
+                Left dat -> (D.xMin1 dat, D.xMax1 dat)
                 Right (Left spline) -> (AD.xMin1 spline, AD.xMax1 spline)
                 Right (Right fns) -> (AD.xMin1 fns, AD.xMax1 fns)
         shiftData dataParams 0 = return dataParams
         shiftData dataParams shift = do
-            let 
+            let
                 func i j d _ = return $ constantOp (F.add) d shift False
             applyToData1 func dataParams "" tEnv
         (xMin1, xMax1) = getRange dataParams1
-        mapFunc shift puFunc = do 
+        mapFunc shift puFunc = do
             dataParams2 <- shiftData dataParams2' shift
-            let 
+            let
                 (xMin2, xMax2) = getRange dataParams2
-        
+
                 xMin = max xMin1 xMin2
                 xMax = min xMax1 xMax2
-            if xMin < xMax then 
+            if xMin < xMax then
                 do
                     let
-                        maybeYs sdp1 sdp2 = 
+                        maybeYs sdp1 sdp2 =
                             case (subData sdp1, subData sdp2) of
                                 (Left d1, Left d2) ->
-                                    let 
-                                        subD1 = D.subSet1 (xMin, xMax) d1  
-                                        subD2 = D.subSet1 (xMin, xMax) d2  
+                                    let
+                                        subD1 = D.subSet1 (xMin, xMax) d1
+                                        subD2 = D.subSet1 (xMin, xMax) d2
                                     in
                                     if D.xs subD1 == D.xs subD2 then Just (D.ys subD1, D.ys subD2) else Nothing
                                 otherwise -> Nothing
-                        (ys1, ys2) = 
+                        (ys1, ys2) =
                             case maybeYs (head $ dataSet dataParams1) (head $ dataSet dataParams2) of
                                 Just (ys1, ys2) -> (ys1, ys2)
                                 otherwise ->
@@ -169,7 +179,7 @@ findCorrelation stateRef dataParams1 dataParams2' precision shifts name = do
                         resamples = map (\rndVect -> V.unzip (V.map (\r -> let i = r `mod` (V.length ys1) in (ys1 V.! i, ys2 V.! i)) rndVect)) rndVects
                         correls = Data.List.sort $ map (\(ys1, ys2) -> correl ys1 ys2) resamples
                         --stdCorrels = stdDev $ normalFromSample (V.fromList correls)
-                        ksStat = kolmogorovSmirnovD (normalFromSample (V.fromList correls)) (V.fromList correls) 
+                        ksStat = kolmogorovSmirnovD (normalFromSample (V.fromList correls)) (V.fromList correls)
                     --appendLog stateRef ("alpha, beta" ++ show alpha ++ ", " ++ show beta)
                     appendLog stateRef ("Correlation coefficient for " ++ name ++ ", shift=" ++ show shift ++ ": " ++ (show (signum beta * sqrt r2)) ++ ", 90% confInt=[" ++ (show (correls !! 49)) ++ ", " ++ (show (correls !! 949)) ++ "]")
                     if shift == 0

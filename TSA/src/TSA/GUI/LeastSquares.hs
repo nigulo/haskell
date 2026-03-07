@@ -1,6 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLabels #-}
+
 module TSA.GUI.LeastSquares  (paramsDialog) where
 
-import Graphics.UI.Gtk hiding (addWidget, Plus)
+import qualified GI.Gtk as Gtk
+import Data.GI.Base
+import qualified Data.Text as T
 --import qualified Data.Map as Map
 --import Data.IORef
 --import Control.Concurrent
@@ -53,66 +58,54 @@ paramsDialog stateRef = do
         parms = lsqParams (params state)
         fitParams = lsqFitParams parms
         commonParams = fitCommonParams fitParams
-    dialog <- dialogWithTitle state "Least squares fit"
-    
-    dialogAddButton dialog "Cancel" ResponseCancel
-    fitButton <- dialogAddButton dialog "Ok" ResponseOk
+    win <- dialogWithTitle state "Least squares fit"
 
-    fitWidgets@(FitWidgets nameEntry rankSpin periodSpin harmonicsSpin typeCombo _ _ _) <- addFitWidgets fitParams state dialog
+    contentBox <- Gtk.boxNew Gtk.OrientationVertical 4
+    Gtk.widgetSetMarginStart contentBox 8
+    Gtk.widgetSetMarginEnd contentBox 8
+    Gtk.widgetSetMarginTop contentBox 8
+    Gtk.widgetSetMarginBottom contentBox 8
+
+    fitWidgets@(FitWidgets nameEntry rankSpin periodSpin harmonicsSpin typeCombo _ _ _) <- addFitWidgets fitParams state contentBox
 
     dataSetCombo <- dataSetComboNew dataAndSpectrum state
-    addWidget (Just "Data set: ") (getComboBox dataSetCombo) dialog
-    
-    bootstrapCountAdjustment <- adjustmentNew (fromIntegral (lsqBootstrapCount parms)) 0 1000 1 1 1
-    bootstrapCountSpin <- spinButtonNew bootstrapCountAdjustment 1 0
-    addWidget (Just "Bootstrap count: ") bootstrapCountSpin dialog
-    
-    let 
-        toggleFitButton :: IO ()
-        toggleFitButton = 
-            do
-                selectedData <- getSelectedData dataSetCombo
-                fitName <- entryGetString nameEntry
-                sensitivity <-
-                    case selectedData of 
-                        Just _ -> if length fitName <= 0 then return False 
-                                                    else return True
-                        Nothing -> return False
-                fitButton `widgetSetSensitivity` sensitivity
-                        
-    on (getComboBox dataSetCombo) changed toggleFitButton
-    --nameEntry `onButtonRelease` (\e -> toggleFitButton >> return False)
-    --nameEntry `onKeyRelease` (\e -> toggleFitButton >> return False)
-    on (castToEditable nameEntry) editableChanged toggleFitButton
---    nameEntry `afterInsertAtCursor` (\s -> toggleFitButton)
---    nameEntry `afterPasteClipboard` (toggleFitButton)
---    nameEntry `afterCutClipboard` (toggleFitButton)
-    
-    
-    widgetShowAll dialog
-    response <- dialogRun dialog
-    
-    if response == ResponseOk 
-        then
-            do
-                Just selectedData <- getSelectedData dataSetCombo
-                bootstrapCount <- spinButtonGetValue bootstrapCountSpin
-                
-                newFitParams <- getFitParams fitWidgets fitParams
-                
-                name <- entryGetString nameEntry
-                
-                widgetDestroy dialog
-                
-                modifyStateParams stateRef $ \params -> params {lsqParams = LsqParams {
-                    lsqFitParams = newFitParams,
-                    lsqBootstrapCount = round bootstrapCount
-                }}
-                runTask stateRef "Least squares fit" $ fit stateRef selectedData name
-                return ()
-        else
-            do
-                widgetDestroy dialog
+    addWidgetToBox (Just "Data set: ") (getComboBox dataSetCombo) contentBox
+
+    bootstrapCountAdjustment <- Gtk.adjustmentNew (fromIntegral (lsqBootstrapCount parms)) 0 1000 1 1 1
+    bootstrapCountSpin <- Gtk.spinButtonNew (Just bootstrapCountAdjustment) 1 0
+    addWidgetToBox (Just "Bootstrap count: ") bootstrapCountSpin contentBox
+
+    -- Button box
+    buttonBox <- Gtk.boxNew Gtk.OrientationHorizontal 4
+    Gtk.widgetSetHalign buttonBox Gtk.AlignEnd
+    cancelButton <- Gtk.buttonNewWithLabel "Cancel"
+    okButton <- Gtk.buttonNewWithLabel "Ok"
+    Gtk.boxAppend buttonBox cancelButton
+    Gtk.boxAppend buttonBox okButton
+    Gtk.boxAppend contentBox buttonBox
+
+    Gtk.onButtonClicked cancelButton $ do
+        Gtk.windowDestroy win
+
+    Gtk.onButtonClicked okButton $ do
+        Just selectedData <- getSelectedData dataSetCombo
+        bootstrapCount <- spinButtonGetValue bootstrapCountSpin
+
+        newFitParams <- getFitParams fitWidgets fitParams
+
+        name <- entryGetString nameEntry
+
+        Gtk.windowDestroy win
+
+        modifyStateParams stateRef $ \params -> params {lsqParams = LsqParams {
+            lsqFitParams = newFitParams,
+            lsqBootstrapCount = round bootstrapCount
+        }}
+        runTask stateRef "Least squares fit" $ fit stateRef selectedData name
+        return ()
+
+    Gtk.windowSetChild win (Just contentBox)
+    Gtk.windowPresent win
 
 
 fit :: StateRef -> DataParams -> String -> IO ()
@@ -120,16 +113,16 @@ fit stateRef dataParams fitName = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
     tEnv <- taskEnv stateRef
-    let 
+    let
         graphTabParms = (graphTabs state) !! currentGraphTab
         selectedGraph = graphTabSelection graphTabParms
 
         lsqParms = lsqParams (params state)
         bootstrapCount = lsqBootstrapCount lsqParms
-        
-        func i (SD1 dat) puFunc = do 
+
+        func i (SD1 dat) puFunc = do
             spline <- fitData (lsqFitParams lsqParms) dat tEnv
-            g <- getStdGen 
+            g <- getStdGen
             let
                 SD1 diff = subDataBinaryOp (F.subtr) (SD1 dat) (SD2 spline) True g
                 SD1 squareDiff = subDataBinaryOp (F.subtr) (SD1 diff) (SD1 diff) True g
@@ -169,7 +162,7 @@ fit stateRef dataParams fitName = do
                         Xml.renderToFile (Xml.toDocument spline) ("spline" ++ show i)
                         Xml.renderToFile (Xml.toDocument dat) ("data" ++ show i)
                 ) (zip3 [1, 2 ..] (dataSet fitDataParams) (dataSet dataParams))
-                
+
 {-
             let
                 numSubData = length $ dataSet dataParams
@@ -181,7 +174,7 @@ fit stateRef dataParams fitName = do
                         Xml.renderToFile (Xml.toDocument spline) ("spline" ++ show i)
                         Xml.renderToFile (Xml.toDocument dat) ("data" ++ show i)
                         bsSplines <- B.bootstrapSplines bootstrapCount (fitData (lsqFitParams lsqParms)) spline dat (\pct -> (progressUpdateFunc tEnv) (pct * fromIntegral i / fromIntegral numSubData))
-                        --mapM (\(j, bsSpline) -> 
+                        --mapM (\(j, bsSpline) ->
                         --        modifyState stateRef $ addDataParams (DataParams {
                         --            dataName = fitName ++ "_b" ++ show j,
                         --            dataSet = [
@@ -190,13 +183,13 @@ fit stateRef dataParams fitName = do
                         --                    subDataBootstrapSet = []
                         --                }
                         --            ]
-                        --        }) (Just (currentGraphTab, selectedGraph)) 
+                        --        }) (Just (currentGraphTab, selectedGraph))
                         --    ) (zip [1 ..] bsSplines)
                         let
                             (upperSpline, lowerSpline) = upperLowerSplines spline bsSplines
                         return fitParams {subDataBootstrapSet = map (\spline -> Right (Left spline)) bsSplines}
                 ) (zip3 [1, 2 ..] (dataSet fitDataParams) (dataSet dataParams))
-            modifyMVar_ stateRef $ \state -> 
+            modifyMVar_ stateRef $ \state ->
                 do
                 let
                     dataParams = getDataByName fitName state
@@ -212,7 +205,7 @@ getDegreesOfFreedom fitParams =
         let
                 rank = fitPolynomRank fitParams
                 numHarmonics = fitNumHarmonics fitParams
-        
+
         in
         case fitType fitParams of
                 FitTypeSpline ->
@@ -220,9 +213,8 @@ getDegreesOfFreedom fitParams =
                                 numNodes = splineNumNodes (fitSplineParams fitParams)
                         in
                                 (3 * (rank + 1)) * numNodes  * numHarmonics
-                FitTypeHarmonic -> 
+                FitTypeHarmonic ->
                         let
                                 numModulators = harmonicCount (fitHarmonicParams fitParams)
                      in
                                 (2 + 4 * numModulators) * numHarmonics + 2 * numModulators + 1
-

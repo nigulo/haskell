@@ -1,12 +1,17 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLabels #-}
+
 module TSA.GUI.Sample where
 
-import Graphics.UI.Gtk hiding (addWidget)
-import Graphics.UI.Gtk.Layout.VBox
+import qualified GI.Gtk as Gtk
+import Data.GI.Base
+import qualified Data.Text as T
+
 import qualified Regression.Polynom as P
 import Regression.Spline as S
 import Regression.Regression as R
 import Regression.AnalyticDataWrapper as ADW
-import Regression.Data as D 
+import Regression.Data as D
 import Regression.Utils as U
 import qualified Math.Function as F
 import qualified Math.Expression as E
@@ -35,108 +40,112 @@ import Debug.Trace
 sampleDialog :: StateRef -> IO ()
 sampleDialog stateRef = do
     state <- readMVar stateRef
-    
+
     let
         parms = sampleParams (params state)
         commonParams = sampleCommonParams parms
-    
-    g <- newStdGen 
+
+    g <- newStdGen
     (currentGraphTab, _) <- getCurrentGraphTab state
 
-    dialog <- dialogWithTitle state "Sample data set"
-    
-    dialogAddButton dialog "Cancel" ResponseCancel
-    fitButton <- dialogAddButton dialog "Ok" ResponseOk
+    win <- dialogWithTitle state "Sample data set"
 
-    vBox <- castToBox <$> dialogGetContentArea dialog
-    
-    nameEntry <- entryNew
-    nameEntry `entrySetText` (getNameWithNo commonParams)
-    addWidget (Just "Name: ") nameEntry dialog
-    
+    contentBox <- Gtk.boxNew Gtk.OrientationVertical 4
+    Gtk.widgetSetMarginTop contentBox 8
+    Gtk.widgetSetMarginBottom contentBox 8
+    Gtk.widgetSetMarginStart contentBox 8
+    Gtk.widgetSetMarginEnd contentBox 8
+
+    nameEntry <- Gtk.entryNew
+    entrySetText nameEntry (getNameWithNo commonParams)
+    addWidgetToBox (Just "Name: ") nameEntry contentBox
+
     dataSetCombo <- dataSetComboNew (\_ -> True) state
-    addWidget (Just "Data to sample: ") (getComboBox dataSetCombo) dialog
+    addWidgetToBox (Just "Data to sample: ") (getComboBox dataSetCombo) contentBox
 
     dataSetCombo2 <- dataSetComboNew2 dataAndSpectrum state False
-    addWidget (Just "Sample with: ") (getComboBox dataSetCombo2) dialog
+    addWidgetToBox (Just "Sample with: ") (getComboBox dataSetCombo2) contentBox
 
-    countAdjustment <- adjustmentNew (fromIntegral (sampleCount parms)) 1 1000000 1 1 1
-    countSpin <- spinButtonNew countAdjustment 1 0
-    addWidget (Just "Count: ") countSpin dialog
+    countAdjustment <- Gtk.adjustmentNew (fromIntegral (sampleCount parms)) 1 1000000 1 1 1
+    countSpin <- Gtk.spinButtonNew (Just countAdjustment) 1 0
+    addWidgetToBox (Just "Count: ") countSpin contentBox
 
-    randomnessAdjustment <- adjustmentNew (fromIntegral (sampleRandomness parms)) 0 100 1 1 1
-    randomnessSpin <- spinButtonNew randomnessAdjustment 1 0
-    addWidget (Just "Randomness: ") randomnessSpin dialog
+    randomnessAdjustment <- Gtk.adjustmentNew (fromIntegral (sampleRandomness parms)) 0 100 1 1 1
+    randomnessSpin <- Gtk.spinButtonNew (Just randomnessAdjustment) 1 0
+    addWidgetToBox (Just "Randomness: ") randomnessSpin contentBox
 
     dataTypeCombo <- createComboBox ["Data", "Spectrum"]
-    if (sampleType parms) then comboBoxSetActive dataTypeCombo 0 else comboBoxSetActive dataTypeCombo 1 
-    addWidget (Just "Type: ") dataTypeCombo dialog
+    if (sampleType parms) then comboBoxSetActive dataTypeCombo 0 else comboBoxSetActive dataTypeCombo 1
+    addWidgetToBox (Just "Type: ") dataTypeCombo contentBox
 
-    widgetShowAll dialog
-    response <- dialogRun dialog
-    
-    if response == ResponseOk 
-        then
-            do
-                name <- entryGetString nameEntry
-                
-                Just selectedData <- getSelectedData dataSetCombo
-                selectedData2 <- getSelectedData dataSetCombo2
-                count <- spinButtonGetValue countSpin
-                randomness <- spinButtonGetValue randomnessSpin
-                dataType <- comboBoxGetActive dataTypeCombo
-                widgetDestroy dialog
+    -- Button box
+    buttonBox <- Gtk.boxNew Gtk.OrientationHorizontal 4
+    Gtk.widgetSetHalign buttonBox Gtk.AlignEnd
+    cancelButton <- Gtk.buttonNewWithLabel "Cancel"
+    okButton <- Gtk.buttonNewWithLabel "Ok"
+    Gtk.boxAppend buttonBox cancelButton
+    Gtk.boxAppend buttonBox okButton
+    Gtk.boxAppend contentBox buttonBox
 
-                let
-                    graphTabParms = (graphTabs state) !! currentGraphTab
-                    selectedGraph = graphTabSelection graphTabParms
-                    (xMins, xMaxs) = unzip $ map (\sdp -> 
-                            case unboxSubData $ subData sdp of 
-                                Left d -> (D.xMins d, D.xMaxs d)
-                                Right ad -> (ADW.xMins ad, ADW.xMaxs ad)
-                        ) (dataSet selectedData)
+    _ <- Gtk.onButtonClicked cancelButton $ Gtk.windowDestroy win
 
-                    xs =
-                        case selectedData2 of -- only unsegmented data
-                            Just dat ->
+    _ <- Gtk.onButtonClicked okButton $ do
+        name <- entryGetString nameEntry
+
+        Just selectedData <- getSelectedData dataSetCombo
+        selectedData2 <- getSelectedData dataSetCombo2
+        count <- spinButtonGetValue countSpin
+        randomness <- spinButtonGetValue randomnessSpin
+        dataType <- comboBoxGetActive dataTypeCombo
+        Gtk.windowDestroy win
+
+        let
+            graphTabParms = (graphTabs state) !! currentGraphTab
+            selectedGraph = graphTabSelection graphTabParms
+            (xMins, xMaxs) = unzip $ map (\sdp ->
+                    case unboxSubData $ subData sdp of
+                        Left d -> (D.xMins d, D.xMaxs d)
+                        Right ad -> (ADW.xMins ad, ADW.xMaxs ad)
+                ) (dataSet selectedData)
+
+            xs =
+                case selectedData2 of -- only unsegmented data
+                    Just dat ->
+                        let
+                            SD1 d = subData $ head $ dataSet dat
+                        in
+                            filter (\xs -> and (zipWith (>=) xs (head xMins)) && and (zipWith (<=) xs (head xMaxs))) (D.xs d)
+                    Nothing ->
+                        let
+                            getXs xMin xMax =
                                 let
-                                    SD1 d = subData $ head $ dataSet dat
+                                    avgStep = (xMax - xMin) / count
                                 in
-                                    --D.xs d
-                                    filter (\xs -> and (zipWith (>=) xs (head xMins)) && and (zipWith (<=) xs (head xMaxs))) (D.xs d)
-                            Nothing ->
-                                let
-                                    getXs xMin xMax =
-                                        let
-                                            avgStep = (xMax - xMin) / count
-                                        in
-                                            map (\(i, r) -> xMin + avgStep * ((fromIntegral i)  + r * randomness / 100)) (zip [0, 1 ..] (take (round count) (randomRs (0, 1) g)))
-                                    xMin = minimum xMins
-                                    xMax = maximum xMaxs
-                                in 
-                                    sequence $ zipWith (\xMin xMax -> getXs xMin xMax) xMin xMax
-                samples <- calcConcurrently_ (\d -> return (U.getValues xs d g)) (map (\sdp -> unboxSubData (subData sdp)) (dataSet selectedData))
-                let
-                    dataCreateFunc sample = if dataType == 0 
-                        then 
-                            case head sample of
-                                ((x1:x2:_), y) -> D.data2' . V.fromList . map (\((x1:x2:_), y) -> (x1, x2, y)) $ sample 
-                                otherwise -> D.data1' . V.fromList . map (\((x:_), y) -> (x, y)) $ sample 
-                        else 
-                            D.spectrum1' . V.fromList . map (\((x:_), y) -> (x, y)) $ sample 
-                    subDataParams = map (\sample -> createSubDataParams_ (SD1 (dataCreateFunc sample))) samples
-     
-                modifyState stateRef $ addDataParams (createDataParams_ name subDataParams) (Just (currentGraphTab, selectedGraph))
+                                    map (\(i, r) -> xMin + avgStep * ((fromIntegral i)  + r * randomness / 100)) (zip [0, 1 ..] (take (round count) (randomRs (0, 1) g)))
+                            xMin = minimum xMins
+                            xMax = maximum xMaxs
+                        in
+                            sequence $ zipWith (\xMin xMax -> getXs xMin xMax) xMin xMax
+        samples <- calcConcurrently_ (\d -> return (U.getValues xs d g)) (map (\sdp -> unboxSubData (subData sdp)) (dataSet selectedData))
+        let
+            dataCreateFunc sample = if dataType == 0
+                then
+                    case head sample of
+                        ((x1:x2:_), y) -> D.data2' . V.fromList . map (\((x1:x2:_), y) -> (x1, x2, y)) $ sample
+                        _ -> D.data1' . V.fromList . map (\((x:_), y) -> (x, y)) $ sample
+                else
+                    D.spectrum1' . V.fromList . map (\((x:_), y) -> (x, y)) $ sample
+            subDataParams = map (\sample -> createSubDataParams_ (SD1 (dataCreateFunc sample))) samples
 
-                modifyStateParams stateRef $ \params -> params {sampleParams = SampleParams {
-                        sampleCommonParams = updateCommonParams name commonParams,
-                        sampleCount = round count,
-                        sampleRandomness = round randomness,
-                        sampleType = if dataType == 0 then True else False
-                    }}
-                return ()
-        else
-            do
-                widgetDestroy dialog
+        modifyState stateRef $ addDataParams (createDataParams_ name subDataParams) (Just (currentGraphTab, selectedGraph))
 
-    
+        modifyStateParams stateRef $ \params -> params {sampleParams = SampleParams {
+                sampleCommonParams = updateCommonParams name commonParams,
+                sampleCount = round count,
+                sampleRandomness = round randomness,
+                sampleType = if dataType == 0 then True else False
+            }}
+        return ()
+
+    Gtk.windowSetChild win (Just contentBox)
+    Gtk.windowPresent win

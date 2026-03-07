@@ -13,7 +13,7 @@ import GUI.Widget
 import Utils.List
 
 import Data.List
-import Graphics.UI.Gtk
+import qualified GI.Gtk as Gtk
 import Control.Concurrent
 import Control.Concurrent.MVar
 import Control.Concurrent.SSem as SSem

@@ -1,7 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLabels #-}
+
 module TSA.GUI.Log (showLog) where
 
-import Graphics.UI.Gtk hiding (addWidget)
-import Graphics.UI.Gtk.Layout.VBox
+import qualified GI.Gtk as Gtk
+import Data.GI.Base
+import qualified Data.Text as T
 
 import TSA.GUI.State
 import TSA.GUI.Common
@@ -18,51 +22,49 @@ showLog stateRef = do
     state <- readMVar stateRef
     case guiLog (fromJust (guiParams state)) of
         Just _ -> return ()
-        otherwise -> do
-            win <- windowNew
-            icon <- pixbufNewFromFile "tsa.bmp"
-            win `set` [windowTitle := "Log", windowIcon := Just icon]
+        Nothing -> do
+            win <- Gtk.windowNew
+            Gtk.windowSetTitle win "Log"
 
-            vBox <- vBoxNew False 2
-            textBuffer <- textBufferNew Nothing
-            textBufferSetText textBuffer (TSA.GUI.State.log state)
-            textView <- textViewNewWithBuffer textBuffer
-            font <- fontDescriptionNew
-            fontDescriptionSetFamily font TSA.GUI.Common.defaultFontFamily
-            widgetModifyFont textView (Just font)
-            --textViewSetAcceptsTab textView False
-            textViewSetEditable textView False 
-            
-            scrolledWindow <- scrolledWindowNew Nothing Nothing
-            containerAdd scrolledWindow textView
-            
-            boxPackStart vBox scrolledWindow PackGrow 2
-            
-            hBox <- hBoxNew False 2
-            clearButton <- buttonNewWithLabel "Clear"
-            on clearButton buttonReleaseEvent $ liftIO (clearLog stateRef >> return True)
-            boxPackEnd hBox clearButton PackNatural 2
-            boxPackEnd vBox hBox PackNatural 2
-            
-            containerAdd win vBox
-            
-            win `on` objectDestroy $
-                modifyMVar_ stateRef $ \state -> return $ state {
-                    guiParams = Just (fromJust (guiParams state)) {
+            vBox <- Gtk.boxNew Gtk.OrientationVertical 2
+            textBuffer <- Gtk.textBufferNew (Nothing :: Maybe Gtk.TextTagTable)
+            Gtk.textBufferSetText textBuffer (T.pack (TSA.GUI.State.log state)) (-1)
+            textView <- Gtk.textViewNewWithBuffer (Just textBuffer)
+            Gtk.textViewSetEditable textView False
+
+            scrolledWindow <- Gtk.scrolledWindowNew
+            Gtk.scrolledWindowSetChild scrolledWindow (Just textView)
+            Gtk.widgetSetVexpand scrolledWindow True
+
+            Gtk.boxAppend vBox scrolledWindow
+
+            hBox <- Gtk.boxNew Gtk.OrientationHorizontal 2
+            clearButton <- Gtk.buttonNewWithLabel "Clear"
+            Gtk.widgetSetHalign hBox Gtk.AlignEnd
+            _ <- Gtk.onButtonClicked clearButton $ clearLog stateRef
+            Gtk.boxAppend hBox clearButton
+            Gtk.boxAppend vBox hBox
+
+            Gtk.windowSetChild win (Just vBox)
+
+            _ <- Gtk.onWindowCloseRequest win $ do
+                modifyMVar_ stateRef $ \st -> return $ st {
+                    guiParams = Just (fromJust (guiParams st)) {
                         guiLog = Nothing
                         }
                     }
-            
-            widgetShowAll win
-            windowResize win 640 480
+                return False
 
-            textMark <- textMarkNew Nothing True 
-            textIter <- textBufferGetEndIter textBuffer
-            textBufferAddMark textBuffer textMark textIter
-            textViewScrollToMark textView textMark 0 Nothing 
-            
-            modifyMVar_ stateRef $ \state -> return $ state {
-                guiParams = Just (fromJust (guiParams state)) {
+            Gtk.windowSetDefaultSize win 640 480
+            Gtk.windowPresent win
+
+            textMark <- Gtk.textMarkNew Nothing True
+            textIter <- Gtk.textBufferGetEndIter textBuffer
+            Gtk.textBufferAddMark textBuffer textMark textIter
+            Gtk.textViewScrollToMark textView textMark 0 False 0 0
+
+            modifyMVar_ stateRef $ \st -> return $ st {
+                guiParams = Just (fromJust (guiParams st)) {
                     guiLog = Just (textView)
                     }
                 }

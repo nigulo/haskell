@@ -1,12 +1,12 @@
 name:                TSA
 version:             0.0.1
-cabal-version:       >= 1.2
+cabal-version:       >= 1.10
 build-type:          Simple
 license:             AllRightsReserved
-extra-source-files:  
+extra-source-files:
 extra-tmp-files:
 executable TSA
-  build-depends:   
+  build-depends:
                GUI -any,
                Math -any,
                Regression -any,
@@ -14,11 +14,19 @@ executable TSA
                array -any,
                base -any,
                cairo -any,
+               gi-gtk >= 4.0,
+               gi-gdk >= 4.0,
+               gi-gio -any,
+               gi-glib -any,
+               gi-gobject -any,
+               gi-cairo-render -any,
+               gi-cairo-connector -any,
+               haskell-gi-base -any,
+               text -any,
                containers -any,
                directory -any,
                gnuplot -any,
                random -any,
-               gtk3 -any,
                transformers -any,
                ISDA -any,
                SafeSemaphore -any,
@@ -33,13 +41,16 @@ executable TSA
                utility-ht -any,
                filepath -any,
                time -any
-               
+
   hs-source-dirs:  src
   ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
   main-is:         Main.hs
-  extensions:      
+  default-language: Haskell2010
+  default-extensions:
                DoAndIfThenElse,
-               ScopedTypeVariables
+               ScopedTypeVariables,
+               OverloadedStrings,
+               OverloadedLabels
   other-modules:
 
 executable Bootstrap
