@@ -1,0 +1,6 @@
+packages: .
+         ../Utils
+         ../Math
+         ../Regression
+         ../GUI
+         ../ISDA
