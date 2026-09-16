@@ -17,8 +17,7 @@
 #
 # snapshot: ./custom-snapshot.yaml
 # snapshot: https://example.com/snapshots/2024-01-01.yaml
-snapshot:
-  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/24/58.yaml
+snapshot: lts-22.43
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -41,10 +40,15 @@ packages:
 # - acme-missiles-0.3
 # - git: https://github.com/commercialhaskell/stack.git
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
-#
 extra-deps:
-  - os-string-2.0.11@sha256:c0663f5f428108680f4aae0f67b7b357c1bb5954281c7fbe941c50c58cd79f18,3618
-
+  - gi-cairo-connector-0.1.1@sha256:352fc558ed5bf27d48bd88c8ec0e3be5fdbaf1418eaddffcfd1c7283fd895d40,1251
+  - gi-gdk-4.0.10@sha256:43f7e6f2d71a4f6b8b2b17c1790ba3a9f4f5bd781a2713d0343a9a491010957e,846
+  - gi-gtk-4.0.12@sha256:1a7e3cfdf25d316d66bc9cddd96f5621b0670573c0704679d56e0fd36279a1c3,850
+  - gi-gdk4-4.0.10@sha256:107ae0d3ba47008c8dd59652af5cf4c648cf84a3e04cb74d326240a7170d3fa7,9907
+  - gi-gtk4-4.0.12@sha256:b3838c11f64d87088bc2ce5bd84b05766e1134dcedf5fcb2fe07f17c8065015e,36859
+  - haskell-gi-0.26.17@sha256:0d502b6e74c4e40849a015280bce01df10d9dd313f1163c6bae92433c3f26b11,5213
+  - gi-gsk-4.0.9@sha256:85c8153ce3d463b48d1b43bdedf7d7fdef7a5ce36e525e694c98a21743fb77d0,8351
+  - haskell-gi-base-0.26.9@sha256:dad5294c37cc21c93c1db411183442d8a001d2687b6b3a34a45474fc72971372,2634
 # Override default flag values for project packages and extra-deps
 # flags: {}
 
@@ -65,6 +69,33 @@ extra-deps:
 # Extra directories used by Stack for building
 # extra-include-dirs: [/path/to/dir]
 # extra-lib-dirs: [/path/to/dir]
+
+# --- Windows/GTK4 toolchain (S-7282, 2026-09-12) ---------------------------
+# NOTE: this project builds with Stack 3.11.1, which REJECTS the `env:` and
+# `extra-path-dirs:` keys at project level ("Unrecognized fields in
+# ProjectAndConfigMonoid: env, extra-path-dirs" - verified empirically), so
+# the GIR / pkg-config / DLL environment CANNOT be configured from this file.
+# It is instead provided by the wrapper script GUI\build.cmd, which sets:
+#   XDG_DATA_DIRS=C:/msys64/mingw64/share
+#   HASKELL_GI_GIR_SEARCH_PATH=C:/msys64/mingw64/share/gir-1.0
+#       haskell-gi 0.26.17 GIR lookup (lib/Data/GI/GIR/Repository.hs searches
+#       this var first, then getSystemDataDirs/XDG_DATA_DIRS, then a macOS
+#       fallback). The machine-level XDG_DATA_DIRS is contaminated with the
+#       literal string "set XDG_DATA_DIRS=C:/msys64/mingw64/share;C:/msys64/
+#       usr/shareCopied!   " (cmd double-paste + clipboard artifact) and
+#       should also be repaired by the user at system level.
+#   PKG_CONFIG_PATH=C:\msys64\mingw64\lib\pkgconfig;...
+#       stack's bundled msys2 has NO gtk4/pango/gdk-pixbuf .pc files, so all
+#       .pc resolution must come from C:/msys64 (the tree cabal uses).
+# and prepends C:\msys64\mingw64\bin to PATH so the C:/msys64 DLLs
+# (libcairo-gobject-2.dll etc.) load ahead of stack's bundled msys2 DLLs
+# during haskell-gi Setup.exe typelib loading, reproducing the DLL layout
+# under which cabal builds the same gi-* packages successfully.
+# Build with:  cmd /c C:\github\haskell\GUI\build.cmd
+extra-include-dirs:
+  - C:/msys64/mingw64/include
+extra-lib-dirs:
+  - C:/msys64/mingw64/lib
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor

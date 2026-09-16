@@ -31,7 +31,7 @@ import TSA.GUI.Dialog
 import TSA.GUI.Common
 import TSA.GUI.Log
 
-import GUI.Widget
+import GUI.Widget hiding (entryGetString)
 
 import Utils.Misc
 import Utils.Xml
@@ -137,7 +137,7 @@ fit stateRef dataParams fitName = do
                 degFreedom = fromIntegral $ getDegreesOfFreedom (lsqFitParams lsqParms)
                 redChiSquared = (V.sum $ V.map (\(x, y, w) -> y * y * w) diffVals) / (n - degFreedom - 1)
                 diffSample = D.ys diff
-                normal = normalFromSample diffSample
+                normal = normalDistr (Sample.mean diffSample) (Sample.stdDev diffSample)
                 --dist = D.data1 $ V.map (\(x, y) -> (x, y, 1)) (cumulProbDist_ diffSample)
             appendLog stateRef ("Results for " ++ fitName ++ " " ++ show i ++ ":")
             appendLog stateRef ("stdev residuals = " ++ (show (stdDev normal)))

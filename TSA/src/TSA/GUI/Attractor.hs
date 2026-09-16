@@ -21,7 +21,7 @@ import TSA.GUI.State
 import TSA.GUI.Data
 import TSA.GUI.Dialog
 import TSA.GUI.Common
-import GUI.Widget
+import GUI.Widget hiding (entryGetString)
 
 import Data.List
 import Utils.Misc

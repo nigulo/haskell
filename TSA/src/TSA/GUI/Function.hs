@@ -1,8 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLabels #-}
 
 module TSA.GUI.Function (functionDialog) where
 
-import Graphics.UI.Gtk hiding (addWidget)
-import Graphics.UI.Gtk.Layout.VBox
+import qualified GI.Gtk as Gtk
+import Data.GI.Base
+import qualified Data.Text as T
 
 import TSA.CommonParams
 import TSA.Params
@@ -12,7 +15,7 @@ import TSA.GUI.Common
 import TSA.GUI.Data
 
 import GUI.Plot
-import GUI.Widget
+import GUI.Widget hiding (entryGetString)
 
 import Math.Function as F
 import Math.Expression
@@ -26,7 +29,7 @@ functionDialog :: StateRef -> IO ()
 functionDialog stateRef = do
     state <- readMVar stateRef
     (currentGraphTab, _) <- getCurrentGraphTab state
-    let 
+    let
         parms = functionParams (params state)
         commonParams = functionCommonParams parms
         graphTabParms = (graphTabs state) !! currentGraphTab
@@ -35,17 +38,16 @@ functionDialog stateRef = do
         ga = graphArea graphParms
 
     dialog <- dialogWithTitle state "Add function"
-    
-    dialogAddButton dialog "Cancel" ResponseCancel
-    okButton <- dialogAddButton dialog "Ok" ResponseNone
 
-    contentBox <- castToBox <$> dialogGetContentArea dialog
-    vBox <- vBoxNew False 2
-    boxPackStart contentBox vBox PackGrow 2
+    contentBox <- Gtk.boxNew Gtk.OrientationVertical 4
+    Gtk.widgetSetMarginTop contentBox 8
+    Gtk.widgetSetMarginBottom contentBox 8
+    Gtk.widgetSetMarginStart contentBox 8
+    Gtk.widgetSetMarginEnd contentBox 8
 
-    nameEntry <- entryNew
-    nameEntry `entrySetText` (getNameWithNo commonParams)
-    addWidgetToBox (Just "Name: ") nameEntry PackNatural vBox
+    nameEntry <- Gtk.entryNew
+    entrySetText nameEntry (getNameWithNo commonParams)
+    addWidgetToBox (Just "Name: ") nameEntry contentBox
 
     let
         xLeft = case functionLeft parms of
@@ -60,96 +62,118 @@ functionDialog stateRef = do
         yTop = case functionTop parms of
             Nothing -> plotAreaTop ga
             Just top -> top
-            
-    leftAdjustment <- adjustmentNew xLeft (-2**52) (2**52) 1 1 10
-    leftSpin <- spinButtonNew leftAdjustment 1 10
-    addWidgetToBox (Just "Left: ") leftSpin PackNatural vBox
 
-    rightAdjustment <- adjustmentNew xRight (-2**52) (2**52) 1 1 10
-    rightSpin <- spinButtonNew rightAdjustment 1 10
-    addWidgetToBox (Just "Right: ") rightSpin PackNatural vBox
+    leftAdjustment <- Gtk.adjustmentNew xLeft (-2**52) (2**52) 1 1 10
+    leftSpin <- Gtk.spinButtonNew (Just leftAdjustment) 1 10
+    addWidgetToBox (Just "Left: ") leftSpin contentBox
 
-    bottomAdjustment <- adjustmentNew yBottom (-2**52) (2**52) 1 1 10
-    bottomSpin <- spinButtonNew bottomAdjustment 1 10
-    addWidgetToBox (Just "Bottom: ") bottomSpin PackNatural vBox
+    rightAdjustment <- Gtk.adjustmentNew xRight (-2**52) (2**52) 1 1 10
+    rightSpin <- Gtk.spinButtonNew (Just rightAdjustment) 1 10
+    addWidgetToBox (Just "Right: ") rightSpin contentBox
 
-    topAdjustment <- adjustmentNew yTop (-2**52) (2**52) 1 1 10
-    topSpin <- spinButtonNew topAdjustment 1 10
-    addWidgetToBox (Just "Top: ") topSpin PackNatural vBox
-    
-    functionTextBuffer <- textBufferNew Nothing
-    textBufferSetText functionTextBuffer (functionDefinition parms)
-    functionTextView <- textViewNewWithBuffer functionTextBuffer
-    font <- fontDescriptionNew
-    fontDescriptionSetFamily font TSA.GUI.Common.defaultFontFamily
-    widgetModifyFont functionTextView (Just font)
-    textViewSetAcceptsTab functionTextView False
+    bottomAdjustment <- Gtk.adjustmentNew yBottom (-2**52) (2**52) 1 1 10
+    bottomSpin <- Gtk.spinButtonNew (Just bottomAdjustment) 1 10
+    addWidgetToBox (Just "Bottom: ") bottomSpin contentBox
 
-    scrolledWindow <- scrolledWindowNew Nothing Nothing
-    containerAdd scrolledWindow functionTextView
+    topAdjustment <- Gtk.adjustmentNew yTop (-2**52) (2**52) 1 1 10
+    topSpin <- Gtk.spinButtonNew (Just topAdjustment) 1 10
+    addWidgetToBox (Just "Top: ") topSpin contentBox
 
-    functionFrame <- frameNew
-    frameSetLabel functionFrame (stringToGlib "Function" )
-    containerAdd functionFrame scrolledWindow
-    addWidgetToBox Nothing functionFrame PackGrow vBox
+    functionTextBuffer <- Gtk.textBufferNew (Nothing :: Maybe Gtk.TextTagTable)
+    Gtk.textBufferSetText functionTextBuffer (T.pack (functionDefinition parms)) (-1)
+    functionTextView <- Gtk.textViewNewWithBuffer functionTextBuffer
+    Gtk.textViewSetMonospace functionTextView True
+    Gtk.textViewSetAcceptsTab functionTextView False
 
-    on okButton buttonActivated $
-        do
-            name <- entryGetString nameEntry
-            startIter <- textBufferGetStartIter functionTextBuffer
-            endIter <- textBufferGetEndIter functionTextBuffer
-            f <- textBufferGetText functionTextBuffer startIter endIter False
-            left <- spinButtonGetValue leftSpin
-            right <- spinButtonGetValue rightSpin
-            bottom <- spinButtonGetValue bottomSpin
-            top <- spinButtonGetValue topSpin
-            let
-                func = F.function f
-                varNames = F.varNames func 
-                opNames = F.funcNames func 
-            if F.isValid func
-                then
-                    if opNames /= []
-                        then
-                            do                    
-                                messageDialog <- messageDialogNew (Just (toWindow dialog)) [DialogModal] MessageWarning ButtonsOk $ ("Missing definitions for " ++ (show opNames))
-                                widgetShowAll messageDialog
-                                dialogRun messageDialog 
-                                widgetDestroy messageDialog
-                        else
-                            if length varNames > 2
-                                then
-                                    do                    
-                                        messageDialog <- messageDialogNew (Just (toWindow dialog)) [DialogModal] MessageWarning ButtonsOk $ ("Too many function arguments " ++ (show varNames))
-                                        widgetShowAll messageDialog
-                                        dialogRun messageDialog 
-                                        widgetDestroy messageDialog
-                                else
-                                    do
-                                        if length varNames <= 1 
-                                            then
-                                                modifyState stateRef $ addFunction (AnalyticData [([left], [right], func)]) name (Just (currentGraphTab, selectedGraph))
-                                            else 
-                                                modifyState stateRef $ addFunction (AnalyticData [([left, bottom], [right, top], func)]) name (Just (currentGraphTab, selectedGraph))
-            
-                                        modifyStateParams stateRef $ \params -> params {functionParams = FunctionParams {
-                                                functionCommonParams = updateCommonParams name commonParams,
-                                                functionDefinition = f,
-                                                functionLeft = Just left,
-                                                functionRight = Just right,
-                                                functionBottom = Just bottom,
-                                                functionTop = Just top
-                                            }}
-                    
-                                        dialogResponse dialog ResponseOk
-                else
-                    do                    
-                        messageDialog <- messageDialogNew (Just (toWindow dialog)) [DialogModal] MessageWarning ButtonsOk $ ("Error while parsing function")
-                        widgetShowAll messageDialog
-                        dialogRun messageDialog 
-                        widgetDestroy messageDialog
-                        
-    widgetShowAll dialog
-    response <- dialogRun dialog
-    widgetDestroy dialog
+    scrolledWindow <- Gtk.scrolledWindowNew
+    Gtk.scrolledWindowSetChild scrolledWindow (Just functionTextView)
+    Gtk.widgetSetVexpand scrolledWindow True
 
+    functionFrame <- Gtk.frameNew (Just "Function")
+    Gtk.frameSetChild functionFrame (Just scrolledWindow)
+    addWidgetToBox Nothing functionFrame contentBox
+
+    -- Button box
+    buttonBox <- Gtk.boxNew Gtk.OrientationHorizontal 4
+    Gtk.widgetSetHalign buttonBox Gtk.AlignEnd
+    cancelButton <- Gtk.buttonNewWithLabel "Cancel"
+    okButton <- Gtk.buttonNewWithLabel "Ok"
+    Gtk.boxAppend buttonBox cancelButton
+    Gtk.boxAppend buttonBox okButton
+    Gtk.boxAppend contentBox buttonBox
+
+    _ <- Gtk.onButtonClicked cancelButton $ Gtk.windowDestroy dialog
+
+    _ <- Gtk.onButtonClicked okButton $ do
+        name <- entryGetString nameEntry
+        startIter <- Gtk.textBufferGetStartIter functionTextBuffer
+        endIter <- Gtk.textBufferGetEndIter functionTextBuffer
+        f <- Gtk.textBufferGetText functionTextBuffer startIter endIter False
+        left <- spinButtonGetValue leftSpin
+        right <- spinButtonGetValue rightSpin
+        bottom <- spinButtonGetValue bottomSpin
+        top <- spinButtonGetValue topSpin
+        let
+            func = F.function (T.unpack f)
+            varNames = F.varNames func
+            opNames = F.funcNames func
+        if F.isValid func
+            then
+                if opNames /= []
+                    then
+                        showWarning dialog ("Missing definitions for " ++ (show opNames))
+                    else
+                        if length varNames > 2
+                            then
+                                showWarning dialog ("Too many function arguments " ++ (show varNames))
+                            else
+                                do
+                                    if length varNames <= 1
+                                        then
+                                            modifyState stateRef $ addFunction (AnalyticData [([left], [right], func)]) name (Just (currentGraphTab, selectedGraph))
+                                        else
+                                            modifyState stateRef $ addFunction (AnalyticData [([left, bottom], [right, top], func)]) name (Just (currentGraphTab, selectedGraph))
+
+                                    modifyStateParams stateRef $ \params -> params {functionParams = FunctionParams {
+                                            functionCommonParams = updateCommonParams name commonParams,
+                                            functionDefinition = T.unpack f,
+                                            functionLeft = Just left,
+                                            functionRight = Just right,
+                                            functionBottom = Just bottom,
+                                            functionTop = Just top
+                                        }}
+
+                                    Gtk.windowDestroy dialog
+            else
+                showWarning dialog "Error while parsing function"
+
+    Gtk.windowSetChild dialog (Just contentBox)
+    Gtk.windowPresent dialog
+
+showWarning :: Gtk.Window -> String -> IO ()
+showWarning parent msg = do
+    win <- Gtk.windowNew
+    Gtk.windowSetTitle win (Just "Warning")
+    Gtk.windowSetModal win True
+    Gtk.windowSetTransientFor win (Just parent)
+
+    vBox <- Gtk.boxNew Gtk.OrientationVertical 8
+    Gtk.widgetSetMarginTop vBox 16
+    Gtk.widgetSetMarginBottom vBox 16
+    Gtk.widgetSetMarginStart vBox 16
+    Gtk.widgetSetMarginEnd vBox 16
+
+    label <- Gtk.labelNew (Just (T.pack msg))
+    Gtk.boxAppend vBox label
+
+    buttonBox <- Gtk.boxNew Gtk.OrientationHorizontal 4
+    Gtk.widgetSetHalign buttonBox Gtk.AlignEnd
+    okButton <- Gtk.buttonNewWithLabel "Ok"
+    Gtk.boxAppend buttonBox okButton
+    Gtk.boxAppend vBox buttonBox
+
+    _ <- Gtk.onButtonClicked okButton $ Gtk.windowDestroy win
+
+    Gtk.windowSetChild win (Just vBox)
+    Gtk.windowSetDefaultSize win 400 100
+    Gtk.windowPresent win

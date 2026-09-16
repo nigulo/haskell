@@ -35,14 +35,14 @@ import TSA.CommonParams
 import TSA.RegressionParams
 import TSA.Params
 import Control.Concurrent.MVar
-import GUI.Widget
+import GUI.Widget hiding (entryGetString)
 
 -- | Create a dialog window with title
 dialogWithTitle :: State -> String -> IO Gtk.Window
 dialogWithTitle state name = do
     let win = getWindow state
     dialog <- Gtk.windowNew
-    Gtk.windowSetTitle dialog (T.pack name)
+    Gtk.windowSetTitle dialog (Just (T.pack name))
     Gtk.windowSetModal dialog True
     Gtk.windowSetTransientFor dialog (Just win)
     Gtk.windowSetDestroyWithParent dialog True
@@ -144,7 +144,8 @@ spinButtonGetValue = Gtk.spinButtonGetValue
 -- | Get text from Entry
 entryGetString :: Gtk.Entry -> IO String
 entryGetString entry = do
-    text <- GUI.Widget.entryGetString entry
+    buffer <- Gtk.entryGetBuffer entry
+    text <- Gtk.entryBufferGetText buffer
     return $ T.unpack text
 
 -- | Set text on Entry
@@ -210,7 +211,7 @@ addFitWidgets fitParams state box = do
             Gtk.widgetSetVisible numNodesBox False
 
     -- Connect to dropdown selection change
-    _ <- Gtk.onDropDownNotifySelected typeCombo $ \_ -> do
+    _ <- on typeCombo #notify $ \_ -> do
         fitTypeIdx <- comboBoxGetActive typeCombo
         if fitTypeIdx == 0
             then do

@@ -320,7 +320,8 @@ drawData plotSettings plotData = do
         frontMinusSpace = front - zSpace
 
         calcIntersections i points =
-            if (i == 0) then points V.! i `V.cons` calcIntersections (i + 1) points
+            if V.null points then V.empty
+            else if (i == 0) then points V.! i `V.cons` calcIntersections (i + 1) points
             else if (i >= V.length points)
                 then V.empty
                 else

@@ -16,6 +16,7 @@ import Control.Concurrent.MVar
 import Control.Concurrent
 import Control.Applicative
 import Debug.Trace
+import Data.Maybe (fromMaybe)
 
 import Statistics.LinearRegression
 import Statistics.Distribution
@@ -73,15 +74,15 @@ findCorrelation taskEnv dataParams1 dataParams2' precision shifts name = do
                         (alpha, beta, r2) = linearRegressionRSqr ys1 ys2
                         (alphaDisp, betaDist) = linearRegressionDistributions (alpha, beta) ys1 ys2
                         Just stdBeta = maybeStdDev betaDist
-                        stdYs1 = stdDev $ normalFromSample ys1
-                        stdYs2 = stdDev $ normalFromSample ys2
+                        stdYs1 = stdDev $ fromMaybe standard (fromSample ys1)
+                        stdYs2 = stdDev $ fromMaybe standard (fromSample ys2)
                         stdR = stdBeta * stdYs1 / stdYs2
                     rndVects <- mapM (\_ -> do rndVect :: V.Vector Int <- withSystemRandom . asGenST $ \gen -> uniformVector gen (V.length ys1); return rndVect) [0 .. 999]
                     let
                         resamples = map (\rndVect -> V.unzip (V.map (\r -> let i = r `mod` (V.length ys1) in (ys1 V.! i, ys2 V.! i)) rndVect)) rndVects
                         correls = Data.List.sort $ map (\(ys1, ys2) -> correl ys1 ys2) resamples
                         --stdCorrels = stdDev $ normalFromSample (V.fromList correls)
-                        ksStat = kolmogorovSmirnovD (normalFromSample (V.fromList correls)) (V.fromList correls) 
+                        ksStat = kolmogorovSmirnovD (fromMaybe standard (fromSample (V.fromList correls))) (V.fromList correls) 
                     --(logFunc taskEnv) stateRef ("alpha, beta" ++ show alpha ++ ", " ++ show beta)
                     (logFunc taskEnv) ("Correlation coefficient for " ++ name ++ ", shift=" ++ show shift ++ ": " ++ (show (signum beta * sqrt r2)) ++ ", 90% confInt=[" ++ (show (correls !! 49)) ++ ", " ++ (show (correls !! 949)) ++ "]")
                     return $ D.data1' (V.zip ys1 ys2)

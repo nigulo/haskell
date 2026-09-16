@@ -21,7 +21,7 @@ import TSA.GUI.Dialog
 import TSA.GUI.Common
 import TSA.GUI.Log
 import TSA.Correlation
-import GUI.Widget
+import GUI.Widget hiding (entryGetString)
 
 import Data.List
 import qualified Data.Vector.Unboxed as V

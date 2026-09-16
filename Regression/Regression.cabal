@@ -3,7 +3,6 @@ version:             0.0.1
 cabal-version:       >= 1.10
 build-type:          Simple
 license:             AllRightsReserved
-data-dir:            ""
 
 library
   default-language: Haskell2010

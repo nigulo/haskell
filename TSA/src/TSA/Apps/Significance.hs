@@ -26,6 +26,7 @@ import qualified Data.Vector.Unboxed as V
 import Statistics.Distribution
 import Statistics.Distribution.Normal
 import Statistics.Test.KolmogorovSmirnov
+import Statistics.Types (mkPValue)
 import qualified Statistics.Sample as Sample
 
 import System.Random
@@ -76,10 +77,10 @@ main = do --mpiWorld $ \size rank ->
                             (distX, distY) = V.unzip (V.fromList dist)
                             --filteredXDist = V.filter (\x -> x > xMin / 2 && x < xMax / 2) distX
                             sampledDistX = V.map (\r -> distX V.! (r `mod` V.length distX)) rndVect
-                            nx = normalFromSample sampledDistX
-                            ny = normalFromSample distY
+                            nx = normalDistr (Sample.mean sampledDistX) (Sample.stdDev sampledDistX)
+                            ny = normalDistr (Sample.mean distY) (Sample.stdDev distY)
                         in 
-                            (( {-(fromIntegral (V.length filteredXDist) :: Double) / fromIntegral (V.length distX), -} Sample.mean distX, Sample.stdDev distX, kolmogorovSmirnovD nx sampledDistX, kolmogorovSmirnovTest nx 0.01 sampledDistX), (mean ny, stdDev ny, kolmogorovSmirnovD ny distY, kolmogorovSmirnovTest ny 0.01 distY)) 
+                            (( {-(fromIntegral (V.length filteredXDist) :: Double) / fromIntegral (V.length distX), -} Sample.mean distX, Sample.stdDev distX, kolmogorovSmirnovD nx sampledDistX, fmap (isSignificant (mkPValue 0.01)) (kolmogorovSmirnovTest nx sampledDistX)), (mean ny, stdDev ny, kolmogorovSmirnovD ny distY, fmap (isSignificant (mkPValue 0.01)) (kolmogorovSmirnovTest ny distY))) 
                     ) distsT [0 ..]
             mapM_ (\((({- weightX ,-} meanX, stDevX, ksStatX, testResX), (meanY, stDevY, ksStatY, testResY)), k) -> putStrLn (show (j + k) {- ++ " " ++ show weightX -} ++ " " ++ " " ++ show meanX ++ " " ++ show stDevX ++ " " ++ show ksStatX ++ " " ++ show testResX ++ " " ++ show meanY ++ " " ++ show stDevY ++ " " ++ show ksStatY ++ " " ++ show testResY)
                 ) (zip stats [0 ..])

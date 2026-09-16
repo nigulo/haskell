@@ -98,7 +98,8 @@ refresh stateRef contentBox destroyedRef =
 
 removeTaskWidgets :: Gtk.Box -> IO ()
 removeTaskWidgets box = do
-    let go = do
+    let
+        go = do
             maybeChild <- Gtk.widgetGetFirstChild box
             case maybeChild of
                 Nothing -> return ()
@@ -111,7 +112,7 @@ removeTaskWidgets box = do
                         else do
                             -- Check next sibling
                             goNext child
-    let goNext widget = do
+        goNext widget = do
             maybeSibling <- Gtk.widgetGetNextSibling widget
             case maybeSibling of
                 Nothing -> return ()

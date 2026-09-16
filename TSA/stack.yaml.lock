@@ -60,6 +60,13 @@ packages:
       size: 2085
   original:
     hackage: haskell-gi-base-0.26.9@sha256:dad5294c37cc21c93c1db411183442d8a001d2687b6b3a34a45474fc72971372,2634
+- completed:
+    hackage: system-fileio-0.3.16.7@sha256:99f35a5212437c81e40bbdc175753fa77ee31177647f0041b41b45b68fb02fe4,2476
+    pantry-tree:
+      sha256: f1e305a31e1dd36a15ba19d1799b818876d781b4dd0674eaf98450f5e671c597
+      size: 935
+  original:
+    hackage: system-fileio-0.3.16.7
 snapshots:
 - completed:
     sha256: 08bd13ce621b41a8f5e51456b38d5b46d7783ce114a50ab604d6bbab0d002146

@@ -24,12 +24,12 @@ showLog stateRef = do
         Just _ -> return ()
         Nothing -> do
             win <- Gtk.windowNew
-            Gtk.windowSetTitle win "Log"
+            Gtk.windowSetTitle win (Just "Log")
 
             vBox <- Gtk.boxNew Gtk.OrientationVertical 2
             textBuffer <- Gtk.textBufferNew (Nothing :: Maybe Gtk.TextTagTable)
             Gtk.textBufferSetText textBuffer (T.pack (TSA.GUI.State.log state)) (-1)
-            textView <- Gtk.textViewNewWithBuffer (Just textBuffer)
+            textView <- Gtk.textViewNewWithBuffer textBuffer
             Gtk.textViewSetEditable textView False
 
             scrolledWindow <- Gtk.scrolledWindowNew

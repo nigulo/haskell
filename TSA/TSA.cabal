@@ -19,6 +19,7 @@ executable TSA
                gi-gio -any,
                gi-glib -any,
                gi-gobject -any,
+               gi-cairo -any,
                gi-cairo-render -any,
                gi-cairo-connector -any,
                haskell-gi-base -any,
@@ -33,6 +34,7 @@ executable TSA
                statistics -any,
                vector -any,
                statistics-linreg -any,
+               monad-parallel -any,
                mwc-random -any,
                zlib -any,
                bytestring -any,
@@ -50,54 +52,195 @@ executable TSA
                ScopedTypeVariables,
                OverloadedStrings,
                OverloadedLabels
-  other-modules:
+  other-modules:   TSA.AnalyticSignal,
+                TSA.CommonParams,
+                TSA.Correlation,
+                TSA.D2,
+                TSA.Data,
+                TSA.Envelopes,
+                TSA.Interpolate,
+                TSA.LeastSquares,
+                TSA.Params,
+                TSA.Period,
+                TSA.RegressionParams,
+                TSA.SpecificPoints,
+                TSA.GUI.AnalyticSignal,
+                TSA.GUI.Attractor,
+                TSA.GUI.Bayes,
+                TSA.GUI.Build,
+                TSA.GUI.Common,
+                TSA.GUI.Correlation,
+                TSA.GUI.D2,
+                TSA.GUI.Data,
+                TSA.GUI.Dialog,
+                TSA.GUI.Envelopes,
+                TSA.GUI.FFT,
+                TSA.GUI.Function,
+                TSA.GUI.Gnu,
+                TSA.GUI.Graph,
+                TSA.GUI.Interpolate,
+                TSA.GUI.IO,
+                TSA.GUI.LeastSquares,
+                TSA.GUI.LocalPhase,
+                TSA.GUI.Log,
+                TSA.GUI.Markers,
+                TSA.GUI.Modify,
+                TSA.GUI.Period,
+                TSA.GUI.Preferences,
+                TSA.GUI.Sample,
+                TSA.GUI.Selection,
+                TSA.GUI.SpecificPoints,
+                TSA.GUI.State,
+                TSA.GUI.Statistic,
+                TSA.GUI.TaskManager
 
 executable Bootstrap
-  build-depends:   
+  build-depends:
                 base >= 4,
+                Math -any,
+                Regression -any,
+                Utils -any,
+                SafeSemaphore -any,
+                array -any,
+                containers -any,
+                mtl -any,
+                statistics -any,
+                vector -any,
+                random -any,
+                mwc-random -any,
                 filelock -any,
                 system-fileio -any,
-                system-filepath -any
+                system-filepath -any,
+                bytestring -any,
+                utf8-string -any
   hs-source-dirs:  src
   ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
   main-is:         TSA/Apps/Bootstrap.hs
-  extensions:      
+  default-language: Haskell2010
+  default-extensions:
                 DoAndIfThenElse,
                 ScopedTypeVariables
-  other-modules: 
+  other-modules:   TSA.CommonParams,
+                TSA.Params,
+                TSA.RegressionParams,
+                TSA.Data,
+                TSA.LeastSquares,
+                TSA.SpecificPoints
 
 executable Significance
-  build-depends:   base >= 4
+  build-depends:
+                base >= 4,
+                Math -any,
+                Regression -any,
+                Utils -any,
+                SafeSemaphore -any,
+                array -any,
+                containers -any,
+                mtl -any,
+                statistics -any,
+                vector -any,
+                random -any,
+                mwc-random -any,
+                filelock -any,
+                system-fileio -any,
+                system-filepath -any,
+                bytestring -any,
+                utf8-string -any
   hs-source-dirs:  src
   ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
   main-is:         TSA/Apps/Significance.hs
-  extensions:      ScopedTypeVariables
-  other-modules:   
+  default-language: Haskell2010
+  default-extensions:
+                DoAndIfThenElse,
+                ScopedTypeVariables
+  other-modules:   TSA.CommonParams,
+                TSA.Params,
+                TSA.RegressionParams,
+                TSA.Data,
+                TSA.LeastSquares,
+                TSA.SpecificPoints
 
 executable D2
-  build-depends:   base >= 4
+  build-depends:
+                base >= 4,
+                Math -any,
+                Regression -any,
+                Utils -any,
+                SafeSemaphore -any,
+                array -any,
+                containers -any,
+                mtl -any,
+                statistics -any,
+                vector -any,
+                random -any,
+                mwc-random -any
   hs-source-dirs:  src
   ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
   main-is:         TSA/Apps/D2.hs
-  extensions:      ScopedTypeVariables
-  other-modules:   
+  default-language: Haskell2010
+  default-extensions:
+                ScopedTypeVariables
+  other-modules:   TSA.CommonParams,
+                TSA.Params,
+                TSA.RegressionParams,
+                TSA.Data,
+                TSA.D2
 
 executable HilbertHuang
-  build-depends:   base >= 4,
-                   mtl -any,
-                   monad-parallel -any
+  build-depends:
+                base >= 4,
+                Math -any,
+                Regression -any,
+                Utils -any,
+                SafeSemaphore -any,
+                array -any,
+                containers -any,
+                mtl -any,
+                monad-parallel -any,
+                statistics -any,
+                vector -any,
+                random -any,
+                mwc-random -any,
+                system-fileio -any,
+                system-filepath -any,
+                directory -any
   hs-source-dirs:  src
   ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
   main-is:         TSA/Apps/HilbertHuang.hs
-  extensions:      ScopedTypeVariables
-  other-modules:   
+  default-language: Haskell2010
+  default-extensions:
+                ScopedTypeVariables
+  other-modules:   TSA.CommonParams,
+                TSA.Params,
+                TSA.RegressionParams,
+                TSA.Data,
+                TSA.LeastSquares,
+                TSA.SpecificPoints,
+                TSA.AnalyticSignal
 
 executable Correlation
-  build-depends:   base >= 4,
-                   mtl -any,
-                   monad-parallel -any
+  build-depends:
+                base >= 4,
+                Math -any,
+                Regression -any,
+                Utils -any,
+                SafeSemaphore -any,
+                array -any,
+                containers -any,
+                mtl -any,
+                statistics -any,
+                statistics-linreg -any,
+                vector -any,
+                random -any,
+                mwc-random -any
   hs-source-dirs:  src
   ghc-options:     -O2 -fexcess-precision -rtsopts -threaded
   main-is:         TSA/Apps/Correlation.hs
-  extensions:      ScopedTypeVariables
-  other-modules:   
+  default-language: Haskell2010
+  default-extensions:
+                ScopedTypeVariables
+  other-modules:   TSA.CommonParams,
+                TSA.Params,
+                TSA.RegressionParams,
+                TSA.Data,
+                TSA.Correlation

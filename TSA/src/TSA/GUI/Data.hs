@@ -70,7 +70,7 @@ import TSA.Data
 import TSA.GUI.State
 import TSA.GUI.Dialog
 import TSA.GUI.Common
-import GUI.Widget
+import GUI.Widget hiding (entryGetString)
 import GUI.Plot
 import Utils.List
 import Utils.Concurrent
@@ -211,11 +211,11 @@ showInfo dp = do
             (show i) ++ ": " ++ left ++ " - " ++ right ++ (if TSA.Data.isDiscrete dp then " " ++ (show n ++ " " ++ show mean ++ " " ++ show var) else "") ++ "\n"
         ) $ zip (dataSet dp) [1, 2 ..])) (-1)
 
-    textView <- Gtk.textViewNewWithBuffer (Just textBuffer)
+    textView <- Gtk.textViewNewWithBuffer textBuffer
     Gtk.textViewSetEditable textView False
 
     win <- Gtk.windowNew
-    Gtk.windowSetTitle win (T.pack (dataName dp))
+    Gtk.windowSetTitle win (Just (T.pack (dataName dp)))
 
     scrolledWindow <- Gtk.scrolledWindowNew
     Gtk.scrolledWindowSetChild scrolledWindow (Just textView)
@@ -247,11 +247,11 @@ showData dp = do
             ) ++ format (subData sdp) ++ "\n"
         ) $ zip (dataSet dp) [1, 2 ..]) (-1)
 
-    textView <- Gtk.textViewNewWithBuffer (Just textBuffer)
+    textView <- Gtk.textViewNewWithBuffer textBuffer
     Gtk.textViewSetEditable textView False
 
     win <- Gtk.windowNew
-    Gtk.windowSetTitle win (T.pack (dataName dp))
+    Gtk.windowSetTitle win (Just (T.pack (dataName dp)))
 
     scrolledWindow <- Gtk.scrolledWindowNew
     Gtk.scrolledWindowSetChild scrolledWindow (Just textView)
@@ -264,7 +264,7 @@ showData dp = do
 exportData :: State -> DataParams -> IO ()
 exportData state dp = do
     win <- Gtk.windowNew
-    Gtk.windowSetTitle win "Export data"
+    Gtk.windowSetTitle win (Just "Export data")
     Gtk.windowSetModal win True
     Gtk.windowSetTransientFor win (Just (getWindow state))
 

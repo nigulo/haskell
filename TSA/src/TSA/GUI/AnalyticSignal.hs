@@ -1,8 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLabels #-}
 
 module TSA.GUI.AnalyticSignal (analyticSignalDialog) where
 
-import Graphics.UI.Gtk hiding (addWidget)
-import Graphics.UI.Gtk.Layout.VBox
+import qualified GI.Gtk as Gtk
+import Data.GI.Base
+import qualified Data.Text as T
 
 import qualified Regression.Polynom as P
 import Regression.AnalyticData as AD
@@ -22,7 +25,7 @@ import TSA.GUI.Common
 import TSA.GUI.Log
 import qualified TSA.AnalyticSignal as AS
 
-import GUI.Widget
+import GUI.Widget hiding (entryGetString)
 import Utils.Misc
 
 import Data.IORef
@@ -41,74 +44,78 @@ import qualified Data.Vector.Unboxed as V
 analyticSignalDialog :: StateRef -> IO ()
 analyticSignalDialog stateRef = do
     state <- readMVar stateRef
-    let 
+    let
         parms = asParams (params state)
         amplitudeParams = asAmplitudeParams parms
         phaseParams = asPhaseParams parms
         frequencyParams = asFrequencyParams parms
     dialog <- dialogWithTitle state "Analytic signal"
-    
-    dialogAddButton dialog "Cancel" ResponseCancel
-    fitButton <- dialogAddButton dialog "Ok" ResponseOk
 
-    contentBox <- castToBox <$> dialogGetContentArea dialog
-    vBox <- vBoxNew False 2
-    boxPackStart contentBox vBox PackGrow 2
-    
-    amplitudeEntry <- entryNew
-    amplitudeEntry `entrySetText` (getNameWithNo amplitudeParams)
-    addWidget (Just "Amplitude name: ") amplitudeEntry dialog
+    contentBox <- Gtk.boxNew Gtk.OrientationVertical 4
+    Gtk.widgetSetMarginTop contentBox 8
+    Gtk.widgetSetMarginBottom contentBox 8
+    Gtk.widgetSetMarginStart contentBox 8
+    Gtk.widgetSetMarginEnd contentBox 8
 
-    phaseEntry <- entryNew
-    phaseEntry `entrySetText` (getNameWithNo phaseParams)
-    addWidget (Just "Phase name: ") phaseEntry dialog
+    amplitudeEntry <- Gtk.entryNew
+    entrySetText amplitudeEntry (getNameWithNo amplitudeParams)
+    addWidgetToBox (Just "Amplitude name: ") amplitudeEntry contentBox
 
-    frequencyEntry <- entryNew
-    frequencyEntry `entrySetText` (getNameWithNo frequencyParams)
-    addWidget (Just "Frequency name: ") frequencyEntry dialog
-    
+    phaseEntry <- Gtk.entryNew
+    entrySetText phaseEntry (getNameWithNo phaseParams)
+    addWidgetToBox (Just "Phase name: ") phaseEntry contentBox
+
+    frequencyEntry <- Gtk.entryNew
+    entrySetText frequencyEntry (getNameWithNo frequencyParams)
+    addWidgetToBox (Just "Frequency name: ") frequencyEntry contentBox
+
     realCombo <- dataSetComboNew (\_ -> True) state
-    addWidget (Just "Real signal: ") (getComboBox realCombo) dialog
+    addWidgetToBox (Just "Real signal: ") (getComboBox realCombo) contentBox
 
     conjugatedCombo <- dataSetComboNew2 (\_ -> True) state False
-    addWidget (Just "Conjugated signal: ") (getComboBox conjugatedCombo) dialog
+    addWidgetToBox (Just "Conjugated signal: ") (getComboBox conjugatedCombo) contentBox
 
-    precisionAdjustment <- adjustmentNew 65536 1 1048576 1 1 1
-    precisionSpin <- spinButtonNew precisionAdjustment 1 0
-    addWidget (Just "Precision: ") precisionSpin dialog
+    precisionAdjustment <- Gtk.adjustmentNew 65536 1 1048576 1 1 1
+    precisionSpin <- Gtk.spinButtonNew (Just precisionAdjustment) 1 0
+    addWidgetToBox (Just "Precision: ") precisionSpin contentBox
 
-    widgetShowAll dialog
-    response <- dialogRun dialog
-    
-    if response == ResponseOk 
-        then
-            do
-                amplitudeName <- entryGetString amplitudeEntry
-                phaseName <- entryGetString phaseEntry
-                frequencyName <- entryGetString frequencyEntry
-                                
-                Just realData <- getSelectedData realCombo
-                conjugatedData <- getSelectedData conjugatedCombo
-                precision <- spinButtonGetValue precisionSpin
-                widgetDestroy dialog
+    -- Button box
+    buttonBox <- Gtk.boxNew Gtk.OrientationHorizontal 4
+    Gtk.widgetSetHalign buttonBox Gtk.AlignEnd
+    cancelButton <- Gtk.buttonNewWithLabel "Cancel"
+    okButton <- Gtk.buttonNewWithLabel "Ok"
+    Gtk.boxAppend buttonBox cancelButton
+    Gtk.boxAppend buttonBox okButton
+    Gtk.boxAppend contentBox buttonBox
 
-                modifyStateParams stateRef $ \params -> params {asParams = AnalyticSignalParams {
-                    asAmplitudeParams = updateCommonParams amplitudeName amplitudeParams,
-                    asPhaseParams = updateCommonParams phaseName phaseParams,
-                    asFrequencyParams = updateCommonParams frequencyName frequencyParams,
-                    asRealData = Just realData,
-                    asImagData = conjugatedData                    
-                }}
-                
-                runTask stateRef "Analytic signal" $ analyticSignal stateRef (round precision) (amplitudeName, phaseName, frequencyName)
-                return ()
-                
-        else
-            do
-                widgetDestroy dialog
+    _ <- Gtk.onButtonClicked cancelButton $ Gtk.windowDestroy dialog
+
+    _ <- Gtk.onButtonClicked okButton $ do
+        amplitudeName <- entryGetString amplitudeEntry
+        phaseName <- entryGetString phaseEntry
+        frequencyName <- entryGetString frequencyEntry
+
+        Just realData <- getSelectedData realCombo
+        conjugatedData <- getSelectedData conjugatedCombo
+        precision <- spinButtonGetValue precisionSpin
+        Gtk.windowDestroy dialog
+
+        modifyStateParams stateRef $ \params -> params {asParams = AnalyticSignalParams {
+            asAmplitudeParams = updateCommonParams amplitudeName amplitudeParams,
+            asPhaseParams = updateCommonParams phaseName phaseParams,
+            asFrequencyParams = updateCommonParams frequencyName frequencyParams,
+            asRealData = Just realData,
+            asImagData = conjugatedData
+        }}
+
+        runTask stateRef "Analytic signal" $ analyticSignal stateRef (round precision) (amplitudeName, phaseName, frequencyName)
+        return ()
+
+    Gtk.windowSetChild dialog (Just contentBox)
+    Gtk.windowPresent dialog
 
 analyticSignal :: StateRef -> Int -> (String, String, String) -> IO ()
-analyticSignal stateRef precision (amplitudeName, phaseName, frequencyName) = 
+analyticSignal stateRef precision (amplitudeName, phaseName, frequencyName) =
     do
         state <- readMVar stateRef
         (currentGraphTab, _) <- getCurrentGraphTab state
@@ -118,5 +125,5 @@ analyticSignal stateRef precision (amplitudeName, phaseName, frequencyName) =
             asParms = asParams (params state)
             dataParams = fromJust (asRealData asParms)
         tEnv <- taskEnv stateRef
-        AS.analyticSignal asParms precision (amplitudeName, phaseName, frequencyName, ((dataName dataParams) ++ "_conj")) tEnv (DataUpdateFunc (\dat name update -> modifyState stateRef $ addOrUpdateData dat name (Just (currentGraphTab, selectedGraph)) update)) 
-        return ()            
+        AS.analyticSignal asParms precision (amplitudeName, phaseName, frequencyName, ((dataName dataParams) ++ "_conj")) tEnv (DataUpdateFunc (\dat name update -> modifyState stateRef $ addOrUpdateData dat name (Just (currentGraphTab, selectedGraph)) update))
+        return ()

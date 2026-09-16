@@ -21,7 +21,7 @@ import System.Random
 import System.Environment
 import System.IO
 import System.CPUTime
-import System.Directory
+import System.Directory (doesFileExist)
 import Filesystem
 import Control.Concurrent.MVar
 import Control.Monad

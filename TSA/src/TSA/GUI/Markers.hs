@@ -42,10 +42,10 @@ showMarkers stateRef = do
         segments = graphSegments ((graphTabGraphs graphTabParms) !! selectedGraph)
 
     Gtk.textBufferSetText textBuffer (T.pack (concatMap (\segment -> show segment ++ "\n") segments)) (-1)
-    textView <- Gtk.textViewNewWithBuffer (Just textBuffer)
+    textView <- Gtk.textViewNewWithBuffer textBuffer
 
     win <- Gtk.windowNew
-    Gtk.windowSetTitle win "Markers"
+    Gtk.windowSetTitle win (Just "Markers")
 
     scrolledWindow <- Gtk.scrolledWindowNew
     Gtk.scrolledWindowSetChild scrolledWindow (Just textView)

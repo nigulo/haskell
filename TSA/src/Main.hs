@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Main (Main.main) where
 
@@ -20,6 +21,7 @@ import Control.Monad.IO.Class
 import Control.Monad (when, forM_)
 import Debug.Trace
 import System.CPUTime
+import System.IO (hSetEncoding, stdout, stderr, utf8)
 import System.IO.Error
 import System.Directory
 import qualified Data.ByteString.Lazy as B
@@ -75,6 +77,12 @@ title = "Time Series Analysis"
 
 main :: IO ()
 main = do
+    -- Set up UTF-8 encoding for Windows console (mirrors GUI/src/Main.hs;
+    -- prevents hPutChar "cannot encode" crashes on non-ASCII stderr output,
+    -- e.g. haskell-gi's disowned-pointer warning callstack bullets '•')
+    hSetEncoding stdout utf8
+    hSetEncoding stderr utf8
+
     app <- Gtk.applicationNew (Just "org.tsa.app") []
     _ <- Gio.onApplicationActivate app (activate app)
     _ <- Gio.applicationRun app Nothing
@@ -83,7 +91,7 @@ main = do
 activate :: Gtk.Application -> IO ()
 activate app = do
     win <- Gtk.applicationWindowNew app
-    Gtk.windowSetTitle win ("Untitled - " <> title)
+    Gtk.windowSetTitle win (Just ("Untitled - " <> title))
     Gtk.windowSetDefaultSize win 640 480
 
     notebook <- Gtk.notebookNew
@@ -131,7 +139,7 @@ activate app = do
         keyName <- Gdk.keyvalName keyval
         case keyName of
             Just name -> liftIO $ Graph.onKeyDown stateRef (T.unpack name)
-            Nothing -> return ()
+            Nothing -> return False
         return False
 
     -- Main layout
@@ -178,7 +186,7 @@ activate app = do
 
 createMenuBar :: Gtk.Application -> StateRef -> IO Gtk.Widget
 createMenuBar app stateRef = do
-    menuBar <- Gtk.popoverMenuBarNew Nothing
+    menuBar <- Gtk.popoverMenuBarNewFromModel (Nothing :: Maybe Gio.Menu)
 
     -- Create menu model
     menu <- Gio.menuNew
@@ -343,27 +351,24 @@ loadDialog stateRef = do
     Gtk.fileFilterAddPattern fileFilter "*.tsaz"
     Gtk.fileFilterSetName fileFilter (Just "TSA files")
 
-    filters <- Gio.listStoreNew Gtk.FileFilter
+    filters <- Gio.listStoreNew =<< glibType @Gtk.FileFilter
     Gio.listStoreAppend filters fileFilter
-    Gtk.fileDialogSetFilters dialog filters
+    Gtk.fileDialogSetFilters dialog (Just filters)
     Gtk.fileDialogSetDefaultFilter dialog (Just fileFilter)
 
     Gtk.fileDialogOpen dialog (Just (getWindow oldState)) (Nothing :: Maybe Gio.Cancellable) $ Just $ \_ result -> do
-        maybeFile <- Gtk.fileDialogOpenFinish dialog result
-        case maybeFile of
-            Just file -> do
-                maybePath <- Gio.fileGetPath file
-                case maybePath of
-                    Just path -> do
-                        let fileName = T.unpack path
-                        loadState fileName stateRef
-                        modifyMVar_ stateRef $ \state -> do
-                            let gp = fromJust (guiParams state)
-                            Gtk.windowSetTitle (guiWindow gp) (T.pack fileName <> " - " <> title)
-                            return $ state {
-                                    guiParams = Just (gp {guiFileName = fileName})
-                                }
-                    Nothing -> return ()
+        file <- Gtk.fileDialogOpenFinish dialog result
+        maybePath <- Gio.fileGetPath file
+        case maybePath of
+            Just path -> do
+                let fileName = path
+                loadState fileName stateRef
+                modifyMVar_ stateRef $ \state -> do
+                    let gp = fromJust (guiParams state)
+                    Gtk.windowSetTitle (guiWindow gp) (Just (T.pack fileName <> " - " <> title))
+                    return $ state {
+                            guiParams = Just (gp {guiFileName = fileName})
+                        }
             Nothing -> return ()
 
 newProject :: StateRef -> IO ()
@@ -375,7 +380,7 @@ newProject stateRef = do
     mapM_ (\_ -> Gtk.notebookRemovePage (guiGraphTabs gp) 0) [0 .. numTabs - 2]
     modifyMVar_ stateRef $ \state -> do
         let Just gp = guiParams state
-        Gtk.windowSetTitle (guiWindow gp) ("Untitled - " <> title)
+        Gtk.windowSetTitle (guiWindow gp) (Just ("Untitled - " <> title))
         return $ (newState newParams) {
             guiParams = Just $ gp {
                 guiMousePos = Nothing,
@@ -429,26 +434,23 @@ saveAsDialog stateRef = do
     Gtk.fileFilterAddPattern fileFilter (T.pack $ "*" ++ suffix)
     Gtk.fileFilterSetName fileFilter (Just "TSA files")
 
-    filters <- Gio.listStoreNew Gtk.FileFilter
+    filters <- Gio.listStoreNew =<< glibType @Gtk.FileFilter
     Gio.listStoreAppend filters fileFilter
-    Gtk.fileDialogSetFilters dialog filters
+    Gtk.fileDialogSetFilters dialog (Just filters)
     Gtk.fileDialogSetDefaultFilter dialog (Just fileFilter)
 
     Gtk.fileDialogSave dialog (Just (getWindow state)) (Nothing :: Maybe Gio.Cancellable) $ Just $ \_ result -> do
-        maybeFile <- Gtk.fileDialogSaveFinish dialog result
-        case maybeFile of
-            Just file -> do
-                maybePath <- Gio.fileGetPath file
-                case maybePath of
-                    Just path -> do
-                        let f = T.unpack path
-                            fileName = if suffix `List.isSuffixOf` (map Char.toLower f) then f else f ++ suffix
-                        saveState fileName state
-                        modifyMVar_ stateRef $ \state -> do
-                            let gp = fromJust (guiParams state)
-                            Gtk.windowSetTitle (guiWindow gp) (T.pack fileName <> " - " <> title)
-                            return $ state {guiParams = Just (gp {guiFileName = fileName})}
-                    Nothing -> return ()
+        file <- Gtk.fileDialogSaveFinish dialog result
+        maybePath <- Gio.fileGetPath file
+        case maybePath of
+            Just path -> do
+                let f = path
+                    fileName = if suffix `List.isSuffixOf` (map Char.toLower f) then f else f ++ suffix
+                saveState fileName state
+                modifyMVar_ stateRef $ \state -> do
+                    let gp = fromJust (guiParams state)
+                    Gtk.windowSetTitle (guiWindow gp) (Just (T.pack fileName <> " - " <> title))
+                    return $ state {guiParams = Just (gp {guiFileName = fileName})}
             Nothing -> return ()
 
 saveState :: String -> State -> IO ()
