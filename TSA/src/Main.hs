@@ -134,13 +134,13 @@ activate app = do
 
     -- Key press handling
     keyController <- Gtk.eventControllerKeyNew
-    Gtk.widgetAddController win keyController
     _ <- Gtk.onEventControllerKeyKeyPressed keyController $ \keyval _keycode _mods -> do
         keyName <- Gdk.keyvalName keyval
         case keyName of
             Just name -> liftIO $ Graph.onKeyDown stateRef (T.unpack name)
             Nothing -> return False
         return False
+    Gtk.widgetAddController win keyController
 
     -- Main layout
     vBox <- Gtk.boxNew Gtk.OrientationVertical 0

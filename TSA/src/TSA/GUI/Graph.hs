@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ImplicitParams #-}
 
 module TSA.GUI.Graph (
     drawGraph,
@@ -14,7 +15,8 @@ module TSA.GUI.Graph (
     updateGuiChanged,
     updateGraphSettings,
     addGraphTab,
-    setNotebookEvents
+    setNotebookEvents,
+    attachPageEvents
 
     ) where
 
@@ -1284,64 +1286,60 @@ setNotebookEvents stateRef =
                                 return ()
                     else return ()
 
-        numPages <- Gtk.notebookGetNPages notebook
+        return ()
 
-        let
-            mapOp i =
-                do
-                    Just page <- Gtk.notebookGetNthPage notebook i
+attachPageEvents :: Gtk.IsWidget w => StateRef -> w -> IO ()
+attachPageEvents stateRef page = do
+    -- Mouse button press
+    clickController <- Gtk.gestureClickNew
+    Gtk.gestureSingleSetButton clickController 0
+    _ <- Gtk.onGestureClickPressed clickController $ \nPress x y -> liftIO $ do
+        buttonNo <- Gtk.gestureSingleGetCurrentButton ?self
+        maybeEvent <- Gtk.eventControllerGetCurrentEvent ?self
+        modifiers <- case maybeEvent of
+            Just event -> concatMap toGuiModifier <$> Gdk.eventGetModifierState event
+            Nothing -> return []
+        _ <- TSA.GUI.Graph.onMouseButton stateRef (toMouseButton buttonNo) modifiers (toClick nPress) (x, y) 0
+        return ()
+    Gtk.widgetAddController page clickController
 
-                    -- Mouse button press
-                    clickController <- Gtk.gestureClickNew
-                    Gtk.gestureSingleSetButton clickController 0
-                    _ <- Gtk.onGestureClickPressed clickController $ \nPress x y -> liftIO $ do
-                        buttonNo <- Gtk.gestureSingleGetCurrentButton clickController
-                        maybeEvent <- Gtk.eventControllerGetCurrentEvent clickController
-                        modifiers <- case maybeEvent of
-                            Just event -> concatMap toGuiModifier <$> Gdk.eventGetModifierState event
-                            Nothing -> return []
-                        _ <- TSA.GUI.Graph.onMouseButton stateRef (toMouseButton buttonNo) modifiers (toClick nPress) (x, y) 0
-                        return ()
-                    Gtk.widgetAddController page clickController
+    -- Mouse button release
+    releaseController <- Gtk.gestureClickNew
+    Gtk.gestureSingleSetButton releaseController 0
+    _ <- Gtk.onGestureClickReleased releaseController $ \nPress x y -> liftIO $ do
+        buttonNo <- Gtk.gestureSingleGetCurrentButton ?self
+        maybeEvent <- Gtk.eventControllerGetCurrentEvent ?self
+        modifiers <- case maybeEvent of
+            Just event -> concatMap toGuiModifier <$> Gdk.eventGetModifierState event
+            Nothing -> return []
+        _ <- TSA.GUI.Graph.onMouseButton stateRef (toMouseButton buttonNo) modifiers ReleaseClick (x, y) 0
+        return ()
+    Gtk.widgetAddController page releaseController
 
-                    -- Mouse button release
-                    releaseController <- Gtk.gestureClickNew
-                    Gtk.gestureSingleSetButton releaseController 0
-                    _ <- Gtk.onGestureClickReleased releaseController $ \nPress x y -> liftIO $ do
-                        buttonNo <- Gtk.gestureSingleGetCurrentButton releaseController
-                        maybeEvent <- Gtk.eventControllerGetCurrentEvent releaseController
-                        modifiers <- case maybeEvent of
-                            Just event -> concatMap toGuiModifier <$> Gdk.eventGetModifierState event
-                            Nothing -> return []
-                        _ <- TSA.GUI.Graph.onMouseButton stateRef (toMouseButton buttonNo) modifiers ReleaseClick (x, y) 0
-                        return ()
-                    Gtk.widgetAddController page releaseController
+    -- Mouse motion
+    motionController <- Gtk.eventControllerMotionNew
+    _ <- Gtk.onEventControllerMotionMotion motionController $ \x y -> liftIO $ do
+        maybeEvent <- Gtk.eventControllerGetCurrentEvent ?self
+        modifiers <- case maybeEvent of
+            Just event -> concatMap toGuiModifier <$> Gdk.eventGetModifierState event
+            Nothing -> return []
+        _ <- TSA.GUI.Graph.onMouseMove stateRef (x, y) modifiers
+        return ()
+    Gtk.widgetAddController page motionController
 
-                    -- Mouse motion
-                    motionController <- Gtk.eventControllerMotionNew
-                    _ <- Gtk.onEventControllerMotionMotion motionController $ \x y -> liftIO $ do
-                        maybeEvent <- Gtk.eventControllerGetCurrentEvent motionController
-                        modifiers <- case maybeEvent of
-                            Just event -> concatMap toGuiModifier <$> Gdk.eventGetModifierState event
-                            Nothing -> return []
-                        _ <- TSA.GUI.Graph.onMouseMove stateRef (x, y) modifiers
-                        return ()
-                    Gtk.widgetAddController page motionController
-
-                    -- Mouse scroll
-                    scrollController <- Gtk.eventControllerScrollNew [Gtk.EventControllerScrollFlagsVertical, Gtk.EventControllerScrollFlagsDiscrete]
-                    _ <- Gtk.onEventControllerScrollScroll scrollController $ \dx dy -> liftIO $ do
-                        let direction = if dy < 0 then ScrollUp else ScrollDown
-                        maybeEvent <- Gtk.eventControllerGetCurrentEvent scrollController
-                        (x, y) <- case maybeEvent of
-                            Just event -> do
-                                (_, ex, ey) <- Gdk.eventGetPosition event
-                                return (ex, ey)
-                            Nothing -> return (0, 0)
-                        _ <- TSA.GUI.Graph.onMouseScroll stateRef (x, y) direction
-                        return True
-                    Gtk.widgetAddController page scrollController
-        mapM_ mapOp [0 .. numPages - 2]
+    -- Mouse scroll
+    scrollController <- Gtk.eventControllerScrollNew [Gtk.EventControllerScrollFlagsVertical, Gtk.EventControllerScrollFlagsDiscrete]
+    _ <- Gtk.onEventControllerScrollScroll scrollController $ \dx dy -> liftIO $ do
+        let direction = if dy < 0 then ScrollUp else ScrollDown
+        maybeEvent <- Gtk.eventControllerGetCurrentEvent ?self
+        (x, y) <- case maybeEvent of
+            Just event -> do
+                (_, ex, ey) <- Gdk.eventGetPosition event
+                return (ex, ey)
+            Nothing -> return (0, 0)
+        _ <- TSA.GUI.Graph.onMouseScroll stateRef (x, y) direction
+        return True
+    Gtk.widgetAddController page scrollController
 
 addGraphTab :: StateRef -> Maybe String -> IO Int
 addGraphTab stateRef maybeGraphName =
@@ -1385,5 +1383,5 @@ addGraphTab stateRef maybeGraphName =
 
         _ <- Gtk.notebookInsertPageMenu notebook page (Just label) (Just label) (pageIndex - 1)
         _ <- Gtk.notebookSetCurrentPage notebook (pageIndex - 1)
-        setNotebookEvents stateRef
+        attachPageEvents stateRef page
         return (fromIntegral pageIndex - 1)
